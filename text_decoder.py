@@ -1,84 +1,115 @@
-﻿"""
-ENN 4D — Pure Associative Memory Field Text Decoder
-Decodes physical field interference output vectors (Y) into retrieved text memories
-using geometric proximity and field resonance ranking.
-No hardcoded regex substitutions, templates, or manual keyword dictionaries.
+"""
+ENN 4D: Pure Semantic Text Decoder
+Zero hardcoding. Zero string templates.
+Decodes 4D physical interference vectors back to natural language text
+using continuous mathematical resonance.
 """
 
+import json
 import numpy as np
-from typing import Dict, Any, List, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple
+
+class MemoryRecord:
+    def __init__(self, text: str, x: np.ndarray, y: np.ndarray, z: np.ndarray, w: int, time_step: int, features: Optional[np.ndarray] = None):
+        self.text = text
+        self.x = np.array(x, dtype=float)
+        self.y = np.array(y, dtype=float)
+        self.z = np.array(z, dtype=float)
+        self.w = int(w) if w is not None else 0
+        self.time_step = int(time_step)
+        self.features = np.array(features, dtype=float) if features is not None else None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "text": self.text,
+            "x": self.x.tolist(),
+            "y": self.y.tolist(),
+            "z": self.z.tolist(),
+            "w": self.w,
+            "time_step": self.time_step
+        }
 
 
 class TextDecoder:
-    """
-    Continuous Field Decoder for ENN 4D.
-    Retrieves memories from the living field based on
-    pure geometric similarity (Cosine alignment & Euclidean proximity).
-    """
-    
-    def __init__(self, memory_log: Optional[List[Dict[str, Any]]] = None):
-        self.memory_log: List[Dict[str, Any]] = memory_log if memory_log is not None else []
-
-    def set_memory_log(self, memory_log: List[Dict[str, Any]]):
-        self.memory_log = memory_log
-
-    def compute_field_similarity(self, vec_a: np.ndarray, vec_b: np.ndarray) -> float:
-        """
-        Computes metric similarity between two continuous vectors combining
-        angular alignment (cosine) and spatial Euclidean proximity.
-        """
-        norm_a = np.linalg.norm(vec_a)
-        norm_b = np.linalg.norm(vec_b)
+    def __init__(self):
+        """Initialize the associative memory bank."""
+        self.memory_log: List[MemoryRecord] = []
         
-        if norm_a == 0 or norm_b == 0:
-            return 0.0
-            
-        cosine_sim = float(np.dot(vec_a, vec_b) / (norm_a * norm_b))
-        euclidean_dist = float(np.linalg.norm(vec_a - vec_b))
-        proximity = 1.0 / (1.0 + euclidean_dist)
-        
-        return float(0.60 * cosine_sim + 0.40 * proximity)
+    def record_memory(self, text: str, x: np.ndarray, y: np.ndarray, z: np.ndarray, w: int, time_step: int, features: Optional[np.ndarray] = None):
+        """Store an episodic memory particle in the memory bank."""
+        record = MemoryRecord(text, x, y, z, w, time_step, features)
+        self.memory_log.append(record)
 
-    def rank_memories(self, y_vector: np.ndarray, candidate_log: Optional[List[Dict[str, Any]]] = None) -> List[Tuple[Dict[str, Any], float]]:
+    def decode_4d_to_text(self, y_vector: np.ndarray, query_features: Optional[np.ndarray] = None) -> str:
         """
-        Ranks memories by their geometric field similarity to the interference vector Y.
+        Pure vector decode: Finds the most resonant memory string for the physical field output vector Y.
+        Zero hardcoded templates.
         """
-        pool = candidate_log if candidate_log is not None else self.memory_log
-        if not pool:
+        matches = self.find_resonant_memories(y_vector, query_features=query_features, top_k=1)
+        if matches:
+            return matches[0][0]
+        return "No active resonance in memory."
+
+    def find_resonant_memories(self, y_vector: np.ndarray, query_features: Optional[np.ndarray] = None, top_k: int = 3) -> List[Tuple[str, float]]:
+        """
+        Calculates mathematical resonance across all stored memories.
+        Combines 4D field output vector alignment with feature manifold resonance.
+        """
+        if not self.memory_log:
             return []
-            
+
+        y_vec = np.array(y_vector, dtype=float)
+        norm_y = np.linalg.norm(y_vec)
+        if norm_y > 0:
+            y_vec = y_vec / norm_y
+
         scored = []
-        for mem in pool:
-            target_vec = np.array(mem.get('y', mem.get('x')), dtype=float)
-            sim = self.compute_field_similarity(y_vector, target_vec)
-            scored.append((mem, sim))
+        for record in self.memory_log:
+            norm_rec = np.linalg.norm(record.x)
+            sim_4d = float(np.dot(y_vec, record.x / norm_rec)) if norm_rec > 0 else 0.0
             
-        scored.sort(key=lambda x: x[1], reverse=True)
-        return scored
-
-    def decode_4d_to_text(
-        self, 
-        y_vector: np.ndarray, 
-        memory_log: Optional[List[Dict[str, Any]]] = None,
-        top_k: int = 1,
-        min_resonance: float = 0.50
-    ) -> str:
-        """
-        Decodes the output interference vector Y by finding the most resonant memory.
-        """
-        active_log = memory_log if memory_log is not None else self.memory_log
-        if not active_log:
-            return "Living field memory is currently empty."
-
-        ranked = self.rank_memories(y_vector, candidate_log=active_log)
-        if not ranked:
-            return "No resonance detected in field."
-
-        top_mem, top_score = ranked[0]
-
-        if top_k == 1:
-            return top_mem['text']
+            sim_feat = 0.0
+            if query_features is not None and record.features is not None:
+                norm_qf = np.linalg.norm(query_features)
+                norm_rf = np.linalg.norm(record.features)
+                if norm_qf > 0 and norm_rf > 0:
+                    sim_feat = float(np.dot(query_features / norm_qf, record.features / norm_rf))
             
-        # Multi-memory retrieval if requested
-        resonant_texts = [mem['text'] for mem, score in ranked[:top_k] if score >= min_resonance]
-        return " | ".join(resonant_texts) if resonant_texts else top_mem['text']
+            # Continuous resonance score
+            total_resonance = (0.5 * sim_feat + 0.5 * sim_4d) if query_features is not None else sim_4d
+            scored.append((record.text, float(total_resonance)))
+
+        scored.sort(key=lambda item: item[1], reverse=True)
+        return scored[:top_k]
+
+    def save_memory_log(self, filepath: str = "memory_log.json"):
+        """Save memory bank to JSON file."""
+        data = [r.to_dict() for r in self.memory_log]
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+    def load_memory_log(self, filepath: str = "memory_log.json"):
+        """Load memory bank from JSON file."""
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.memory_log = [
+                MemoryRecord(
+                    d["text"],
+                    np.array(d["x"]),
+                    np.array(d["y"]),
+                    np.array(d["z"]),
+                    d.get("w", 0),
+                    d.get("time_step", 0)
+                )
+                for d in data
+            ]
+        except FileNotFoundError:
+            self.memory_log = []
+
+
+# Global helper instance
+_default_decoder = TextDecoder()
+
+def decode_4d_to_text(y_vector: np.ndarray) -> str:
+    return _default_decoder.decode_4d_to_text(y_vector)

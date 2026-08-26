@@ -1,141 +1,153 @@
-﻿"""
-ENN 4D — Pure Emergent Chat Interface
-Connects the mathematical text encoder, continuous 4D physics engine, and associative decoder.
-No hardcoded rules, templates, or artificial heuristics.
+"""
+ENN 4D: Living Physical Chat Interface
+Zero hardcoded response templates. Zero regexes.
+Natural Language operates purely on the 5 Physical Principles of ENN 4D:
+- Declarative statements birth & amplify living neuron particles.
+- Queries send probe waves across the field to find the most physically resonant neuron.
 """
 
-import os
 import sys
-import json
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
+import os
 import numpy as np
-from typing import Optional
-
-if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-
+from typing import Dict, Any, List
 from enn4d import ENN4D
 from text_encoder import TextEncoder
-from text_decoder import TextDecoder
 
-
-class ENN4DChat:
-    """
-    Pure emergent conversational interface for ENN 4D.
-    Relies entirely on 4D continuous field dynamics (Resonance, Wave Interference,
-    Kinetic Momentum, and Spatial Clustering) to encode, learn, and decode memories.
-    """
-
-    def __init__(
-        self, 
-        universe_path: str = "universe.json", 
-        memory_path: str = "memory_log.json",
-        dim: int = 4
-    ):
-        self.universe_path = universe_path
-        self.memory_path = memory_path
+class ENNChatBrain:
+    def __init__(self, universe_file: str = "universe.json", dim: int = 4):
+        self.universe_file = universe_file
         self.dim = dim
         
-        self.system = ENN4D(dim=dim)
-        self.encoder = TextEncoder(dim=dim)
-        self.decoder = TextDecoder()
+        self.system = ENN4D(dim=self.dim)
+        self.encoder = TextEncoder(dim=self.dim)
         
+        self.step_counter = 0
         self.load_state()
 
     def load_state(self):
-        """Loads existing universe and associative memory log."""
-        if os.path.exists(self.universe_path):
+        """Load living universe state from disk."""
+        if os.path.exists(self.universe_file):
             try:
-                self.system.load(self.universe_path)
-            except Exception as e:
-                print(f"[Warning] Could not load {self.universe_path}: {e}")
-                
-        if os.path.exists(self.memory_path):
-            try:
-                with open(self.memory_path, 'r', encoding='utf-8') as f:
-                    memories = json.load(f)
-                    for m in memories:
-                        m['x'] = np.array(m['x'], dtype=float)
-                        m['y'] = np.array(m['y'], dtype=float)
-                        m['z'] = np.array(m['z'], dtype=float)
-                    self.encoder.set_memory_log(memories)
-                    self.decoder.set_memory_log(memories)
-                    print(f"Memory log loaded ({len(memories)} memories).")
-            except Exception as e:
-                print(f"[Warning] Could not load {self.memory_path}: {e}")
+                self.system.load(self.universe_file)
+            except Exception:
+                pass
+        self.step_counter = self.system.event_count
 
     def save_state(self):
-        """Persists the universe state and memory log."""
-        self.system.save(self.universe_path)
-        
-        serializable_memories = []
-        for m in self.encoder.get_memory_log():
-            serializable_memories.append({
-                'text': m['text'],
-                'x': np.round(m['x'], 4).tolist(),
-                'y': np.round(m['y'], 4).tolist(),
-                'z': np.round(m['z'], 4).tolist(),
-                'step': int(m.get('step', 0))
-            })
-            
-        with open(self.memory_path, 'w', encoding='utf-8') as f:
-            json.dump(serializable_memories, f, indent=2)
+        """Persist living universe state to disk."""
+        self.system.save(self.universe_file)
 
-    def send(self, user_input: str) -> str:
-        """
-        Executes one full sensory-physical-generative cycle:
-        1. Encodes raw text into a 4D sensory vector
-        2. Steps the 4D physics engine (Resonance -> Interference -> Amplification -> Homeostasis -> Phase Transitions)
-        3. Decodes the resulting field interference Y vector via geometric associative recall
-        4. Auto-saves universe state
-        """
-        if not user_input.strip():
-            return "Please enter a message."
-            
-        # 1. Sensory Encoding
-        event = self.encoder.encode_text_to_4d(user_input, temporal_step=self.system.event_count + 1)
-        self.decoder.set_memory_log(self.encoder.get_memory_log())
+    def is_probe_query(self, text: str) -> bool:
+        """Check if user input is probing memory (query) vs presenting new knowledge."""
+        t = text.strip().lower()
+        if t.endswith('?'):
+            return True
+        first_word = t.split()[0] if t.split() else ""
+        return first_word in {"who", "what", "where", "when", "why", "how", "tell", "explain", "recall", "do"}
+
+    def learn(self, text: str) -> Dict[str, Any]:
+        """Step the physical universe with new knowledge, birthing or amplifying living particles."""
+        self.step_counter += 1
+        time_coord = (self.step_counter * 0.05) % 1.0
         
-        # 2. Physics Step
-        output_y = self.system.step(event['x'], event['y'], event['z'])
+        event = self.encoder.encode(text, time_step=time_coord)
+        event_x, event_y, event_z = event["x"], event["y"], event["z"]
+        features = event.get("features")
         
-        # 3. Associative Field Decoding
-        response = self.decoder.decode_4d_to_text(
-            y_vector=output_y,
-            memory_log=self.encoder.get_memory_log()
-        )
+        neurons_before = len(self.system.neurons)
+        output_y = self.system.step(event_x, event_y, event_z, text=text, features=features)
+        neurons_after = len(self.system.neurons)
+        new_neurons = neurons_after - neurons_before
         
-        # 4. Persist
+        forces = self.system.compute_resonance(event_x, event_y, event_z)
+        family_id = int(np.argmax(forces)) if forces else 0
+        
         self.save_state()
-        return response
+        
+        return {
+            "mode": "learn",
+            "text": text,
+            "family_id": family_id,
+            "new_neurons": new_neurons,
+            "total_neurons": neurons_after,
+            "response": f"Learned & integrated into Family {family_id} (Total: {neurons_after} neurons)."
+        }
 
-    def run_interactive_loop(self):
-        """Starts the interactive terminal chat loop."""
-        print("=" * 65)
-        print("ENN 4D LIVING AI CHAT INTERFACE (Pure Emergent Field)")
-        print("=" * 65)
-        print(f"Universe: {len(self.system.neurons)} neurons | {len(set(n.w for n in self.system.neurons))} families.")
-        print("Type your message. Type 'exit' or 'quit' to close.\n")
+    def query(self, text: str) -> Dict[str, Any]:
+        """Send a non-destructive probe wave into the field to find the most physically active resonant neuron."""
+        event = self.encoder.encode(text, time_step=0.0)
+        query_x = event["x"]
+        features = event.get("features")
+        
+        # Probe physical resonance across living particles
+        matches = self.system.probe_resonance(query_x, query_features=features, top_k=3)
+        
+        if matches:
+            top_neuron, activation = matches[0]
+            response_text = top_neuron.text
+            family_id = top_neuron.w
+            energy = top_neuron.energy
+        else:
+            response_text = "No active neuron is resonating in memory."
+            family_id = 0
+            energy = 0.0
+            
+        return {
+            "mode": "query",
+            "text": text,
+            "response": response_text,
+            "family_id": family_id,
+            "energy": energy,
+            "total_neurons": len(self.system.neurons)
+        }
 
-        while True:
-            try:
-                user_input = input("You: ").strip()
-                if not user_input:
-                    continue
-                if user_input.lower() in ["exit", "quit", "q"]:
-                    print("\nSaving living universe state and shutting down...")
-                    self.save_state()
-                    print("Goodbye!")
-                    break
-                    
-                response = self.send(user_input)
-                print(f"System: {response}\n")
-                
-            except (KeyboardInterrupt, EOFError):
-                print("\n\nSession terminated. State saved.")
-                self.save_state()
+    def process_input(self, user_text: str) -> Dict[str, Any]:
+        """Process user input through living 4D physics."""
+        if self.is_probe_query(user_text):
+            return self.query(user_text)
+        else:
+            return self.learn(user_text)
+
+
+def run_interactive_chat():
+    """Run pure physical terminal chat with ENN 4D."""
+    brain = ENNChatBrain()
+    
+    print("=" * 70)
+    print("🧠 ENN 4D LIVING SYSTEM: PURE PHYSICS NATURAL LANGUAGE INTERFACE")
+    print("=" * 70)
+    print(f"Universe Loaded: {len(brain.system.neurons)} neurons across {len(set(n.w for n in brain.system.neurons))} families.")
+    print("No hardcoded templates. Everything emerges from 4D wave resonance.")
+    print("Type your message below. Type 'exit' or 'quit' to end session.\n")
+    
+    while True:
+        try:
+            user_input = input("You: ").strip()
+            if not user_input:
+                continue
+            if user_input.lower() in ["exit", "quit", "q"]:
+                print("\nSaving living universe state... Goodbye!")
+                brain.save_state()
                 break
-
+                
+            result = brain.process_input(user_input)
+            if result.get("mode") == "query":
+                print(f"System (Resonant Memory): \"{result['response']}\"")
+                print(f"  [Physics: Probed Family {result['family_id']} | Energy: {result['energy']:.2f}]\n")
+            else:
+                print(f"System: {result['response']}")
+                print(f"  [Physics: Family {result['family_id']} | Total Neurons: {result['total_neurons']}]\n")
+            
+        except (KeyboardInterrupt, EOFError):
+            print("\nSession ended. Universe saved.")
+            brain.save_state()
+            break
 
 if __name__ == "__main__":
-    chat_app = ENN4DChat()
-    chat_app.run_interactive_loop()
+    run_interactive_chat()

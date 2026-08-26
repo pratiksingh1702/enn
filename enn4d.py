@@ -1,24 +1,22 @@
 """
-ENN 4D: A Living Physics Engine for Thought
-Physics-based neural dynamics: Resonance, Interference, Amplification, Damping, and Phase Transitions.
-Includes basal metabolic homeostasis, connections tracking, and universe JSON state serialization.
+ENN 4D: High-Performance Vectorized Living Physics Engine
+With Robust Synaptic Wiring, Hebbian Plasticity, and Stable Topology Tracking.
 """
 
 import sys
 import json
 import numpy as np
-import matplotlib.pyplot as plt
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict, Any
 from collections import defaultdict
 
-# --- THE 4D NEURON (Particle) ---
-
 class Neuron:
-    def __init__(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, w: int):
+    def __init__(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, w: int, text: str = "", features: Optional[np.ndarray] = None):
         self.x = np.array(x, dtype=float).copy()           # Input coordinates (X)
         self.y = np.array(y, dtype=float).copy()           # Output coordinates (Y)
-        self.z = np.array(z, dtype=float).copy()           # Event / Temporal state (Z)
+        self.z = np.array(z, dtype=float).copy()           # Temporal coordinate (Z)
         self.w = int(w)                                    # Family ID (W)
+        self.text = str(text)                              # Natural language semantic concept
+        self.features = np.array(features, dtype=float).copy() if features is not None else None
         
         # Physical properties
         self.energy = 1.0                                  # Mass / activation potential
@@ -26,314 +24,354 @@ class Neuron:
         self.velocity_y = np.zeros_like(self.y)            # Momentum in Y
         self.velocity_z = np.zeros_like(self.z)            # Momentum in Z
         self.age = 0                                       # Time steps since birth
-        self.connections: List[int] = []                   # Connected neuron indices
+        self.connections: List[int] = []                   # Synaptic links (max 16)
         self.last_active = 0                               # Last activated step
-        
-    def distance_to(self, other: 'Neuron') -> float:
-        """4D distance with family affinity."""
-        dx = np.linalg.norm(self.x - other.x)
-        dy = np.linalg.norm(self.y - other.y)
-        dz = np.linalg.norm(self.z - other.z) * 0.1
-        dw = 0.0 if self.w == other.w else 1.0
-        return float(dx + dy + dz + dw)
-    
+
     def clone(self) -> 'Neuron':
-        """Create a slightly modified daughter copy."""
-        noise = 0.05
         daughter = Neuron(
-            x=self.x + np.random.randn(*self.x.shape) * noise,
-            y=self.y + np.random.randn(*self.y.shape) * noise,
+            x=self.x + np.random.randn(*self.x.shape) * 0.04,
+            y=self.y + np.random.randn(*self.y.shape) * 0.04,
             z=self.z.copy(),
-            w=self.w
+            w=self.w,
+            text=self.text,
+            features=self.features
         )
         daughter.connections = list(self.connections)
+        daughter.last_active = self.last_active
         return daughter
-    
-    def __repr__(self):
-        return f"N(w={self.w}, e={self.energy:.2f}, age={self.age})"
 
-# --- THE ENN 4D SYSTEM (The Universe) ---
 
 class ENN4D:
     def __init__(self, dim: int = 4):
         self.dim = dim
         self.neurons: List[Neuron] = []
         self.next_family_id = 0
-        self.history = []           # Track neuron count over time
-        self.energy_history = []    # Track total system energy
+        self.history = []
+        self.energy_history = []
         self.event_count = 0
         
-        # Physical & Biological constants
-        self.epsilon = 0.45         # Novelty threshold: max resonance force below this births a neuron
-        self.merge_distance = 0.25  # Spatial threshold for merging close neurons
-        self.split_energy = 3.5     # Energy threshold for splitting overactive neurons
-        self.decay_rate = 0.015     # Natural damping rate
-        self.momentum = 0.4         # Momentum factor for spatial attraction
-        self.baseline_energy = 0.15 # Basal metabolic floor (Spontaneous life activity)
-        self.min_energy = 0.05      # Pruning threshold: neurons below this die
+        # Physical & Family parameters
+        self.epsilon = 0.40         # Novelty threshold for birth
+        self.family_resonance_threshold = 0.55  # If prototype force > this, join family
+        self.family_capacity = 16   # Max neurons in a family before sub-family mitosis
+        self.merge_distance = 0.15  # Spatial merge threshold
+        self.split_energy = 4.0     # Energy mitosis threshold
+        self.decay_rate = 0.015     # Thermodynamic decay
+        self.momentum = 0.4         # Spatial momentum
+        self.baseline_energy = 0.15 # Basal metabolic floor
+        self.min_energy = 0.05      # Pruning floor
+        self.max_connections = 16   # Synaptic capacity per neuron
+
+    # --- VECTORIZED MATRICES ---
+    def _get_x_matrix(self) -> np.ndarray:
+        if not self.neurons:
+            return np.empty((0, self.dim))
+        return np.array([n.x for n in self.neurons])
+
+    def _get_y_matrix(self) -> np.ndarray:
+        if not self.neurons:
+            return np.empty((0, self.dim))
+        return np.array([n.y for n in self.neurons])
+
+    def _get_energy_vector(self) -> np.ndarray:
+        if not self.neurons:
+            return np.empty((0,))
+        return np.array([n.energy for n in self.neurons])
+
+    # --- FAMILY PROTOTYPES ---
+    def get_all_family_prototypes(self) -> Dict[int, np.ndarray]:
+        """Compute energy-weighted centroids for all active families."""
+        families = defaultdict(list)
+        for n in self.neurons:
+            families[n.w].append(n)
+            
+        prototypes = {}
+        for w, members in families.items():
+            energies = np.array([m.energy for m in members])
+            xs = np.array([m.x for m in members])
+            total_e = np.sum(energies)
+            prototypes[w] = (np.sum(xs * energies[:, None], axis=0) / total_e) if total_e > 0 else np.mean(xs, axis=0)
+        return prototypes
+
+    def find_best_family(self, event_x: np.ndarray) -> Tuple[Optional[int], float]:
+        """Fast vectorized prototype search."""
+        prototypes = self.get_all_family_prototypes()
+        if not prototypes:
+            return None, 0.0
+            
+        fam_ids = list(prototypes.keys())
+        proto_mat = np.array([prototypes[w] for w in fam_ids])
         
-    # --- RESONANCE: Compute the field force on each neuron ---
+        dist_sq = np.sum((proto_mat - event_x) ** 2, axis=1)
+        forces = 1.0 / (1.0 + 3.0 * dist_sq)
+        
+        best_idx = np.argmax(forces)
+        return fam_ids[best_idx], float(forces[best_idx])
+
+    # --- 1. VECTORIZED RESONANCE ---
     def compute_resonance(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray) -> List[float]:
-        """Compute the resonance force of the incoming event on each neuron."""
-        forces = []
-        for neuron in self.neurons:
-            dx = np.linalg.norm(event_x - neuron.x)
-            dy = np.linalg.norm(event_y - neuron.y)
-            dist_sq = (dx * dx) + (dy * dy)
-            force = 1.0 / (1.0 + 3.0 * dist_sq)
-            forces.append(float(force))
-        return forces
-    
-    # --- INTERFERENCE: Combine active neurons' outputs ---
+        """Vectorized field resonance force calculation."""
+        if not self.neurons:
+            return []
+        x_mat = self._get_x_matrix()
+        y_mat = self._get_y_matrix()
+        
+        dx_sq = np.sum((x_mat - event_x) ** 2, axis=1)
+        dy_sq = np.sum((y_mat - event_y) ** 2, axis=1)
+        forces = 1.0 / (1.0 + 3.0 * (dx_sq + dy_sq))
+        return forces.tolist()
+
+    # --- 2. VECTORIZED INTERFERENCE ---
     def interfere(self, event_x: np.ndarray, forces: List[float], event_y: Optional[np.ndarray] = None) -> np.ndarray:
-        """Compute the interference output of active neurons."""
         if not self.neurons:
             return event_y.copy() if event_y is not None else np.zeros(self.dim)
+            
+        f_arr = np.array(forces)
+        e_arr = self._get_energy_vector()
+        weights = f_arr * e_arr
         
-        combined_y = np.zeros(self.dim)
-        total_force = 0.0
-        
-        for neuron, force in zip(self.neurons, forces):
-            if force > 0.05:
-                combined_y += force * neuron.y
-                total_force += force
-        
-        if total_force > 0:
-            return combined_y / total_force
-        else:
-            return event_y.copy() if event_y is not None else np.zeros(self.dim)
-    
-    # --- AMPLIFICATION: Strengthen active neurons ---
+        mask = f_arr > 0.05
+        total_w = np.sum(weights[mask])
+        if total_w > 0:
+            y_mat = self._get_y_matrix()
+            return np.sum(y_mat[mask] * weights[mask, None], axis=0) / total_w
+        return event_y.copy() if event_y is not None else np.zeros(self.dim)
+
+    # --- 3. HEBBIAN AMPLIFICATION & SYNAPSE WIRING ---
     def amplify(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray, forces: List[float], signal_magnitude: float):
-        """Amplify neurons proportional to resonance force and input signal power."""
-        if signal_magnitude < 1e-4:
+        if signal_magnitude < 1e-4 or not self.neurons:
             return
             
-        active_indices = []
-        for i, (neuron, force) in enumerate(zip(self.neurons, forces)):
-            if force > 0.1:
-                active_indices.append(i)
-                energy_gain = force * signal_magnitude * 0.15
-                neuron.energy += energy_gain
-                neuron.last_active = self.event_count
-                
-                # Spatial convergence toward the resonant event
-                shift_x = (event_x - neuron.x) * force * 0.08
-                shift_y = (event_y - neuron.y) * force * 0.08
-                
-                neuron.velocity_x = (neuron.velocity_x + shift_x) * self.momentum
-                neuron.velocity_y = (neuron.velocity_y + shift_y) * self.momentum
-                
-                neuron.x += neuron.velocity_x
-                neuron.y += neuron.velocity_y
-                neuron.z = 0.9 * neuron.z + 0.1 * event_z
-                
-            neuron.age += 1
-            
-        # Synaptic wire-together dynamics (Hebbian co-activation)
+        f_arr = np.array(forces)
+        active_indices = np.where(f_arr > 0.1)[0]
+        
         for i in active_indices:
-            for j in active_indices:
-                if i != j and j not in self.neurons[i].connections:
-                    self.neurons[i].connections.append(j)
-    
-    # --- DAMPING & HOMEOSTASIS: Thermodynamic decay with basal living floor ---
+            force = f_arr[i]
+            n = self.neurons[i]
+            n.energy += force * signal_magnitude * 0.20
+            n.last_active = self.event_count
+            
+            shift_x = (event_x - n.x) * force * 0.08
+            shift_y = (event_y - n.y) * force * 0.08
+            
+            n.velocity_x = (n.velocity_x + shift_x) * self.momentum
+            n.velocity_y = (n.velocity_y + shift_y) * self.momentum
+            n.x += n.velocity_x
+            n.y += n.velocity_y
+            n.z = 0.9 * n.z + 0.1 * event_z
+            n.age += 1
+
+        # Hebbian synaptic wiring: Active neurons wiring together, sorted by resonance force!
+        if len(active_indices) > 1:
+            sorted_active = active_indices[np.argsort(f_arr[active_indices])[::-1]][:6]
+            for i in sorted_active:
+                for j in sorted_active:
+                    if i != j:
+                        if j not in self.neurons[i].connections and len(self.neurons[i].connections) < self.max_connections:
+                            self.neurons[i].connections.append(int(j))
+                        if i not in self.neurons[j].connections and len(self.neurons[j].connections) < self.max_connections:
+                            self.neurons[j].connections.append(int(i))
+
+    # --- 4. DAMPING & HOMEOSTASIS ---
     def dampen(self):
-        """Apply continuous thermodynamic damping with basal homeostasis."""
-        for neuron in self.neurons:
-            inactivity = max(0, self.event_count - neuron.last_active)
+        for n in self.neurons:
+            inactivity = max(0, self.event_count - n.last_active)
             decay = self.decay_rate * (1.0 + inactivity * 0.01)
             
-            # Smoothly decay towards basal homeostasis floor
-            if neuron.energy > self.baseline_energy:
-                neuron.energy = max(self.baseline_energy, neuron.energy - decay)
+            if n.energy > self.baseline_energy:
+                n.energy = max(self.baseline_energy, n.energy - decay)
             else:
-                thermal_pulse = np.random.uniform(0.0005, 0.002)
-                neuron.energy = min(self.baseline_energy, neuron.energy + thermal_pulse)
+                n.energy = min(self.baseline_energy, n.energy + np.random.uniform(0.0005, 0.002))
             
-            # Small thermal noise
-            noise = 0.001
-            neuron.x += np.random.randn(*neuron.x.shape) * noise
-            neuron.y += np.random.randn(*neuron.y.shape) * noise
-    
-    # --- PHASE TRANSITION: Birth, Merge, Split, Death ---
-    def phase_transition(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray, signal_magnitude: float):
-        """Apply phase transitions to the system."""
-        # 1. Birth: If input has signal and no neuron resonates sufficiently
+            n.x += np.random.randn(*n.x.shape) * 0.0005
+            n.y += np.random.randn(*n.y.shape) * 0.0005
+
+    # --- 5. PHASE TRANSITIONS ---
+    def phase_transition(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray, signal_magnitude: float, text: str = "", features: Optional[np.ndarray] = None):
         if signal_magnitude > 1e-4:
             if not self.neurons:
-                self.birth(event_x, event_y, event_z, None)
+                self.birth(event_x, event_y, event_z, None, text=text, features=features)
             else:
+                best_family, proto_force = self.find_best_family(event_x)
                 forces = self.compute_resonance(event_x, event_y, event_z)
                 max_force = max(forces) if forces else 0.0
-                if max_force < self.epsilon:
-                    self.birth(event_x, event_y, event_z, None)
-        
-        # 2. Merge: Merge neurons that are too close within same family
-        self.merge_neurons()
-        
-        # 3. Split: Split over-amplified neurons
-        self.split_neurons()
-        
-        # 4. Prune: Remove dead neurons
-        self.prune_neurons()
-    
-    def find_matching_family(self, x: np.ndarray) -> Optional[int]:
-        """Find if input belongs to an existing family cluster."""
-        if not self.neurons:
-            return None
-            
-        families = defaultdict(list)
-        for neuron in self.neurons:
-            families[neuron.w].append(neuron)
-            
-        best_family = None
-        best_dist = float('inf')
-        
-        for family_id, members in families.items():
-            mean_x = np.mean([n.x for n in members], axis=0)
-            dist = np.linalg.norm(x - mean_x)
-            if dist < best_dist:
-                best_dist = dist
-                best_family = family_id
                 
-        if best_dist < 0.5:
-            return best_family
-        return None
-    
-    def birth(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, family: Optional[int] = None) -> Neuron:
-        """Birth a new neuron in a new or matching family."""
-        if family is None:
-            family = self.find_matching_family(x)
-            
+                if max_force < self.epsilon and proto_force < self.family_resonance_threshold:
+                    self.birth(event_x, event_y, event_z, None, text=text, features=features)
+                else:
+                    target_fam = best_family if best_family is not None else 0
+                    self.birth(event_x, event_y, event_z, target_fam, text=text, features=features)
+
+        # Periodic maintenance
+        if self.event_count % 15 == 0:
+            self.check_family_capacities()
+            self.merge_neurons()
+            self.clean_connections()
+
+    def birth(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, family: Optional[int] = None, text: str = "", features: Optional[np.ndarray] = None) -> Neuron:
+        """Birth a new neuron and construct synaptic bridges to nearest neighbors."""
         if family is None:
             family = self.next_family_id
             self.next_family_id += 1
-        
-        new_neuron = Neuron(x, y, z, family)
+            
+        new_neuron = Neuron(x, y, z, family, text=text, features=features)
         new_neuron.last_active = self.event_count
+        new_neuron.energy = 2.0
         
-        # Connect to spatially close existing neurons
         new_idx = len(self.neurons)
-        for idx, other in enumerate(self.neurons):
-            if np.linalg.norm(new_neuron.x - other.x) < 0.8:
-                new_neuron.connections.append(idx)
-                other.connections.append(new_idx)
+        if self.neurons:
+            x_mat = self._get_x_matrix()
+            dists = np.linalg.norm(x_mat - x, axis=1)
+            
+            # Wire to top 4 spatially closest neighbors in 4D space
+            nearest_indices = np.argsort(dists)[:4]
+            for peer_idx in nearest_indices:
+                peer_idx = int(peer_idx)
+                new_neuron.connections.append(peer_idx)
+                if new_idx not in self.neurons[peer_idx].connections and len(self.neurons[peer_idx].connections) < self.max_connections:
+                    self.neurons[peer_idx].connections.append(new_idx)
                 
         self.neurons.append(new_neuron)
         return new_neuron
-    
+
+    def check_family_capacities(self):
+        family_members = defaultdict(list)
+        for i, n in enumerate(self.neurons):
+            family_members[n.w].append(i)
+            
+        for w, indices in list(family_members.items()):
+            if len(indices) > self.family_capacity:
+                self.split_family(w, indices)
+
+    def split_family(self, family_id: int, member_indices: List[int]):
+        pts = np.array([self.neurons[i].x for i in member_indices])
+        mean_pt = np.mean(pts, axis=0)
+        
+        u, s, vt = np.linalg.svd(pts - mean_pt)
+        v0 = vt[0] if len(vt) > 0 else np.ones(self.dim)
+        
+        new_fam_id = self.next_family_id
+        self.next_family_id += 1
+        
+        for idx in member_indices:
+            if np.dot(self.neurons[idx].x - mean_pt, v0) > 0:
+                self.neurons[idx].w = new_fam_id
+
+    def clean_connections(self):
+        """Sanitize and deduplicate connections within valid bounds."""
+        n_count = len(self.neurons)
+        for i, n in enumerate(self.neurons):
+            valid_conns = []
+            for c in n.connections:
+                if 0 <= c < n_count and c != i and c not in valid_conns:
+                    valid_conns.append(c)
+            n.connections = valid_conns[:self.max_connections]
+
     def merge_neurons(self):
-        """Merge neurons that are too close to each other in 4D space."""
         if len(self.neurons) < 2:
             return
-            
+        x_mat = self._get_x_matrix()
+        families = np.array([n.w for n in self.neurons])
+        
         merged = set()
         for i in range(len(self.neurons)):
-            if i in merged:
-                continue
-            for j in range(i + 1, len(self.neurons)):
-                if j in merged:
-                    continue
-                n1 = self.neurons[i]
-                n2 = self.neurons[j]
+            if i in merged: continue
+            same_fam = np.where((families == families[i]) & (np.arange(len(self.neurons)) > i))[0]
+            if len(same_fam) == 0: continue
+            
+            dists = np.linalg.norm(x_mat[same_fam] - x_mat[i], axis=1)
+            close_idx = same_fam[np.where(dists < self.merge_distance)[0]]
+            
+            for j in close_idx:
+                if j in merged: continue
+                n1, n2 = self.neurons[i], self.neurons[j]
+                total_e = n1.energy + n2.energy
+                n1.x = (n1.x * n1.energy + n2.x * n2.energy) / total_e
+                n1.y = (n1.y * n1.energy + n2.y * n2.energy) / total_e
+                n1.energy = total_e * 0.85
+                if not n1.text and n2.text: n1.text = n2.text
                 
-                dist = np.linalg.norm(n1.x - n2.x) + np.linalg.norm(n1.y - n2.y)
-                if dist < self.merge_distance and n1.w == n2.w:
-                    total_e = n1.energy + n2.energy
-                    n1.x = (n1.x * n1.energy + n2.x * n2.energy) / total_e
-                    n1.y = (n1.y * n1.energy + n2.y * n2.energy) / total_e
-                    n1.energy = total_e * 0.85
-                    
-                    # Merge connections
-                    n1.connections = list(set(n1.connections + n2.connections))
-                    if i in n1.connections:
-                        n1.connections.remove(i)
-                    if j in n1.connections:
-                        n1.connections.remove(j)
-                        
-                    merged.add(j)
-        
+                # Merge connection sets
+                n1.connections = list(set(n1.connections + n2.connections))
+                merged.add(j)
+                
         if merged:
             surviving = [n for idx, n in enumerate(self.neurons) if idx not in merged]
-            # Remap connection indices
-            old_to_new = {}
-            new_idx = 0
-            for idx in range(len(self.neurons)):
-                if idx not in merged:
-                    old_to_new[idx] = new_idx
-                    new_idx += 1
+            old_to_new = {old: new for new, old in enumerate([i for i in range(len(self.neurons)) if i not in merged])}
             for n in surviving:
-                n.connections = [old_to_new[c] for c in n.connections if c in old_to_new]
+                n.connections = [old_to_new[c] for c in n.connections if c in old_to_new and old_to_new[c] != surviving.index(n)]
             self.neurons = surviving
-    
-    def split_neurons(self):
-        """Split neurons whose energy exceeds the phase transition threshold."""
-        new_neurons = []
-        for neuron in self.neurons:
-            if neuron.energy > self.split_energy:
-                d1 = neuron.clone()
-                d2 = neuron.clone()
-                
-                d1.energy = neuron.energy * 0.55
-                d2.energy = neuron.energy * 0.45
-                
-                noise = 0.08
-                d1.x += np.random.randn(*d1.x.shape) * noise
-                d2.x -= np.random.randn(*d2.x.shape) * noise
-                
-                new_neurons.extend([d1, d2])
-            else:
-                new_neurons.append(neuron)
-        
-        self.neurons = new_neurons
-    
-    def prune_neurons(self):
-        """Remove dead neurons whose energy dropped below the minimum threshold."""
-        alive = [n for n in self.neurons if n.energy >= self.min_energy]
-        if len(alive) != len(self.neurons):
-            old_to_new = {old_idx: new_idx for new_idx, old_idx in enumerate(
-                [i for i, n in enumerate(self.neurons) if n.energy >= self.min_energy]
-            )}
-            for n in alive:
-                n.connections = [old_to_new[c] for c in n.connections if c in old_to_new]
-            self.neurons = alive
-    
-    # --- STEP THE SYSTEM ---
-    def step(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray) -> np.ndarray:
-        """Process a single event through the 5 physical laws."""
+            self.clean_connections()
+
+    # --- PHYSICAL STEP ---
+    def step(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray, text: str = "", features: Optional[np.ndarray] = None) -> np.ndarray:
         self.event_count += 1
         signal_magnitude = float(np.linalg.norm(event_x) + np.linalg.norm(event_y)) / 2.0
         
-        # 1. Resonance
         forces = self.compute_resonance(event_x, event_y, event_z)
-        
-        # 2. Interference
         output_y = self.interfere(event_x, forces, event_y)
-        
-        # 3. Amplification
         self.amplify(event_x, event_y, event_z, forces, signal_magnitude)
-        
-        # 4. Damping & Homeostasis
         self.dampen()
+        self.phase_transition(event_x, event_y, event_z, signal_magnitude, text=text, features=features)
         
-        # 5. Phase transition
-        self.phase_transition(event_x, event_y, event_z, signal_magnitude)
-        
-        # History tracking
         self.history.append(len(self.neurons))
         self.energy_history.append(sum(n.energy for n in self.neurons))
-        
         return output_y
-    
-    # --- PERSISTENCE: Save & Load Universe ---
+
+    # --- HIERARCHICAL RESONANCE PROBE ---
+    def probe_resonance(self, query_x: np.ndarray, query_features: Optional[np.ndarray] = None, top_k: int = 3) -> List[Tuple[Neuron, float]]:
+        if not self.neurons:
+            return []
+
+        prototypes = self.get_all_family_prototypes()
+        if not prototypes:
+            return []
+
+        # Tier 1: Rank families by prototype resonance
+        fam_ids = list(prototypes.keys())
+        proto_mat = np.array([prototypes[w] for w in fam_ids])
+        dist_sq = np.sum((proto_mat - query_x) ** 2, axis=1)
+        f_forces = 1.0 / (1.0 + 3.0 * dist_sq)
+        
+        top_fam_indices = np.argsort(f_forces)[::-1][:max(3, len(fam_ids) // 3)]
+        top_families = set(fam_ids[idx] for idx in top_fam_indices)
+        
+        # Tier 2: Score candidate neurons
+        candidates = [n for n in self.neurons if n.w in top_families and n.text]
+        if not candidates:
+            candidates = [n for n in self.neurons if n.text]
+
+        scored = []
+        for n in candidates:
+            norm_qx, norm_nx = np.linalg.norm(query_x), np.linalg.norm(n.x)
+            sim_4d = float(np.dot(query_x / norm_qx, n.x / norm_nx)) if norm_qx > 0 and norm_nx > 0 else 0.0
+            
+            sim_feat = 0.0
+            if query_features is not None and n.features is not None:
+                norm_qf, norm_nf = np.linalg.norm(query_features), np.linalg.norm(n.features)
+                if norm_qf > 0 and norm_nf > 0:
+                    sim_feat = float(np.dot(query_features / norm_qf, n.features / norm_nf))
+                    
+            dist_sq = np.sum((query_x - n.x) ** 2)
+            force = 1.0 / (1.0 + 3.0 * dist_sq)
+            
+            semantic_score = (0.6 * sim_feat + 0.4 * max(0.0, sim_4d)) if query_features is not None else max(0.0, sim_4d)
+            activation = force * n.energy * (1.0 + 3.0 * semantic_score)
+            scored.append((n, float(activation)))
+
+        scored.sort(key=lambda item: item[1], reverse=True)
+        return scored[:top_k]
+
+    # --- PERSISTENCE ---
     def save(self, filepath: str = "universe.json"):
-        """Save the full living universe state to a JSON file."""
+        self.clean_connections()
         data = {
             "event_count": self.event_count,
             "next_family_id": self.next_family_id,
             "total_energy": float(sum(n.energy for n in self.neurons)),
             "total_neurons": len(self.neurons),
             "num_families": len(set(n.w for n in self.neurons)),
+            "total_connections": sum(len(n.connections) for n in self.neurons),
             "neurons": [
                 {
                     "id": i,
@@ -341,10 +379,9 @@ class ENN4D:
                     "y": np.round(n.y, 4).tolist(),
                     "z": np.round(n.z, 4).tolist(),
                     "w": int(n.w),
+                    "text": n.text,
                     "energy": float(np.round(n.energy, 4)),
                     "age": int(n.age),
-                    "velocity_x": np.round(n.velocity_x, 4).tolist(),
-                    "velocity_y": np.round(n.velocity_y, 4).tolist(),
                     "connections": [int(c) for c in n.connections if c < len(self.neurons) and c != i],
                     "last_active": int(n.last_active)
                 }
@@ -353,74 +390,23 @@ class ENN4D:
         }
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
-        print(f"Living universe state saved to {filepath} ({len(self.neurons)} neurons, {data['num_families']} families)")
 
     def load(self, filepath: str = "universe.json"):
-        """Load a living universe state from a JSON file."""
         with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
         self.event_count = data["event_count"]
         self.next_family_id = data["next_family_id"]
         self.neurons = []
         for d in data["neurons"]:
-            n = Neuron(np.array(d["x"]), np.array(d["y"]), np.array(d["z"]), d["w"])
+            n = Neuron(
+                np.array(d["x"]),
+                np.array(d["y"]),
+                np.array(d["z"]),
+                d["w"],
+                text=d.get("text", "")
+            )
             n.energy = float(d["energy"])
             n.age = int(d["age"])
-            n.velocity_x = np.array(d["velocity_x"])
-            n.velocity_y = np.array(d["velocity_y"])
             n.connections = list(d.get("connections", []))
             n.last_active = int(d.get("last_active", 0))
             self.neurons.append(n)
-        print(f"Loaded universe from {filepath}: {len(self.neurons)} neurons, {self.event_count} events.")
-
-    # --- STATE INSPECTION ---
-    def display(self):
-        """Display summary of the system state."""
-        print(f"\n--- ENN 4D System ---")
-        print(f"Total Neurons: {len(self.neurons)}")
-        print(f"Total Energy: {sum(n.energy for n in self.neurons):.2f}")
-        print(f"Total Families: {len(set(n.w for n in self.neurons))}")
-        print(f"Events Processed: {self.event_count}")
-        
-        families = defaultdict(list)
-        for neuron in self.neurons:
-            families[neuron.w].append(neuron)
-        
-        for family_id, members in sorted(families.items()):
-            avg_energy = np.mean([n.energy for n in members])
-            print(f"  Family {family_id}: {len(members)} neurons, avg energy {avg_energy:.2f}")
-
-
-def run_demo():
-    """Run a demonstration of the ENN 4D system and save state."""
-    system = ENN4D(dim=4)
-    
-    pattern_A = np.array([0.0, 0.0, 1.0, 1.0]) / np.sqrt(2)
-    pattern_B = np.array([1.0, 0.0, 1.0, 0.0]) / np.sqrt(2)
-    pattern_C = np.array([1.0, 1.0, 0.0, 0.0]) / np.sqrt(2)
-    pattern_D = np.array([0.0, 1.0, 0.0, 1.0]) / np.sqrt(2)
-    pattern_E = np.array([0.5, 0.5, 0.5, 0.5])
-    
-    print("=" * 60)
-    print("ENN 4D DEMONSTRATION & SNAPSHOT")
-    print("=" * 60)
-    
-    print("\n--- Training across 5 distinct pattern domains ---")
-    for i in range(40):
-        system.step(pattern_A, pattern_A, np.array([0.1]))
-    for i in range(40):
-        system.step(pattern_B, pattern_B, np.array([0.2]))
-    for i in range(40):
-        system.step(pattern_C, pattern_C, np.array([0.3]))
-    for i in range(40):
-        system.step(pattern_D, pattern_D, np.array([0.4]))
-    for i in range(40):
-        system.step(pattern_E, pattern_E, np.array([0.5]))
-    
-    system.display()
-    system.save("universe.json")
-    return system
-
-
-if __name__ == "__main__":
-    system = run_demo()

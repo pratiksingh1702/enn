@@ -1,143 +1,141 @@
-﻿"""
-ENN 4D — Pure Mathematical Semantic Text Encoder
-Continuous vector space projection using subword hashing, inverse-frequency weighting,
-and orthonormal 4D manifold projection.
-No hardcoded rules or manual topic dictionaries.
+"""
+ENN 4D: Neural Text Encoder (with Batching Support)
+Zero hardcoding. Zero rule dictionaries. Zero templates.
+Uses continuous deep semantic embeddings from local HuggingFace cache (BAAI/bge-small-en-v1.5)
+with batching support for high-throughput streaming.
 """
 
+import os
+import glob
 import hashlib
-import re
 import numpy as np
-from typing import Dict, Any, List, Optional
-
+from typing import Dict, Any, Optional, List
 
 class TextEncoder:
-    """
-    Deterministic Continuous Vector Encoder for ENN 4D.
-    Maps arbitrary text into normalized continuous 4D sensory vectors [0.05, 0.95]^4.
-    """
-    
-    def __init__(self, dim: int = 4, feature_dim: int = 256):
+    def __init__(self, dim: int = 4, seed: int = 42):
         self.dim = dim
-        self.feature_dim = feature_dim
-        self.step_counter = 0
-        self.memory_log: List[Dict[str, Any]] = []
+        self.seed = seed
+        self._hf_model = None
+        self._hf_tokenizer = None
+        self._use_hf = False
+        self._proj = None
         
-        # Deterministic Orthonormal Projection Matrix (feature_dim -> dim)
-        rng = np.random.RandomState(42)
-        rand_mat = rng.randn(self.feature_dim, self.dim)
-        q, _ = np.linalg.qr(rand_mat)
-        self._proj_matrix = q[:, :self.dim]
+        self._init_model()
 
-        # Common functional particles receive diminished frequency weight
-        self._functional_tokens = {
-            "a", "an", "the", "is", "am", "are", "was", "were", "be", "been",
-            "and", "or", "in", "on", "at", "to", "for", "of", "with", "by",
-            "it", "this", "that", "do", "does", "did"
-        }
-
-    def _hash_token(self, token: str, seed: int = 0) -> int:
-        """Deterministic integer hash for token."""
-        h = hashlib.sha256(f"{seed}:{token}".encode('utf-8')).hexdigest()
-        return int(h[:8], 16) % self.feature_dim
-
-    def _text_to_feature_vector(self, text: str) -> np.ndarray:
-        """
-        Converts text to a high-dimensional continuous feature vector using
-        word tokens, character n-grams, and inverse frequency weighting.
-        """
-        cleaned = text.strip().lower()
-        words = re.findall(r'\b\w+\b', cleaned)
+    def _init_model(self):
+        cache_pattern = os.path.expanduser(r'~/.cache/huggingface/hub/models--BAAI--bge-small-en-v1.5/snapshots/*')
+        snapshots = glob.glob(cache_pattern)
         
-        vec = np.zeros(self.feature_dim, dtype=float)
-        if not words:
-            return vec
+        if snapshots and os.path.isdir(snapshots[0]):
+            try:
+                import torch
+                from transformers import AutoTokenizer, AutoModel
+                snapshot_dir = snapshots[0]
+                self._hf_tokenizer = AutoTokenizer.from_pretrained(snapshot_dir)
+                self._hf_model = AutoModel.from_pretrained(snapshot_dir)
+                self._hf_model.eval()
+                self._use_hf = True
+                
+                rng = np.random.RandomState(self.seed)
+                mat = rng.randn(384, self.dim)
+                q, _ = np.linalg.qr(mat)
+                self._proj = q[:, :self.dim]
+                return
+            except Exception:
+                self._use_hf = False
+                
+        self.vocab_dim = 2048
+        rng = np.random.RandomState(self.seed)
+        mat = rng.randn(self.vocab_dim, self.dim)
+        q, _ = np.linalg.qr(mat)
+        self._proj = q[:, :self.dim]
 
-        for pos, word in enumerate(words):
-            # Functional vs Content token weighting
-            is_func = word in self._functional_tokens or len(word) <= 2
-            base_weight = 0.25 if is_func else 2.5
-            pos_factor = 1.0 / np.sqrt(pos + 1.0)
-            token_weight = base_weight * pos_factor
+    def encode_batch(self, texts: List[str], time_steps: Optional[List[float]] = None) -> List[Dict[str, Any]]:
+        """Encode a batch of texts simultaneously for high speed."""
+        if time_steps is None:
+            time_steps = [(i * 0.001) % 1.0 for i in range(len(texts))]
             
-            # 1. Whole-word feature
-            w_idx = self._hash_token(word, seed=1)
-            vec[w_idx] += token_weight
+        results = []
+        if self._use_hf:
+            import torch
+            batch_size = 64
+            all_embeddings = []
+            for i in range(0, len(texts), batch_size):
+                chunk = texts[i:i+batch_size]
+                formatted = [f"Represent this sentence: {t}" if t.endswith('?') else t for t in chunk]
+                inputs = self._hf_tokenizer(formatted, padding=True, truncation=True, max_length=128, return_tensors='pt')
+                with torch.no_grad():
+                    out = self._hf_model(**inputs)
+                    emb = out[0][:, 0]
+                    emb = torch.nn.functional.normalize(emb, p=2, dim=1)
+                    all_embeddings.append(emb.cpu().numpy())
+                    
+            embs = np.vstack(all_embeddings)
+            dense_4d = np.dot(embs, self._proj)
+            norms = np.linalg.norm(dense_4d, axis=1, keepdims=True)
+            norms[norms == 0] = 1.0
+            dense_4d = dense_4d / norms
             
-            # 2. Subword character n-grams (3, 4, 5) for root & morphological semantics
-            if not is_func:
-                for n in (3, 4, 5):
-                    if len(word) >= n:
-                        for i in range(len(word) - n + 1):
-                            ngram = word[i:i+n]
-                            ng_idx = self._hash_token(ngram, seed=n)
-                            vec[ng_idx] += 1.0 * pos_factor
-
-            # 3. Word-pair bi-grams for context phrase semantics
-            if pos < len(words) - 1:
-                next_w = words[pos + 1]
-                bigram = f"{word}_{next_w}"
-                bg_idx = self._hash_token(bigram, seed=2)
-                vec[bg_idx] += 1.5 * pos_factor
-
-        # L2 Normalization
-        norm = np.linalg.norm(vec)
-        if norm > 0:
-            vec = vec / norm
-        return vec
-
-    def extract_vector(self, text: str) -> np.ndarray:
-        """
-        Projects high-dimensional text feature vector onto the 4D field coordinate box [0.05, 0.95].
-        """
-        features = self._text_to_feature_vector(text)
-        projected = np.dot(features, self._proj_matrix)
-        
-        # Min-max scaling onto [0.05, 0.95]
-        min_v = np.min(projected)
-        max_v = np.max(projected)
-        if max_v - min_v > 1e-8:
-            normalized = (projected - min_v) / (max_v - min_v)
+            for idx, text in enumerate(texts):
+                x_vec = np.round(dense_4d[idx], 4).astype(float)
+                results.append({
+                    "text": text,
+                    "x": x_vec,
+                    "y": x_vec.copy(),
+                    "z": np.array([float(np.round(time_steps[idx] % 1.0, 4))]),
+                    "w": None,
+                    "features": embs[idx]
+                })
         else:
-            normalized = np.full_like(projected, 0.5)
+            for idx, text in enumerate(texts):
+                results.append(self.encode(text, time_step=time_steps[idx]))
+                
+        return results
+
+    def _embed_text(self, text: str) -> np.ndarray:
+        if self._use_hf:
+            import torch
+            formatted = f"Represent this sentence: {text}" if text.endswith('?') else text
+            inputs = self._hf_tokenizer([formatted], padding=True, truncation=True, max_length=128, return_tensors='pt')
+            with torch.no_grad():
+                out = self._hf_model(**inputs)
+                emb = out[0][:, 0]
+                emb = torch.nn.functional.normalize(emb, p=2, dim=1)
+                return emb[0].cpu().numpy()
+        else:
+            normalized = " " + text.lower().strip() + " "
+            vec = np.zeros(self.vocab_dim, dtype=float)
+            for n in (2, 3, 4):
+                for i in range(len(normalized) - n + 1):
+                    h = int(hashlib.md5(normalized[i:i+n].encode('utf-8')).hexdigest(), 16) % self.vocab_dim
+                    vec[h] += 1.0 / np.sqrt(n)
+            for word in text.lower().split():
+                h = int(hashlib.md5(word.encode('utf-8')).hexdigest(), 16) % self.vocab_dim
+                vec[h] += 2.0
+            norm = np.linalg.norm(vec)
+            return vec / norm if norm > 0 else vec
+
+    def encode(self, text: str, time_step: float = 0.1, family: Optional[int] = None) -> Dict[str, Any]:
+        features = self._embed_text(text)
+        dense_4d = np.dot(features, self._proj)
+        norm_4d = np.linalg.norm(dense_4d)
+        dense_4d = (dense_4d / norm_4d) if norm_4d > 0 else np.array([0.5, 0.5, 0.5, 0.5])
             
-        scaled = normalized * 0.9 + 0.05
-        return np.round(scaled, 4)
-
-    def encode_text_to_4d(self, text: str, temporal_step: Optional[int] = None) -> Dict[str, Any]:
-        """
-        Encodes text into a 4D sensory event vector:
-        - X: Continuous semantic position in 4D space
-        - Y: Target associative memory vector
-        - Z: Normalized temporal step
-        - W: Dynamic family placeholder (assigned organically by ENN4D spatial clustering)
-        """
-        self.step_counter += 1
-        step_idx = temporal_step if temporal_step is not None else self.step_counter
-        
-        x_vec = self.extract_vector(text)
+        x_vec = np.round(dense_4d, 4).astype(float)
         y_vec = x_vec.copy()
+        z_vec = np.array([float(np.round(time_step % 1.0, 4))])
         
-        # Normalized temporal coordinate
-        z_val = float((step_idx % 1000) / 1000.0)
-        z_vec = np.array([z_val], dtype=float)
-        
-        event = {
-            'text': text.strip(),
-            'x': x_vec,
-            'y': y_vec,
-            'z': z_vec,
-            'w': None,
-            'step': step_idx
+        return {
+            "text": text,
+            "x": x_vec,
+            "y": y_vec,
+            "z": z_vec,
+            "w": family,
+            "features": features
         }
-        
-        self.memory_log.append(event)
-        return event
 
-    def get_memory_log(self) -> List[Dict[str, Any]]:
-        return self.memory_log
 
-    def set_memory_log(self, memories: List[Dict[str, Any]]):
-        self.memory_log = memories
-        if memories:
-            self.step_counter = max(m.get('step', 0) for m in memories)
+_default_encoder = TextEncoder(dim=4)
+
+def encode_text_to_4d(text: str, time_step: float = 0.1) -> Dict[str, Any]:
+    return _default_encoder.encode(text, time_step=time_step)
