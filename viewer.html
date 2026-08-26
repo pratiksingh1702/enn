@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ENN 4D — Living Field Explorer & 4D Visualizer</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Three.js & OrbitControls from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    :root {
+      --bg-primary: #F8F9FA;
+      --bg-surface: rgba(255, 255, 255, 0.9);
+      --bg-surface-solid: #FFFFFF;
+      --bg-subtle: #F1F3F5;
+      --border-color: rgba(226, 232, 240, 0.95);
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #94A3B8;
+      --accent-primary: #0284C7;
+      --accent-hover: #0369A1;
+      --accent-tint: rgba(2, 132, 199, 0.1);
+      --success: #10B981;
+      --card-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -1px rgba(15, 23, 42, 0.03);
+      --panel-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+      --canvas-bg: #F8F9FA;
+      --grid-color: rgba(203, 213, 225, 0.4);
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #090D16;
+      --bg-surface: rgba(15, 23, 42, 0.9);
+      --bg-surface-solid: #0F172A;
+      --bg-subtle: #1E293B;
+      --border-color: rgba(51, 65, 85, 0.8);
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      --accent-primary: #38BDF8;
+      --accent-hover: #7DD3FC;
+      --accent-tint: rgba(56, 189, 248, 0.12);
+      --success: #34D399;
+      --card-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.35);
+      --panel-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      --canvas-bg: #090D16;
+      --grid-color: rgba(30, 41, 59, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+
+    /* 3D Coordinate Labels Container */
+    #labels-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 5;
+      overflow: hidden;
+    }
+
+    .coord-label {
+      position: absolute;
+      transform: translate(-50%, -120%);
+      background: var(--bg-surface-solid);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 3px 7px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      line-height: 1.2;
+      color: var(--text-secondary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      white-space: nowrap;
+      pointer-events: auto;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .coord-label:hover {
+      border-color: var(--accent-primary);
+      color: var(--text-primary);
+      transform: translate(-50%, -125%) scale(1.05);
+      z-index: 10;
+    }
+
+    .coord-label-title {
+      font-weight: 700;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .coord-label-coords {
+      font-size: 9px;
+      color: var(--text-muted);
+    }
+
+    /* --- TOP HEADER --- */
+    header {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      height: 56px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 10;
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0284C7 0%, #10B981 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-4d {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: var(--bg-subtle);
+      color: var(--accent-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .family-select-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-surface-solid);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 3px 8px;
+    }
+
+    .family-select-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .family-select {
+      background: transparent;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      outline: none;
+      cursor: pointer;
+      padding: 4px 4px 4px 0;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface-solid);
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .btn:hover {
+      background: var(--bg-subtle);
+      border-color: var(--text-muted);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: #FFFFFF;
+      border-color: var(--accent-primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn-icon {
+      padding: 7px 10px;
+    }
+
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 6px;
+    }
+
+    /* --- SIDEBAR PANEL (LEFT) --- */
+    .sidebar {
+      position: absolute;
+      top: 84px;
+      left: 16px;
+      bottom: 16px;
+      width: 320px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--panel-shadow);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(-340px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .sidebar-content {
+      padding: 16px 18px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed var(--border-color);
+      border-radius: 12px;
+      padding: 18px 12px;
+      text-align: center;
+      background: var(--bg-subtle);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent-primary);
+      background: var(--accent-tint);
+    }
+
+    .upload-icon {
+      font-size: 22px;
+      color: var(--accent-primary);
+      margin-bottom: 6px;
+    }
+
+    .upload-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .upload-subtext {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Vitality Indicator */
+    .vitality-badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      border-radius: 10px;
+    }
+
+    .vitality-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pulse-beacon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--success);
+    }
+
+    .vitality-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .vitality-status {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--success);
+      background: rgba(16, 185, 129, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    /* Stat Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .stat-card {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-primary);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Energy Bar */
+    .energy-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .energy-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .energy-track {
+      height: 8px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .energy-fill {
+      height: 100%;
+      width: 75%;
+      background: linear-gradient(90deg, #0284C7, #10B981, #F59E0B);
+      border-radius: 99px;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Family Legend */
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .family-legend-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .family-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      background: var(--bg-subtle);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .family-item:hover {
+      border-color: var(--accent-primary);
+      background: var(--bg-surface-solid);
+    }
+
+    .family-item.active-family {
+      border-color: var(--accent-primary);
+      background: var(--accent-tint);
+      font-weight: 600;
+    }
+
+    .family-swatch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+
+    .swatch-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .family-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .family-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .btn-zoom-family {
+      background: var(--bg-surface-solid);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-zoom-family:hover {
+      background: var(--accent-primary);
+      color: #FFFFFF;
+      border-color: var(--accent-primary);
+    }
+
+    /* View Controls */
+    .controls-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 36px;
+      height: 20px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      transition: .3s;
+      border-radius: 20px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 2px;
+      bottom: 2px;
+      background-color: var(--text-muted);
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent-primary);
+      border-color: var(--accent-primary);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(16px);
+      background-color: #ffffff;
+    }
+
+    /* --- RIGHT INSPECTOR PANEL --- */
+    .inspector {
+      position: absolute;
+      top: 84px;
+      right: 16px;
+      width: 320px;
+      max-height: calc(100vh - 100px);
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      z-index: 10;
+      box-shadow: var(--panel-shadow);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(340px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+      overflow: hidden;
+    }
+
+    .inspector.active {
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .inspector-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .inspector-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .inspector-content {
+      padding: 16px 18px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .vector-box {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      word-break: break-all;
+    }
+
+    .coord-tag {
+      display: inline-block;
+      font-weight: 700;
+      color: var(--accent-primary);
+      margin-right: 4px;
+    }
+
+    .connections-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .conn-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .conn-badge:hover {
+      background: var(--accent-primary);
+      color: white;
+      border-color: var(--accent-primary);
+    }
+
+    /* Hover Tooltip */
+    #tooltip {
+      position: absolute;
+      display: none;
+      background: var(--bg-surface-solid);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      pointer-events: none;
+      z-index: 100;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      transform: translate(-50%, -120%);
+    }
+
+    /* Family Focus HUD Banner */
+    #family-focus-hud {
+      position: absolute;
+      top: 84px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 30px;
+      padding: 6px 16px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      z-index: 10;
+      box-shadow: var(--card-shadow);
+      font-size: 12px;
+    }
+
+    #family-focus-hud.active {
+      display: flex;
+    }
+
+    .hud-family-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    /* Floating View Toggles */
+    .view-overlay-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 30px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+      box-shadow: var(--card-shadow);
+    }
+
+    .view-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--border-color);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 280px;
+      }
+      .inspector {
+        width: 280px;
+      }
+      .family-select-container {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light">
+
+  <div id="canvas-container"></div>
+  <div id="labels-container"></div>
+  <div id="tooltip"></div>
+
+  <!-- Family Focus HUD -->
+  <div id="family-focus-hud">
+    <div class="hud-family-pill">
+      <span class="swatch-color" id="hud-family-swatch" style="background-color: #10B981;"></span>
+      <span id="hud-family-title">Family 0 View</span>
+    </div>
+    <span style="color: var(--text-muted); font-size: 11px;" id="hud-family-count">(0 neurons)</span>
+    <button class="btn btn-sm" id="btn-hud-recenter">Recenter Family</button>
+    <button class="btn btn-sm btn-primary" id="btn-hud-exit">Show All Universe</button>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-logo">4D</div>
+      <div class="brand-title">
+        ENN Living Field
+        <span class="badge-4d">4D Field</span>
+        <span class="brand-subtitle">Digital Biology Laboratory</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Quick Family Zoom Selector -->
+      <div class="family-select-container">
+        <span class="family-select-label">Focus Family:</span>
+        <select id="header-family-select" class="family-select">
+          <option value="all">🌐 All Families</option>
+        </select>
+      </div>
+
+      <button class="btn" id="btn-toggle-sidebar" title="Toggle Sidebar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        <span>Overview</span>
+      </button>
+      <button class="btn" id="btn-reset-view" title="Reset Camera View">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        <span>Reset View</span>
+      </button>
+      <button class="btn btn-icon" id="btn-theme-toggle" title="Toggle Light/Dark Theme">
+        <span id="theme-icon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Sidebar (Control Center) -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Universe Control</span>
+      <button class="btn btn-icon" id="btn-close-sidebar" style="padding: 4px 6px;">✕</button>
+    </div>
+
+    <div class="sidebar-content">
+      <!-- File Upload Zone -->
+      <div class="upload-zone" id="upload-zone">
+        <div class="upload-icon">🧬</div>
+        <div class="upload-text">Upload <code>universe.json</code></div>
+        <div class="upload-subtext">Click or drag and drop universe file</div>
+        <input type="file" id="file-input" accept=".json" style="display: none;" />
+      </div>
+
+      <!-- Vitality Indicator -->
+      <div class="vitality-badge">
+        <div class="vitality-left">
+          <div class="pulse-beacon"></div>
+          <span class="vitality-label">Network Status</span>
+        </div>
+        <span class="vitality-status" id="vitality-text">LIVING / ACTIVE</span>
+      </div>
+
+      <!-- Global Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-value" id="stat-neurons">0</span>
+          <span class="stat-label">Total Neurons</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-families">0</span>
+          <span class="stat-label">Families (W)</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-events">0</span>
+          <span class="stat-label">Events Processed</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-avg-energy">0.00</span>
+          <span class="stat-label">Avg Energy</span>
+        </div>
+      </div>
+
+      <!-- System Energy Meter -->
+      <div class="energy-container">
+        <div class="energy-header">
+          <span>Total Universe Energy</span>
+          <span id="stat-total-energy" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">0.00</span>
+        </div>
+        <div class="energy-track">
+          <div class="energy-fill" id="energy-fill-bar"></div>
+        </div>
+      </div>
+
+      <!-- Family Legend -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span class="section-title" style="margin-bottom: 0;">Species / Families</span>
+          <span style="font-size: 10px; color: var(--text-muted);">Click to zoom in</span>
+        </div>
+        <div class="family-legend-list" id="family-legend-list">
+          <div style="font-size: 11px; color: var(--text-muted);">No universe loaded.</div>
+        </div>
+      </div>
+
+      <!-- View Settings -->
+      <div class="controls-group">
+        <div class="section-title">Visual Layers</div>
+        <div class="control-row">
+          <span>3D Coordinates Overlay</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-coords" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="control-row">
+          <span>Isolate Active Family</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-isolate" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="control-row">
+          <span>Synaptic Synapses</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-synapses" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="control-row">
+          <span>Auto-Rotation</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-autorotate" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="control-row">
+          <span>Subtle Oscillations</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-pulse" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Inspector Panel -->
+  <aside class="inspector" id="inspector">
+    <div class="inspector-header">
+      <div class="inspector-title">
+        <span id="insp-badge" class="badge-4d">Neuron #0</span>
+        <span id="insp-family-badge" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--bg-subtle);">Family 0</span>
+      </div>
+      <button class="btn btn-icon" id="btn-close-inspector" style="padding: 4px 6px;">✕</button>
+    </div>
+
+    <div class="inspector-content">
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-sm btn-primary" id="btn-insp-zoom-family" style="flex: 1; justify-content: center;">
+          🔍 Zoom into this Family
+        </button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-value" id="insp-energy">0.00</span>
+          <span class="stat-label">Energy Potential</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="insp-age">0</span>
+          <span class="stat-label">Neuron Age</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">3D World Position</div>
+        <div class="vector-box" style="margin-bottom: 6px;">
+          <span class="coord-tag">Position (X, Y, Z):</span><br>
+          <span id="insp-scene-coords">[0.00, 0.00, 0.00]</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">4D Coordinates (X, Y, Z, W)</div>
+        <div class="vector-box" style="margin-bottom: 6px;">
+          <span class="coord-tag">X (Input Vector):</span><br>
+          <span id="insp-coord-x">[0.0, 0.0, 0.0, 0.0]</span>
+        </div>
+        <div class="vector-box" style="margin-bottom: 6px;">
+          <span class="coord-tag">Y (Output Vector):</span><br>
+          <span id="insp-coord-y">[0.0, 0.0, 0.0, 0.0]</span>
+        </div>
+        <div class="vector-box" style="margin-bottom: 6px;">
+          <span class="coord-tag">Z (Event Stack):</span> <span id="insp-coord-z">[0.0]</span>
+        </div>
+        <div class="vector-box">
+          <span class="coord-tag">W (Family ID):</span> <span id="insp-coord-w">0</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Kinetic Momentum (Velocities)</div>
+        <div class="vector-box">
+          <span class="coord-tag">Vx:</span> <span id="insp-vx">[0.0, 0.0]</span><br>
+          <span class="coord-tag">Vy:</span> <span id="insp-vy">[0.0, 0.0]</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Synaptic Connections (<span id="insp-conn-count">0</span>)</div>
+        <div class="connections-list" id="insp-connections-list">
+          <span style="font-size: 11px; color: var(--text-muted);">None</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Overlay Quick Navigation -->
+  <div class="view-overlay-controls">
+    <button class="btn btn-icon" id="btn-zoom-in" title="Zoom In">+</button>
+    <button class="btn btn-icon" id="btn-zoom-out" title="Zoom Out">-</button>
+    <div class="view-divider"></div>
+    <button class="btn btn-icon" id="btn-focus-center" title="Center Focus">⊙</button>
+  </div>
+
+  <script>
+    // --- COLOR PALETTES FOR FAMILIES ---
+    const FAMILY_COLORS = [
+      '#10B981', // Family 0: Emerald
+      '#6366F1', // Family 1: Indigo
+      '#F59E0B', // Family 2: Amber
+      '#EC4899', // Family 3: Pink
+      '#06B6D4', // Family 4: Cyan
+      '#8B5CF6', // Family 5: Purple
+      '#F97316', // Family 6: Orange
+      '#14B8A6', // Family 7: Teal
+      '#3B82F6', // Family 8: Blue
+      '#EF4444'  // Family 9: Red
+    ];
+
+    function getFamilyColor(w) {
+      return FAMILY_COLORS[Math.abs(w) % FAMILY_COLORS.length];
+    }
+
+    // --- THREE.JS SCENE SETUP ---
+    let scene, camera, renderer, controls;
+    let neuronMeshes = [];
+    let synapseLines = null;
+    let universeData = null;
+    let selectedNeuronId = null;
+    let hoveredNeuronId = null;
+    let activeFocusedFamily = null; // null = all universe, number = family id
+    let familyBoundingBoxHelper = null;
+    let raycaster, mouse;
+    let clock = new THREE.Clock();
+
+    // Camera animation state
+    let cameraAnim = {
+      active: false,
+      startPos: new THREE.Vector3(),
+      targetPos: new THREE.Vector3(),
+      startLook: new THREE.Vector3(),
+      targetLook: new THREE.Vector3(),
+      progress: 0,
+      duration: 1.0
+    };
+
+    const container = document.getElementById('canvas-container');
+    const labelsContainer = document.getElementById('labels-container');
+    const tooltip = document.getElementById('tooltip');
+
+    function initScene() {
+      scene = new THREE.Scene();
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      scene.background = new THREE.Color(isDark ? 0x090D16 : 0xF8F9FA);
+
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 8, 24);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.06;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.6;
+
+      // Clean Balanced Studio Lights (no overly bright blinding glow)
+      const ambientLight = new THREE.AmbientLight(0xffffff, isDark ? 0.7 : 0.9);
+      scene.add(ambientLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight1.position.set(15, 25, 20);
+      scene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0x94A3B8, 0.4);
+      dirLight2.position.set(-15, -10, -15);
+      scene.add(dirLight2);
+
+      // Subtle Grid Ground
+      const gridHelper = new THREE.GridHelper(40, 40, isDark ? 0x1E293B : 0xCBD5E1, isDark ? 0x0F172A : 0xE2E8F0);
+      gridHelper.position.y = -8;
+      scene.add(gridHelper);
+
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+
+      window.addEventListener('resize', onWindowResize);
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('click', onMouseClick);
+
+      animate();
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function onMouseMove(event) {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const visibleMeshes = neuronMeshes
+        .filter(n => n.mesh.visible)
+        .map(n => n.mesh);
+
+      const intersects = raycaster.intersectObjects(visibleMeshes);
+
+      if (intersects.length > 0) {
+        const hit = intersects[0].object;
+        const neuronData = hit.userData;
+        hoveredNeuronId = neuronData.id;
+        document.body.style.cursor = 'pointer';
+
+        const item = neuronMeshes.find(m => m.id === neuronData.id);
+        const posX = item ? item.basePos.x.toFixed(2) : 0;
+        const posY = item ? item.basePos.y.toFixed(2) : 0;
+        const posZ = item ? item.basePos.z.toFixed(2) : 0;
+
+        tooltip.style.display = 'block';
+        tooltip.style.left = `${event.clientX}px`;
+        tooltip.style.top = `${event.clientY}px`;
+        tooltip.innerHTML = `<strong>Neuron #${neuronData.id}</strong> (Family ${neuronData.w})<br>` +
+                            `3D Pos: [${posX}, ${posY}, ${posZ}]<br>` +
+                            `Energy: ${(neuronData.energy || 1.0).toFixed(2)}`;
+      } else {
+        hoveredNeuronId = null;
+        document.body.style.cursor = 'default';
+        tooltip.style.display = 'none';
+      }
+    }
+
+    function onMouseClick(event) {
+      // Ignore click if on UI panels
+      if (event.target.closest('.sidebar') || 
+          event.target.closest('.inspector') || 
+          event.target.closest('header') || 
+          event.target.closest('.view-overlay-controls') || 
+          event.target.closest('#family-focus-hud') ||
+          event.target.closest('.coord-label')) {
+        return;
+      }
+
+      raycaster.setFromCamera(mouse, camera);
+      const visibleMeshes = neuronMeshes
+        .filter(n => n.mesh.visible)
+        .map(n => n.mesh);
+
+      const intersects = raycaster.intersectObjects(visibleMeshes);
+
+      if (intersects.length > 0) {
+        const neuronData = intersects[0].object.userData;
+        selectNeuron(neuronData.id);
+      } else {
+        deselectNeuron();
+      }
+    }
+
+    // --- BUILD / UPDATE UNIVERSE 3D PARTICLES ---
+    function renderUniverse(data) {
+      universeData = data;
+
+      // Clear existing meshes & helpers
+      neuronMeshes.forEach(n => {
+        scene.remove(n.mesh);
+        if (n.selectRing) scene.remove(n.selectRing);
+      });
+      neuronMeshes = [];
+      if (synapseLines) {
+        scene.remove(synapseLines);
+        synapseLines = null;
+      }
+      if (familyBoundingBoxHelper) {
+        scene.remove(familyBoundingBoxHelper);
+        familyBoundingBoxHelper = null;
+      }
+
+      labelsContainer.innerHTML = '';
+
+      const neurons = data.neurons || [];
+      const positions = [];
+
+      neurons.forEach((n, idx) => {
+        // Map 4D into 3D world space
+        const posX = (n.x[0] || 0) * 10 - 5 + ((n.x[2] || 0) * 4);
+        const posY = (n.y[0] || 0) * 10 - 5 + ((n.y[2] || 0) * 4);
+        const posZ = (n.z[0] || 0) * 12 - 6 + ((n.x[1] || 0) * 4);
+
+        const energy = n.energy || 1.0;
+        const radius = Math.max(0.3, Math.min(0.7, 0.25 + energy * 0.12));
+        const colorHex = getFamilyColor(n.w || 0);
+
+        // Core Crisp Shaded Sphere (No blurry glowing aura)
+        const geometry = new THREE.SphereGeometry(radius, 32, 32);
+        const material = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(colorHex),
+          roughness: 0.35,
+          metalness: 0.15,
+          flatShading: false
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(posX, posY, posZ);
+        mesh.userData = n;
+        scene.add(mesh);
+
+        // Selection Ring (crisp geometric ring, shown only when selected)
+        const ringGeo = new THREE.RingGeometry(radius * 1.3, radius * 1.5, 32);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0
+        });
+        const selectRing = new THREE.Mesh(ringGeo, ringMat);
+        selectRing.position.set(posX, posY, posZ);
+        selectRing.visible = false;
+        scene.add(selectRing);
+
+        // Create HTML 3D coordinate label
+        const labelEl = document.createElement('div');
+        labelEl.className = 'coord-label';
+        labelEl.id = `label-neuron-${n.id !== undefined ? n.id : idx}`;
+        labelEl.innerHTML = `
+          <div class="coord-label-title">
+            <span class="swatch-color" style="background-color: ${colorHex}; width: 8px; height: 8px;"></span>
+            #${n.id !== undefined ? n.id : idx} (F${n.w || 0})
+          </div>
+          <div class="coord-label-coords">(${posX.toFixed(1)}, ${posY.toFixed(1)}, ${posZ.toFixed(1)})</div>
+        `;
+        labelEl.onclick = () => selectNeuron(n.id !== undefined ? n.id : idx);
+        labelsContainer.appendChild(labelEl);
+
+        neuronMeshes.push({
+          id: n.id !== undefined ? n.id : idx,
+          data: n,
+          mesh: mesh,
+          selectRing: selectRing,
+          labelEl: labelEl,
+          basePos: new THREE.Vector3(posX, posY, posZ),
+          radius: radius,
+          energy: energy,
+          color: colorHex,
+          family: n.w || 0
+        });
+
+        positions[idx] = new THREE.Vector3(posX, posY, posZ);
+      });
+
+      // Build Synapses
+      buildSynapses(neurons, positions);
+
+      // Update Dashboard Stats & Legend & Family Dropdown
+      updateDashboard(data);
+      populateFamilyControls(data);
+
+      // If active family was selected, re-apply
+      if (activeFocusedFamily !== null) {
+        zoomToFamily(activeFocusedFamily, false);
+      }
+    }
+
+    function buildSynapses(neurons, positions) {
+      if (synapseLines) scene.remove(synapseLines);
+
+      const linePositions = [];
+      const lineColors = [];
+
+      neurons.forEach((n, i) => {
+        const fromPos = positions[i];
+        if (!fromPos || !n.connections) return;
+
+        const colorFrom = new THREE.Color(getFamilyColor(n.w));
+
+        n.connections.forEach(targetIdx => {
+          const toPos = positions[targetIdx];
+          if (toPos && i < targetIdx) {
+            linePositions.push(fromPos.x, fromPos.y, fromPos.z);
+            linePositions.push(toPos.x, toPos.y, toPos.z);
+
+            const colorTo = new THREE.Color(getFamilyColor(neurons[targetIdx].w));
+            lineColors.push(colorFrom.r, colorFrom.g, colorFrom.b);
+            lineColors.push(colorTo.r, colorTo.g, colorTo.b);
+          }
+        });
+      });
+
+      if (linePositions.length > 0) {
+        const lineGeo = new THREE.BufferGeometry();
+        lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+        lineGeo.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
+
+        const isDark = document.body.getAttribute('data-theme') === 'dark';
+        const lineMat = new THREE.LineBasicMaterial({
+          vertexColors: true,
+          transparent: true,
+          opacity: isDark ? 0.35 : 0.45,
+          blending: THREE.NormalBlending
+        });
+
+        synapseLines = new THREE.LineSegments(lineGeo, lineMat);
+        scene.add(synapseLines);
+      }
+    }
+
+    // --- FAMILY ZOOM & 3D COORDINATE FOCUS ---
+    function zoomToFamily(familyId, animated = true) {
+      if (!universeData) return;
+
+      if (familyId === null || familyId === 'all') {
+        resetFamilyFocus(animated);
+        return;
+      }
+
+      const famIdNum = parseInt(familyId, 10);
+      activeFocusedFamily = famIdNum;
+
+      // Update dropdown selection
+      document.getElementById('header-family-select').value = famIdNum.toString();
+
+      // Find all neurons belonging to this family
+      const familyNeurons = neuronMeshes.filter(n => n.family === famIdNum);
+      if (familyNeurons.length === 0) return;
+
+      // Calculate 3D Bounding Box & Center
+      const box = new THREE.Box3();
+      familyNeurons.forEach(n => box.expandByPoint(n.basePos));
+
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z, 2.5);
+
+      // Camera position: offset from center
+      const distance = Math.max(6, maxDim * 2.2);
+      const targetCamPos = new THREE.Vector3(
+        center.x + distance * 0.6,
+        center.y + distance * 0.4,
+        center.z + distance * 0.8
+      );
+
+      // Create / Update Bounding Box Wireframe for Family
+      if (familyBoundingBoxHelper) scene.remove(familyBoundingBoxHelper);
+      const boxGeo = new THREE.BoxGeometry(
+        Math.max(size.x + 1.5, 3), 
+        Math.max(size.y + 1.5, 3), 
+        Math.max(size.z + 1.5, 3)
+      );
+      const boxEdges = new THREE.EdgesGeometry(boxGeo);
+      const famColor = getFamilyColor(famIdNum);
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      const boxMat = new THREE.LineBasicMaterial({
+        color: new THREE.Color(famColor),
+        transparent: true,
+        opacity: isDark ? 0.35 : 0.45
+      });
+      familyBoundingBoxHelper = new THREE.LineSegments(boxEdges, boxMat);
+      familyBoundingBoxHelper.position.copy(center);
+      scene.add(familyBoundingBoxHelper);
+
+      // Update HUD Banner
+      const hud = document.getElementById('family-focus-hud');
+      hud.classList.add('active');
+      document.getElementById('hud-family-swatch').style.backgroundColor = famColor;
+      document.getElementById('hud-family-title').innerText = `Family ${famIdNum} in 3D Space`;
+      document.getElementById('hud-family-count').innerText = `(${familyNeurons.length} neurons)`;
+
+      // Highlight active family in legend
+      document.querySelectorAll('.family-item').forEach(el => {
+        el.classList.toggle('active-family', el.getAttribute('data-family') === famIdNum.toString());
+      });
+
+      // Update visibility/opacity of meshes if Isolate toggle is ON
+      updateFamilyIsolation();
+
+      // Trigger smooth camera transition
+      if (animated) {
+        startCameraAnimation(targetCamPos, center);
+      } else {
+        camera.position.copy(targetCamPos);
+        controls.target.copy(center);
+        controls.update();
+      }
+    }
+
+    function resetFamilyFocus(animated = true) {
+      activeFocusedFamily = null;
+      document.getElementById('header-family-select').value = 'all';
+
+      if (familyBoundingBoxHelper) {
+        scene.remove(familyBoundingBoxHelper);
+        familyBoundingBoxHelper = null;
+      }
+
+      document.getElementById('family-focus-hud').classList.remove('active');
+      document.querySelectorAll('.family-item').forEach(el => el.classList.remove('active-family'));
+
+      updateFamilyIsolation();
+
+      const defaultCamPos = new THREE.Vector3(0, 8, 24);
+      const defaultLookAt = new THREE.Vector3(0, 0, 0);
+
+      if (animated) {
+        startCameraAnimation(defaultCamPos, defaultLookAt);
+      } else {
+        camera.position.copy(defaultCamPos);
+        controls.target.copy(defaultLookAt);
+        controls.update();
+      }
+    }
+
+    function updateFamilyIsolation() {
+      const isolate = document.getElementById('toggle-isolate').checked;
+
+      neuronMeshes.forEach(item => {
+        if (activeFocusedFamily === null || !isolate) {
+          // Show all fully
+          item.mesh.visible = true;
+          item.mesh.material.opacity = 1.0;
+          item.mesh.material.transparent = false;
+        } else {
+          // Only highlight selected family, dim or ghost others
+          if (item.family === activeFocusedFamily) {
+            item.mesh.visible = true;
+            item.mesh.material.opacity = 1.0;
+            item.mesh.material.transparent = false;
+          } else {
+            item.mesh.visible = true;
+            item.mesh.material.opacity = 0.15;
+            item.mesh.material.transparent = true;
+          }
+        }
+      });
+    }
+
+    function startCameraAnimation(targetPos, targetLook) {
+      cameraAnim.startPos.copy(camera.position);
+      cameraAnim.targetPos.copy(targetPos);
+      cameraAnim.startLook.copy(controls.target);
+      cameraAnim.targetLook.copy(targetLook);
+      cameraAnim.progress = 0;
+      cameraAnim.duration = 0.9;
+      cameraAnim.active = true;
+    }
+
+    // --- ANIMATION LOOP ---
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+      const pulseEnabled = document.getElementById('toggle-pulse').checked;
+      const coordsEnabled = document.getElementById('toggle-coords').checked;
+
+      // Handle Smooth Camera Animation
+      if (cameraAnim.active) {
+        cameraAnim.progress += delta / cameraAnim.duration;
+        if (cameraAnim.progress >= 1.0) {
+          cameraAnim.progress = 1.0;
+          cameraAnim.active = false;
+        }
+
+        // Smooth ease-in-out curve
+        const t = cameraAnim.progress;
+        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+        camera.position.lerpVectors(cameraAnim.startPos, cameraAnim.targetPos, ease);
+        controls.target.lerpVectors(cameraAnim.startLook, cameraAnim.targetLook, ease);
+      }
+
+      // Update Neurons & 3D Coordinates Projection
+      neuronMeshes.forEach(item => {
+        if (pulseEnabled) {
+          const pulse = Math.sin(time * 2.0 + item.id) * 0.05;
+          const scale = 1.0 + pulse;
+          item.mesh.scale.set(scale, scale, scale);
+
+          // Gentle floating motion
+          item.mesh.position.y = item.basePos.y + Math.sin(time * 1.2 + item.id) * 0.04;
+        }
+
+        // Update Selection Ring
+        if (selectedNeuronId === item.id) {
+          item.selectRing.visible = true;
+          item.selectRing.position.copy(item.mesh.position);
+          item.selectRing.lookAt(camera.position);
+          item.selectRing.material.opacity = 0.85;
+          item.mesh.material.roughness = 0.1;
+        } else {
+          item.selectRing.visible = false;
+          item.mesh.material.roughness = 0.35;
+        }
+
+        // 3D Coordinate Overlay Projection
+        const shouldShowLabel = coordsEnabled && item.mesh.visible && 
+          (activeFocusedFamily === null || item.family === activeFocusedFamily || selectedNeuronId === item.id);
+
+        if (shouldShowLabel) {
+          const tempV = item.mesh.position.clone();
+          tempV.project(camera);
+
+          // If in front of camera
+          if (tempV.z < 1) {
+            const x = (tempV.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-(tempV.y * 0.5) + 0.5) * window.innerHeight;
+
+            item.labelEl.style.display = 'flex';
+            item.labelEl.style.left = `${x}px`;
+            item.labelEl.style.top = `${y}px`;
+
+            if (selectedNeuronId === item.id) {
+              item.labelEl.style.borderColor = 'var(--accent-primary)';
+              item.labelEl.style.fontWeight = '700';
+            } else {
+              item.labelEl.style.borderColor = 'var(--border-color)';
+              item.labelEl.style.fontWeight = '400';
+            }
+          } else {
+            item.labelEl.style.display = 'none';
+          }
+        } else {
+          item.labelEl.style.display = 'none';
+        }
+      });
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // --- DASHBOARD UI UPDATER ---
+    function updateDashboard(data) {
+      document.getElementById('stat-neurons').innerText = data.total_neurons || data.neurons.length;
+      document.getElementById('stat-families').innerText = data.num_families || new Set(data.neurons.map(n => n.w)).size;
+      document.getElementById('stat-events').innerText = data.event_count || 0;
+
+      const totalEnergy = data.total_energy || data.neurons.reduce((acc, n) => acc + (n.energy || 1.0), 0);
+      document.getElementById('stat-total-energy').innerText = totalEnergy.toFixed(2);
+
+      const avgEnergy = (totalEnergy / Math.max(1, data.neurons.length));
+      document.getElementById('stat-avg-energy').innerText = avgEnergy.toFixed(2);
+
+      // Energy Bar fill
+      const energyPct = Math.min(100, Math.max(10, (totalEnergy / 100) * 100));
+      document.getElementById('energy-fill-bar').style.width = `${energyPct}%`;
+
+      // Family Legend
+      const familyCounts = {};
+      data.neurons.forEach(n => {
+        const fam = n.w !== undefined ? n.w : 0;
+        familyCounts[fam] = (familyCounts[fam] || 0) + 1;
+      });
+
+      const legendList = document.getElementById('family-legend-list');
+      legendList.innerHTML = '';
+      Object.keys(familyCounts).sort((a,b) => a - b).forEach(w => {
+        const color = getFamilyColor(w);
+        const item = document.createElement('div');
+        item.className = 'family-item';
+        item.setAttribute('data-family', w);
+        item.innerHTML = `
+          <div class="family-swatch">
+            <span class="swatch-color" style="background-color: ${color};"></span>
+            <span>Family ${w}</span>
+          </div>
+          <div class="family-actions">
+            <span class="family-count">${familyCounts[w]}n</span>
+            <button class="btn-zoom-family" title="Zoom into Family ${w}">Zoom 3D</button>
+          </div>
+        `;
+        item.onclick = (e) => {
+          zoomToFamily(parseInt(w, 10));
+        };
+        legendList.appendChild(item);
+      });
+    }
+
+    function populateFamilyControls(data) {
+      const familySelect = document.getElementById('header-family-select');
+      familySelect.innerHTML = '<option value="all">🌐 All Families</option>';
+
+      const familyIds = Array.from(new Set(data.neurons.map(n => n.w !== undefined ? n.w : 0))).sort((a, b) => a - b);
+      familyIds.forEach(famId => {
+        const opt = document.createElement('option');
+        opt.value = famId;
+        const count = data.neurons.filter(n => (n.w !== undefined ? n.w : 0) === famId).length;
+        opt.innerText = `Family ${famId} (${count} neurons)`;
+        familySelect.appendChild(opt);
+      });
+
+      familySelect.onchange = (e) => {
+        if (e.target.value === 'all') {
+          resetFamilyFocus();
+        } else {
+          zoomToFamily(parseInt(e.target.value, 10));
+        }
+      };
+    }
+
+    // --- NEURON INSPECTOR ---
+    function selectNeuron(id) {
+      selectedNeuronId = id;
+      const target = universeData.neurons.find(n => n.id === id || (n.id === undefined && universeData.neurons.indexOf(n) === id));
+      if (!target) return;
+
+      const inspector = document.getElementById('inspector');
+      inspector.classList.add('active');
+
+      document.getElementById('insp-badge').innerText = `Neuron #${id}`;
+      const famColor = getFamilyColor(target.w);
+      const famBadge = document.getElementById('insp-family-badge');
+      famBadge.innerText = `Family ${target.w}`;
+      famBadge.style.color = famColor;
+      famBadge.style.borderColor = famColor;
+
+      const item = neuronMeshes.find(m => m.id === id);
+      if (item) {
+        document.getElementById('insp-scene-coords').innerText = 
+          `X: ${item.basePos.x.toFixed(3)}, Y: ${item.basePos.y.toFixed(3)}, Z: ${item.basePos.z.toFixed(3)}`;
+      }
+
+      document.getElementById('insp-energy').innerText = (target.energy || 1.0).toFixed(3);
+      document.getElementById('insp-age').innerText = `${target.age || 0} steps`;
+
+      document.getElementById('insp-coord-x').innerText = JSON.stringify(target.x || []);
+      document.getElementById('insp-coord-y').innerText = JSON.stringify(target.y || []);
+      document.getElementById('insp-coord-z').innerText = JSON.stringify(target.z || []);
+      document.getElementById('insp-coord-w').innerText = target.w !== undefined ? target.w : 0;
+
+      document.getElementById('insp-vx').innerText = JSON.stringify(target.velocity_x || []);
+      document.getElementById('insp-vy').innerText = JSON.stringify(target.velocity_y || []);
+
+      const connList = document.getElementById('insp-connections-list');
+      connList.innerHTML = '';
+      const conns = target.connections || [];
+      document.getElementById('insp-conn-count').innerText = conns.length;
+
+      if (conns.length === 0) {
+        connList.innerHTML = '<span style="font-size: 11px; color: var(--text-muted);">None</span>';
+      } else {
+        conns.forEach(cid => {
+          const btn = document.createElement('span');
+          btn.className = 'conn-badge';
+          btn.innerText = `#${cid}`;
+          btn.onclick = () => selectNeuron(cid);
+          connList.appendChild(btn);
+        });
+      }
+
+      document.getElementById('btn-insp-zoom-family').onclick = () => {
+        zoomToFamily(target.w);
+      };
+    }
+
+    function deselectNeuron() {
+      selectedNeuronId = null;
+      document.getElementById('inspector').classList.remove('active');
+    }
+
+    // --- EVENT LISTENERS & CONTROLS ---
+    document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+    });
+    document.getElementById('btn-close-sidebar').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.add('collapsed');
+    });
+    document.getElementById('btn-close-inspector').addEventListener('click', deselectNeuron);
+
+    document.getElementById('btn-reset-view').addEventListener('click', () => {
+      resetFamilyFocus();
+    });
+
+    document.getElementById('btn-hud-recenter').addEventListener('click', () => {
+      if (activeFocusedFamily !== null) {
+        zoomToFamily(activeFocusedFamily);
+      }
+    });
+
+    document.getElementById('btn-hud-exit').addEventListener('click', () => {
+      resetFamilyFocus();
+    });
+
+    document.getElementById('btn-zoom-in').addEventListener('click', () => {
+      camera.position.multiplyScalar(0.8);
+    });
+    document.getElementById('btn-zoom-out').addEventListener('click', () => {
+      camera.position.multiplyScalar(1.2);
+    });
+    document.getElementById('btn-focus-center').addEventListener('click', () => {
+      if (activeFocusedFamily !== null) {
+        zoomToFamily(activeFocusedFamily);
+      } else {
+        controls.target.set(0, 0, 0);
+      }
+    });
+
+    // Theme Toggle
+    const themeBtn = document.getElementById('btn-theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    themeBtn.addEventListener('click', () => {
+      const current = document.body.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.body.setAttribute('data-theme', next);
+      themeIcon.innerText = next === 'dark' ? '☀️' : '🌙';
+      scene.background = new THREE.Color(next === 'dark' ? 0x090D16 : 0xF8F9FA);
+    });
+
+    // Toggle Synapses
+    document.getElementById('toggle-synapses').addEventListener('change', (e) => {
+      if (synapseLines) synapseLines.visible = e.target.checked;
+    });
+
+    // Toggle Isolate Family
+    document.getElementById('toggle-isolate').addEventListener('change', () => {
+      updateFamilyIsolation();
+    });
+
+    // Toggle Auto-rotation
+    document.getElementById('toggle-autorotate').addEventListener('change', (e) => {
+      controls.autoRotate = e.target.checked;
+    });
+
+    // File Upload Handling
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-input');
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleFile(e.target.files[0]);
+    });
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+
+    function handleFile(file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = JSON.parse(event.target.result);
+          renderUniverse(data);
+        } catch (err) {
+          alert('Invalid universe JSON file: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // --- AUTO LOAD UNIVERSE.JSON IF AVAILABLE ---
+    async function loadDefaultUniverse() {
+      try {
+        const resp = await fetch('universe.json');
+        if (resp.ok) {
+          const data = await resp.json();
+          renderUniverse(data);
+          return;
+        }
+      } catch (e) {
+        console.log('Fetching local universe.json directly; falling back to starter state.');
+      }
+
+      // Starter fallback data
+      const fallbackData = {
+        event_count: 200,
+        next_family_id: 4,
+        total_energy: 60.33,
+        total_neurons: 25,
+        num_families: 4,
+        neurons: [
+          { id: 0, x: [0.52, 0.38, 0.53, 0.53], y: [0.44, 0.38, 0.5, 0.67], z: [0.5], w: 0, energy: 2.45, age: 15, velocity_x: [0.01, 0.0], velocity_y: [0.0, 0.01], connections: [1, 2, 3], last_active: 50 },
+          { id: 1, x: [0.48, 0.42, 0.51, 0.55], y: [0.46, 0.35, 0.52, 0.64], z: [0.5], w: 0, energy: 2.15, age: 14, velocity_x: [0.0, 0.0], velocity_y: [0.0, 0.0], connections: [0, 2], last_active: 48 },
+          { id: 2, x: [0.55, 0.36, 0.56, 0.51], y: [0.42, 0.4, 0.48, 0.69], z: [0.5], w: 0, energy: 1.85, age: 10, velocity_x: [0.0, 0.0], velocity_y: [0.0, 0.0], connections: [0, 1], last_active: 45 },
+          { id: 3, x: [0.85, 0.1, 0.8, 0.15], y: [0.82, 0.08, 0.79, 0.12], z: [0.2], w: 1, energy: 2.65, age: 20, velocity_x: [0.0, 0.0], velocity_y: [0.0, 0.0], connections: [4, 5], last_active: 80 },
+          { id: 4, x: [0.88, 0.12, 0.82, 0.14], y: [0.85, 0.1, 0.81, 0.11], z: [0.2], w: 1, energy: 2.38, age: 18, velocity_x: [0.0, 0.0], velocity_y: [0.0, 0.0], connections: [3, 5], last_active: 79 },
+          { id: 5, x: [0.83, 0.09, 0.78, 0.16], y: [0.8, 0.07, 0.77, 0.13], z: [0.2], w: 1, energy: 2.1, age: 12, velocity_x: [0.0, 0.0], velocity_y: [0.0, 0.0], connections: [3, 4], last_active: 75 },
+          { id: 6, x: [0.12, 0.88, 0.15, 0.82], y: [0.1, 0.85, 0.14, 0.8], z: [0.3], w: 2, energy: 2.95, age: 25, velocity_x: [0.0, 0.0], velocity_y: [0.0, 0.0], connections: [7, 8], last_active: 120 },
+          { id: 7, x: [0.15, 0.85, 0.18, 0.79], y: [0.12, 0.82, 0.16, 0.78], z: [0.3], w: 2, energy: 2.4, age: 22, velocity_x: [0.0, 0.0], velocity_y: [0.0, 0.0], connections: [6, 8], last_active: 118 },
+          { id: 8, x: [0.1, 0.9, 0.12, 0.84], y: [0.09, 0.88, 0.11, 0.83], z: [0.3], w: 2, energy: 2.6, age: 19, velocity_x: [0.0, 0.0], velocity_y: [0.0, 0.0], connections: [6, 7], last_active: 115 },
+          { id: 9, x: [0.92, 0.89, 0.1, 0.08], y: [0.9, 0.87, 0.09, 0.07], z: [0.4], w: 3, energy: 2.2, age: 16, velocity_x: [0.0, 0.0], velocity_y: [0.0, 0.0], connections: [10], last_active: 160 },
+          { id: 10, x: [0.89, 0.92, 0.12, 0.1], y: [0.88, 0.9, 0.11, 0.09], z: [0.4], w: 3, energy: 2.05, age: 14, velocity_x: [0.0, 0.0], velocity_y: [0.0, 0.0], connections: [9], last_active: 158 }
+        ]
+      };
+      renderUniverse(fallbackData);
+    }
+
+    // Initialize
+    initScene();
+    loadDefaultUniverse();
+  </script>
+</body>
+</html>
+
