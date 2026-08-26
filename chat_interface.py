@@ -1,6 +1,7 @@
 ﻿"""
-ENN 4D Interactive Chat Interface (Brain-Body Integration)
-Combines the TextEncoder, TextDecoder, and ENN4D Physics Engine into a conversational agent.
+ENN 4D — Pure Emergent Chat Interface
+Connects the mathematical text encoder, continuous 4D physics engine, and associative decoder.
+No hardcoded rules, templates, or artificial heuristics.
 """
 
 import os
@@ -19,9 +20,9 @@ from text_decoder import TextDecoder
 
 class ENN4DChat:
     """
-    High-level conversational interface for ENN 4D.
-    Handles encoding sensory input, running field physics, decoding generative recall,
-    and persisting memory logs and universe state.
+    Pure emergent conversational interface for ENN 4D.
+    Relies entirely on 4D continuous field dynamics (Resonance, Wave Interference,
+    Kinetic Momentum, and Spatial Clustering) to encode, learn, and decode memories.
     """
 
     def __init__(
@@ -34,16 +35,14 @@ class ENN4DChat:
         self.memory_path = memory_path
         self.dim = dim
         
-        # Core components
         self.system = ENN4D(dim=dim)
         self.encoder = TextEncoder(dim=dim)
         self.decoder = TextDecoder()
         
-        # Load existing universe & memory if available
         self.load_state()
 
     def load_state(self):
-        """Loads existing universe and memory log."""
+        """Loads existing universe and associative memory log."""
         if os.path.exists(self.universe_path):
             try:
                 self.system.load(self.universe_path)
@@ -55,9 +54,9 @@ class ENN4DChat:
                 with open(self.memory_path, 'r', encoding='utf-8') as f:
                     memories = json.load(f)
                     for m in memories:
-                        m['x'] = np.array(m['x'])
-                        m['y'] = np.array(m['y'])
-                        m['z'] = np.array(m['z'])
+                        m['x'] = np.array(m['x'], dtype=float)
+                        m['y'] = np.array(m['y'], dtype=float)
+                        m['z'] = np.array(m['z'], dtype=float)
                     self.encoder.set_memory_log(memories)
                     self.decoder.set_memory_log(memories)
                     print(f"Memory log loaded ({len(memories)} memories).")
@@ -68,7 +67,6 @@ class ENN4DChat:
         """Persists the universe state and memory log."""
         self.system.save(self.universe_path)
         
-        # Serialize memories
         serializable_memories = []
         for m in self.encoder.get_memory_log():
             serializable_memories.append({
@@ -76,8 +74,6 @@ class ENN4DChat:
                 'x': np.round(m['x'], 4).tolist(),
                 'y': np.round(m['y'], 4).tolist(),
                 'z': np.round(m['z'], 4).tolist(),
-                'w': int(m['w']),
-                'is_query': bool(m.get('is_query', False)),
                 'step': int(m.get('step', 0))
             })
             
@@ -86,11 +82,11 @@ class ENN4DChat:
 
     def send(self, user_input: str) -> str:
         """
-        Processes a single conversational turn:
-        1. Encodes text into 4D sensory event
+        Executes one full sensory-physical-generative cycle:
+        1. Encodes raw text into a 4D sensory vector
         2. Steps the 4D physics engine (Resonance -> Interference -> Amplification -> Homeostasis -> Phase Transitions)
-        3. Decodes output Y into response
-        4. Auto-saves state
+        3. Decodes the resulting field interference Y vector via geometric associative recall
+        4. Auto-saves universe state
         """
         if not user_input.strip():
             return "Please enter a message."
@@ -102,29 +98,23 @@ class ENN4DChat:
         # 2. Physics Step
         output_y = self.system.step(event['x'], event['y'], event['z'])
         
-        # 3. Compute Resonance diagnostics
-        forces = self.system.compute_resonance(event['x'], event['y'], event['z'])
-        max_force = max(forces) if forces else 0.0
-        
-        # 4. Generative Decoding
+        # 3. Associative Field Decoding
         response = self.decoder.decode_4d_to_text(
             y_vector=output_y,
-            query_text=user_input,
-            memory_log=self.encoder.get_memory_log(),
-            resonance_force=max_force
+            memory_log=self.encoder.get_memory_log()
         )
         
-        # 5. Persist
+        # 4. Persist
         self.save_state()
         return response
 
     def run_interactive_loop(self):
-        """Starts interactive terminal chat loop."""
+        """Starts the interactive terminal chat loop."""
         print("=" * 65)
-        print("ENN 4D LIVING AI CHAT INTERFACE (Phase 2)")
+        print("ENN 4D LIVING AI CHAT INTERFACE (Pure Emergent Field)")
         print("=" * 65)
-        print(f"Loaded Universe with {len(self.system.neurons)} neurons across {len(set(n.w for n in self.system.neurons))} families.")
-        print("Type your message below. Type 'exit' or 'quit' to close.\n")
+        print(f"Universe: {len(self.system.neurons)} neurons | {len(set(n.w for n in self.system.neurons))} families.")
+        print("Type your message. Type 'exit' or 'quit' to close.\n")
 
         while True:
             try:
