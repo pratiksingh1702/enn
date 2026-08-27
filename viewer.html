@@ -950,23 +950,30 @@
         positions[idx] = new THREE.Vector3(posX, posY, posZ);
       });
 
-      // Build Synapses
+      // Build Synapses with Continuous Physical Conductance Weights
       const linePositions = [];
       const lineColors = [];
 
       neurons.forEach((n, i) => {
         const fromPos = positions[i];
-        if (!fromPos || !n.connections) return;
+        if (!fromPos) return;
         const colorFrom = new THREE.Color(getFamilyColor(n.w));
 
-        n.connections.forEach(targetIdx => {
+        const synapses = n.synapses || {};
+        const connections = Object.keys(synapses).length > 0 ? Object.keys(synapses).map(Number) : (n.connections || []);
+
+        connections.forEach(targetIdx => {
           const toPos = positions[targetIdx];
           if (toPos && i < targetIdx) {
+            const weight = synapses[targetIdx] !== undefined ? synapses[targetIdx] : (neurons[targetIdx]?.synapses?.[i] || 0.5);
             linePositions.push(fromPos.x, fromPos.y, fromPos.z);
             linePositions.push(toPos.x, toPos.y, toPos.z);
+            
             const colorTo = new THREE.Color(getFamilyColor(neurons[targetIdx]?.w || 0));
-            lineColors.push(colorFrom.r, colorFrom.g, colorFrom.b);
-            lineColors.push(colorTo.r, colorTo.g, colorTo.b);
+            // Modulate line brightness by physical conductance weight W_ij
+            const alphaFactor = Math.min(1.0, Math.max(0.15, weight));
+            lineColors.push(colorFrom.r * alphaFactor, colorFrom.g * alphaFactor, colorFrom.b * alphaFactor);
+            lineColors.push(colorTo.r * alphaFactor, colorTo.g * alphaFactor, colorTo.b * alphaFactor);
           }
         });
       });
@@ -978,7 +985,7 @@
         const lineMat = new THREE.LineBasicMaterial({
           vertexColors: true,
           transparent: true,
-          opacity: 0.4
+          opacity: 0.75
         });
         synapseLines = new THREE.LineSegments(lineGeo, lineMat);
         scene.add(synapseLines);
@@ -1069,15 +1076,20 @@
       document.getElementById('insp-coord-z').innerText = JSON.stringify(target.z || []);
       document.getElementById('insp-coord-w').innerText = target.w !== undefined ? target.w : 0;
 
-      const conns = target.connections || [];
+      const synapses = target.synapses || {};
+      const conns = Object.keys(synapses).length > 0 ? Object.keys(synapses).map(Number) : (target.connections || []);
       document.getElementById('insp-conn-count').innerText = conns.length;
       const connList = document.getElementById('insp-connections-list');
       connList.innerHTML = conns.length === 0 ? '<span style="font-size: 11px; color: var(--text-muted);">None</span>' : '';
+      
       conns.forEach(cid => {
+        const weight = synapses[cid] !== undefined ? synapses[cid].toFixed(2) : '0.50';
         const badge = document.createElement('span');
         badge.className = 'badge-4d';
         badge.style.cursor = 'pointer';
-        badge.innerText = `#${cid}`;
+        badge.style.margin = '2px';
+        badge.style.padding = '3px 6px';
+        badge.innerHTML = `#${cid} <span style="opacity:0.75; font-size:9px;">(W: ${weight})</span>`;
         badge.onclick = () => selectNeuron(cid);
         connList.appendChild(badge);
       });

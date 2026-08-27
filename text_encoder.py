@@ -115,7 +115,7 @@ class TextEncoder:
             norm = np.linalg.norm(vec)
             return vec / norm if norm > 0 else vec
 
-    def encode(self, text: str, time_step: float = 0.1, family: Optional[int] = None) -> Dict[str, Any]:
+    def encode(self, text: str, time_step: float = 0.1, family: Optional[int] = None, origin: float = 1.0) -> Dict[str, Any]:
         features = self._embed_text(text)
         dense_4d = np.dot(features, self._proj)
         norm_4d = np.linalg.norm(dense_4d)
@@ -131,11 +131,59 @@ class TextEncoder:
             "y": y_vec,
             "z": z_vec,
             "w": family,
+            "origin": float(origin),
             "features": features
         }
+
+    def encode_constellation(self, text: str, time_step: float = 0.1, family: Optional[int] = None, origin: float = 1.0) -> List[Dict[str, Any]]:
+        """
+        Decomposes an utterance into a relational micro-circuit (geometric constellation).
+        Returns a list of node dicts with anchor, component, and relational vectors.
+        """
+        words = [w.strip() for w in text.strip().split() if w.strip()]
+        if len(words) <= 1:
+            # Single token -> single neuron
+            base = self.encode(text, time_step=time_step, family=family, origin=origin)
+            base["role"] = "anchor"
+            return [base]
+
+        # 1. Global Anchor
+        anchor = self.encode(text, time_step=time_step, family=family, origin=origin)
+        anchor["role"] = "anchor"
+        nodes = [anchor]
+
+        # 2. Sub-components: entities / relations / objects
+        # For short sentences (e.g. "I am Pratik"), individual tokens form constellation nodes.
+        # For longer sentences, small 2-3 word phrases form nodes.
+        chunks = []
+        if len(words) <= 4:
+            chunks = words
+        else:
+            # Group into 2-word sliding phrases
+            for i in range(0, len(words), 2):
+                chunks.append(" ".join(words[i:i+2]))
+
+        for idx, chunk in enumerate(chunks):
+            chunk_enc = self.encode(chunk, time_step=time_step, family=family, origin=origin)
+            # Offset slightly relative to anchor coordinate to create a coherent geometric orbit
+            offset = 0.05 * (chunk_enc["x"] - anchor["x"])
+            node_x = anchor["x"] + offset
+            norm = np.linalg.norm(node_x)
+            if norm > 0:
+                node_x = node_x / norm
+                
+            chunk_enc["x"] = np.round(node_x, 4)
+            chunk_enc["y"] = chunk_enc["x"].copy()
+            chunk_enc["role"] = "relation" if idx == 1 and len(chunks) >= 3 else ("subject" if idx == 0 else "object")
+            nodes.append(chunk_enc)
+
+        return nodes
 
 
 _default_encoder = TextEncoder(dim=4)
 
 def encode_text_to_4d(text: str, time_step: float = 0.1) -> Dict[str, Any]:
     return _default_encoder.encode(text, time_step=time_step)
+
+def encode_constellation(text: str, time_step: float = 0.1, origin: float = 1.0) -> List[Dict[str, Any]]:
+    return _default_encoder.encode_constellation(text, time_step=time_step, origin=origin)

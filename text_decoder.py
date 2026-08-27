@@ -82,6 +82,31 @@ class TextDecoder:
         scored.sort(key=lambda item: item[1], reverse=True)
         return scored[:top_k]
 
+    def decode_curiosity_void(self, void_event: Dict[str, Any]) -> str:
+        """
+        Translates an epistemic vacuum tension into a natural curiosity probe.
+        Finds the closest existing memory to ground the curiosity inquiry.
+        """
+        text = void_event.get("text", "").strip()
+        x_vec = np.array(void_event.get("x", []))
+        q_feat = np.array(void_event.get("features")) if void_event.get("features") is not None else None
+        
+        matches = self.find_resonant_memories(x_vec, query_features=q_feat, top_k=1)
+        if matches and matches[0][1] > 0.25:
+            nearest_text = matches[0][0]
+            return f"Curious... '{text}' creates an epistemic void. How does it relate to '{nearest_text}'?"
+        else:
+            return f"I sense high novelty in '{text}' with no prior resonance. What should I understand about this?"
+
+    def decode_insight(self, insight_event: Dict[str, Any]) -> str:
+        """
+        Translates a spontaneous cross-family resonance into an emergent thought.
+        """
+        src = insight_event.get("source_text", "")
+        tgt = insight_event.get("target_text", "")
+        res = insight_event.get("resonance", 0.0)
+        return f"Spontaneous Reflection: A harmonic wave ({res:.2f}) bridged '{src}' with '{tgt}'."
+
     def save_memory_log(self, filepath: str = "memory_log.json"):
         """Save memory bank to JSON file."""
         data = [r.to_dict() for r in self.memory_log]
