@@ -13,6 +13,8 @@ import json
 import numpy as np
 from typing import List, Tuple, Optional, Dict, Any
 from collections import defaultdict
+from meta_learning import MetaField
+from self_awareness import MetacognitiveEngine
 
 class Neuron:
     def __init__(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, w: int, text: str = "", features: Optional[np.ndarray] = None, origin: float = 1.0, epistemic_tension: float = 0.0, role: str = "concept"):
@@ -521,6 +523,82 @@ class ENN4D:
         self.energy_history.append(sum(n.energy for n in self.neurons))
         return output_y, void_event
 
+    # --- MULTI-STEP WAVE PROPAGATION (REASONING TRAJECTORY) ---
+    def propagate_wave(self, source_x: np.ndarray, steps: int = 4, damping: float = 0.15, initial_amplitude: float = 1.0) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
+        """
+        Multi-Step Damped Wave Propagation across the 4D neural substrate.
+        Wave cascades from local resonance along synaptic conductance highways (W_ij).
+        Tracks and returns the detailed physical trajectory (wave_path).
+        """
+        if not self.neurons:
+            return source_x.copy(), []
+            
+        current_wave = np.array(source_x, dtype=float).copy()
+        norm = np.linalg.norm(current_wave)
+        if norm > 0:
+            current_wave = current_wave / norm
+            
+        wave_path = []
+        visited_neurons = set()
+        amplitude = float(initial_amplitude)
+        
+        for s in range(1, steps + 1):
+            # Compute resonance of current wavefront with all neurons
+            forces = self.compute_resonance(current_wave, current_wave, np.array([0.0]))
+            f_arr = np.array(forces)
+            
+            # Find active resonant nodes at this hop
+            active_indices = np.where(f_arr > 0.15)[0]
+            if len(active_indices) == 0:
+                active_indices = [int(np.argmax(f_arr))]
+                
+            step_hops = []
+            next_wave_components = []
+            
+            for idx in active_indices:
+                n = self.neurons[idx]
+                f_val = float(f_arr[idx])
+                
+                hop_entry = {
+                    "step": s,
+                    "neuron_id": int(idx),
+                    "text": n.text,
+                    "family": int(n.w),
+                    "force": float(np.round(f_val, 4)),
+                    "energy": float(np.round(n.energy, 4)),
+                    "amplitude": float(np.round(amplitude, 4)),
+                    "synapses": {int(k): float(np.round(v, 4)) for k, v in n.synapses.items() if v > 0.1}
+                }
+                step_hops.append(hop_entry)
+                visited_neurons.add(idx)
+                
+                # Neuron contributes its output coordinate Y weighted by force & energy
+                node_weight = f_val * n.energy * amplitude
+                next_wave_components.append(n.y * node_weight)
+                
+                # Synaptic conduction boost: forward wave propagates along synaptic highways
+                for target_idx, w_ij in n.synapses.items():
+                    if target_idx < len(self.neurons) and target_idx not in visited_neurons:
+                        target_n = self.neurons[target_idx]
+                        synaptic_wave = target_n.y * (node_weight * w_ij * 0.40)
+                        next_wave_components.append(synaptic_wave)
+                        
+            wave_path.extend(step_hops)
+            
+            # Constructive/destructive superposition of next wavefront
+            if next_wave_components:
+                summed_wave = np.sum(next_wave_components, axis=0)
+                norm_sw = np.linalg.norm(summed_wave)
+                if norm_sw > 0:
+                    current_wave = summed_wave / norm_sw
+                    
+            # Exponential damping over multi-hop distance
+            amplitude *= (1.0 - damping)
+            if amplitude < 0.1:
+                break
+                
+        return current_wave, wave_path
+
     # --- AUTONOMOUS REFLECTIVE CLOCK (IDLE STEP) ---
     def idle_step(self, noise_scale: float = 0.04) -> Optional[Dict[str, Any]]:
         """
@@ -760,3 +838,436 @@ class ENN4D:
                 n.synapses = {int(c): 0.5 for c in d["connections"]}
                 
             self.neurons.append(n)
+
+
+# =====================================================================
+# COUPLED DUAL-NETWORK ARCHITECTURE: NETWORK B (TRAIT DRIVE FIELD)
+# =====================================================================
+
+class TraitAttractor:
+    """
+    A continuous physical attractor particle in the Trait Drive Field.
+    Maintains target 4D spatial coordinates, metabolic energy, and kinetic activation.
+    """
+    def __init__(self, name: str, coordinate: np.ndarray, base_energy: float = 1.5, drive_type: str = "drive"):
+        self.name = str(name)
+        self.x = np.array(coordinate, dtype=float).copy()
+        self.energy = float(base_energy)
+        self.base_energy = float(base_energy)
+        self.velocity = np.zeros_like(self.x)
+        self.drive_type = str(drive_type)
+        self.last_activation = 0.0
+
+    def compute_resonance(self, input_wave: np.ndarray) -> float:
+        """Continuous inverse-distance field resonance with incoming transmitted wave."""
+        dist_sq = float(np.sum((self.x - input_wave) ** 2))
+        force = 1.0 / (1.0 + 3.0 * dist_sq)
+        return force
+
+    def step_dynamics(self, resonance_force: float):
+        """Update attractor energy and apply metabolic relaxation."""
+        self.energy += resonance_force * 0.15
+        decay = 0.02 * (self.energy - self.base_energy)
+        self.energy = max(0.1, self.energy - decay)
+        self.last_activation = float(resonance_force * self.energy)
+
+
+class AttractorBasin:
+    """
+    A decision attractor basin in the Trait Drive Field.
+    Has a target 4D coordinate, radius, valence, energy, and semantic decision label.
+    """
+    def __init__(self, name: str, coordinate: np.ndarray, valence: float = 1.0, radius: float = 0.8, decision_label: str = "", base_energy: float = 1.5):
+        self.name = str(name)
+        self.x = np.array(coordinate, dtype=float).copy()
+        norm = np.linalg.norm(self.x)
+        if norm > 0:
+            self.x = self.x / norm
+        self.valence = float(valence)  # Positive = attraction / affirmation, Negative = repulsion / avoidance
+        self.radius = max(0.1, float(radius))
+        self.decision_label = str(decision_label or name)
+        self.energy = float(base_energy)
+        self.base_energy = float(base_energy)
+        self.last_pull = 0.0
+
+    def compute_pull(self, wave_pos: np.ndarray) -> float:
+        """
+        Continuous gravitational pull of basin on incoming wave packet.
+        Pull = (Valence * Energy) / (1 + 3 * (distance / radius)^2)
+        """
+        dist_sq = float(np.sum((self.x - wave_pos) ** 2))
+        scaled_dist_sq = dist_sq / (self.radius ** 2)
+        pull = (self.valence * self.energy) / (1.0 + 3.0 * scaled_dist_sq)
+        self.last_pull = float(pull)
+        return float(pull)
+
+
+class TraitField:
+    """
+    Network B: The Trait Drive Field (Self / Experiencer).
+    Maintains a continuous 4D attractor landscape encoding internal cognitive drives & decision basins:
+    - Foundational Attractors (Curiosity, Coherence, Wonder, Ego)
+    - Decision Attractor Basins (Affirm, Inquire, Caution, Synthesize)
+    """
+    def __init__(self, dim: int = 4):
+        self.dim = dim
+        self.attractors: Dict[str, TraitAttractor] = {}
+        self.basins: Dict[str, AttractorBasin] = {}
+        self._init_attractors()
+        self._init_default_basins()
+
+    def _init_attractors(self):
+        self.attractors["curiosity"] = TraitAttractor("Curiosity", np.array([0.7071, 0.7071, 0.0, 0.0]), base_energy=1.8, drive_type="curiosity")
+        self.attractors["coherence"] = TraitAttractor("Coherence", np.array([-0.7071, -0.7071, 0.0, 0.0]), base_energy=1.5, drive_type="coherence")
+        self.attractors["wonder"] = TraitAttractor("Wonder", np.array([0.0, 0.0, 0.7071, 0.7071]), base_energy=1.4, drive_type="wonder")
+        self.attractors["ego"] = TraitAttractor("Ego", np.array([0.0, 0.0, -0.7071, -0.7071]), base_energy=2.0, drive_type="ego")
+
+    def _init_default_basins(self):
+        # Action decision basins
+        self.create_basin("affirm", np.array([0.7071, 0.7071, 0.0, 0.0]), valence=1.2, radius=0.9, decision_label="Affirm / Proceed")
+        self.create_basin("inquire", np.array([0.7071, -0.7071, 0.0, 0.0]), valence=1.1, radius=0.9, decision_label="Inquire / Explore")
+        self.create_basin("caution", np.array([-0.7071, 0.7071, 0.0, 0.0]), valence=1.0, radius=0.8, decision_label="Caution / Restrain")
+        self.create_basin("synthesize", np.array([0.0, 0.0, 0.7071, 0.7071]), valence=1.3, radius=0.9, decision_label="Synthesize / Integrate")
+        
+        # Metacognitive Self-Awareness basins
+        self.create_basin("self_grounded", np.array([-0.5, -0.5, -0.5, -0.5]), valence=1.4, radius=0.9, decision_label="Grounded Self Knowledge")
+        self.create_basin("self_ignorance", np.array([0.5, 0.5, 0.5, 0.5]), valence=1.2, radius=0.9, decision_label="Epistemic Humility / Void")
+        self.create_basin("self_conflict", np.array([-0.5, 0.5, -0.5, 0.5]), valence=1.1, radius=0.8, decision_label="Epistemic Doubt / Conflict")
+        self.create_basin("self_identity", np.array([0.0, 0.0, -0.7071, -0.7071]), valence=1.5, radius=1.0, decision_label="Self Identity")
+
+    def create_basin(self, name: str, coordinate: np.ndarray, valence: float = 1.0, radius: float = 0.8, decision_label: str = "") -> AttractorBasin:
+        basin = AttractorBasin(name, coordinate, valence=valence, radius=radius, decision_label=decision_label)
+        self.basins[name] = basin
+        return basin
+
+    def compute_basin_pulls(self, wave_pos: np.ndarray) -> Dict[str, float]:
+        pulls = {}
+        for name, basin in self.basins.items():
+            pulls[name] = basin.compute_pull(wave_pos)
+        return pulls
+
+    def collapse_phase(self, wave_pos: np.ndarray, threshold: float = 0.35) -> Tuple[Optional[AttractorBasin], float, Dict[str, float]]:
+        """
+        Continuous Phase Collapse into winning decision attractor basin.
+        Returns: (winning_basin, confidence_ratio, pulls_dict)
+        """
+        pulls = self.compute_basin_pulls(wave_pos)
+        if not pulls:
+            return None, 0.0, {}
+            
+        pos_pulls = {k: max(0.0, v) for k, v in pulls.items()}
+        total_pull = sum(pos_pulls.values())
+        
+        if total_pull <= 1e-6:
+            return None, 0.0, pulls
+            
+        best_name = max(pos_pulls.keys(), key=lambda k: pos_pulls[k])
+        best_pull = pos_pulls[best_name]
+        confidence = best_pull / total_pull
+        
+        if confidence >= threshold:
+            winning_basin = self.basins[best_name]
+            winning_basin.energy = min(5.0, winning_basin.energy + 0.10)
+            return winning_basin, float(confidence), pulls
+        else:
+            return None, float(confidence), pulls
+
+    def process_transmitted_wave(self, transmitted_wave: np.ndarray, world_resonance_max: float) -> Tuple[np.ndarray, Dict[str, float]]:
+        """
+        Process wave packet transmitted from Network A (World Field).
+        Evaluates physical resonance across attractors and computes the Drive Modulation Wave y_B.
+        """
+        activations = {}
+        forces = {}
+        for name, attr in self.attractors.items():
+            f = attr.compute_resonance(transmitted_wave)
+            if name == "curiosity":
+                entropy_boost = max(0.0, 1.0 - world_resonance_max) * 1.5
+                effective_force = f * (1.0 + entropy_boost)
+            elif name == "coherence":
+                effective_force = f * (0.5 + world_resonance_max)
+            else:
+                effective_force = f
+                
+            attr.step_dynamics(effective_force)
+            forces[name] = float(effective_force)
+            activations[name] = float(effective_force * attr.energy)
+
+        total_act = sum(activations.values())
+        if total_act > 0:
+            y_b = sum(self.attractors[name].x * (act / total_act) for name, act in activations.items())
+            norm = np.linalg.norm(y_b)
+            if norm > 0:
+                y_b = y_b / norm
+        else:
+            y_b = np.zeros(self.dim)
+
+        return y_b, activations
+
+
+class DualFieldENN:
+    """
+    Coupled Dual-Network Universe:
+    - Network A: World Field (ENN4D - Knowledge, Constellations & Multi-Hop Wave Propagation)
+    - Network B: Trait Drive Field (TraitField - Drives & Decision Attractor Basins)
+    - Level 3: Meta-Learning Field (MetaField - Elastic Physics Parameters)
+    - Metacognitive Engine: Self-Attractor Complex & Inward Mirror
+    Coupled via continuous bidirectional wave conductance matrices W_AB and W_BA.
+    """
+    def __init__(self, dim: int = 4):
+        self.dim = dim
+        self.world_field = ENN4D(dim=self.dim)
+        self.trait_field = TraitField(dim=self.dim)
+        
+        # Meta-Learning & Self-Awareness Engines
+        self.meta_field = MetaField()
+        self.self_awareness = MetacognitiveEngine(self)
+        
+        # Inter-field coupling matrices (orthogonal isometric mappings)
+        rng = np.random.RandomState(42)
+        q_ab, _ = np.linalg.qr(rng.randn(self.dim, self.dim))
+        q_ba, _ = np.linalg.qr(rng.randn(self.dim, self.dim))
+        self.W_AB = q_ab
+        self.W_BA = q_ba
+        
+        # Superposition coupling strength
+        self.coupling_lambda = 0.35
+
+    @property
+    def neurons(self):
+        return self.world_field.neurons
+
+    @property
+    def event_count(self):
+        return self.world_field.event_count
+
+    @property
+    def question_stack(self):
+        return self.world_field.question_stack
+
+    def reset(self):
+        self.world_field.reset()
+        self.trait_field._init_attractors()
+        self.trait_field._init_default_basins()
+        self.meta_field = MetaField()
+        self.self_awareness = MetacognitiveEngine(self)
+
+    def birth(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, family: Optional[int] = None, text: str = "", features: Optional[np.ndarray] = None, origin: float = 1.0, epistemic_tension: float = 0.0, role: str = "concept") -> Neuron:
+        return self.world_field.birth(x, y, z, family=family, text=text, features=features, origin=origin, epistemic_tension=epistemic_tension, role=role)
+
+    def birth_constellation(self, nodes: List[Dict[str, Any]], family: Optional[int] = None) -> List[Neuron]:
+        return self.world_field.birth_constellation(nodes, family=family)
+
+    def step(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray, text: str = "", features: Optional[np.ndarray] = None, origin: float = 1.0) -> Tuple[np.ndarray, Optional[Dict[str, Any]]]:
+        return self.world_field.step(event_x, event_y, event_z, text=text, features=features, origin=origin)
+
+    def propagate_wave(self, source_x: np.ndarray, steps: int = 4, damping: float = 0.15) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
+        return self.world_field.propagate_wave(source_x, steps=steps, damping=damping)
+
+    def introspect(self) -> Dict[str, Any]:
+        """Generate a real-time physical self-awareness and introspection report."""
+        return self.self_awareness.generate_introspection_report()
+
+    def reason(self, query_x: np.ndarray, query_features: Optional[np.ndarray] = None, query_text: str = "", max_steps: int = 4) -> Dict[str, Any]:
+        """
+        Execute multi-hop wave reasoning & decision phase collapse.
+        1. Launches wave packet into Network A (World Field).
+        2. Propagates across synaptic highways over multiple steps, recording wave trajectory.
+        3. Projects output wave into Network B (Trait Drive Field).
+        4. Calculates attractor basin pulls and triggers continuous phase collapse.
+        5. Returns structured decision, confidence, wave path, and physical explanation.
+        """
+        out_wave_world, wave_path = self.world_field.propagate_wave(query_x, steps=max_steps)
+        
+        transmitted_wave = np.dot(self.W_AB, out_wave_world)
+        norm_tw = np.linalg.norm(transmitted_wave)
+        if norm_tw > 0:
+            transmitted_wave = transmitted_wave / norm_tw
+            
+        winning_basin, confidence, basin_pulls = self.trait_field.collapse_phase(transmitted_wave)
+        explanation = self.format_explanation(wave_path, winning_basin, confidence)
+        
+        return {
+            "query_text": query_text,
+            "decision": winning_basin.decision_label if winning_basin else "Superposition / Inconclusive",
+            "basin": winning_basin.name if winning_basin else "Superposition",
+            "confidence": float(np.round(confidence, 4)),
+            "basin_pulls": {k: float(np.round(v, 4)) for k, v in basin_pulls.items()},
+            "wave_path": wave_path,
+            "explanation": explanation
+        }
+
+    def format_explanation(self, wave_path: List[Dict[str, Any]], winning_basin: Optional[AttractorBasin], confidence: float) -> str:
+        if not wave_path:
+            return "Wave dissipated with zero active resonance."
+            
+        hops_text = " ➔ ".join([f"[{h['text'] or f'Neuron-{h['neuron_id']}'}] (F={h['force']:.2f})" for h in wave_path[:5]])
+        decision_str = f"'{winning_basin.decision_label}' ({confidence*100:.1f}% pull)" if winning_basin else "Superposition State"
+        return f"Wave Trajectory: {hops_text} ➔ Collapsed into {decision_str}"
+
+    def step_constellation(self, nodes: List[Dict[str, Any]], text: str = "") -> Tuple[np.ndarray, Optional[Dict[str, Any]]]:
+        if not nodes:
+            return np.zeros(self.dim), None
+
+        # 1. Compute World Field resonance against existing memory prior to birthing
+        anchor = next((n for n in nodes if n.get("role") == "anchor"), nodes[0])
+        forces = self.world_field.compute_resonance(anchor["x"], anchor.get("y", anchor["x"]), anchor.get("z", np.array([0.0])))
+        world_res_max = max(forces) if forces else 0.0
+
+        # 2. Step World Field
+        output_y_world, void_event = self.world_field.step_constellation(nodes, text=text)
+        
+        # 3. Forward transmission to Trait Field: w_A->B = W_AB * y_A
+        transmitted_wave = np.dot(self.W_AB, output_y_world)
+        norm_tw = np.linalg.norm(transmitted_wave)
+        if norm_tw > 0:
+            transmitted_wave = transmitted_wave / norm_tw
+            
+        # 4. Network B Attractor processing
+        y_trait, activations = self.trait_field.process_transmitted_wave(transmitted_wave, world_res_max)
+        
+        # 5. Metacognitive Inward Wave Evaluation & Meta-Learning Adaptation
+        total_energy = float(sum(n.energy for n in self.world_field.neurons))
+        self.meta_field.observe_and_adapt(total_energy, len(self.world_field.neurons), world_res_max)
+        metacognitive_eval = self.self_awareness.evaluate_inward_wave(transmitted_wave, world_res_max)
+        
+        # 6. Feedback transmission to World Field: w_B->A = W_BA * y_B
+        feedback_wave = np.dot(self.W_BA, y_trait)
+        
+        # Effective Cognitive Output Superposition: y_eff = (y_A + lambda * w_B->A) / norm
+        y_effective = output_y_world + self.coupling_lambda * feedback_wave
+        norm_eff = np.linalg.norm(y_effective)
+        if norm_eff > 0:
+            y_effective = y_effective / norm_eff
+            
+        curiosity_act = activations.get("curiosity", 0.0)
+        coherence_act = activations.get("coherence", 0.0)
+        
+        trait_event = None
+        if void_event or (curiosity_act > coherence_act and world_res_max < 0.45):
+            trait_event = void_event or {
+                "text": text,
+                "tension": float(np.round(max(0.1, 1.0 - world_res_max), 4)),
+                "x": anchor["x"].tolist(),
+                "y": anchor.get("y", anchor["x"]).tolist(),
+                "z": anchor.get("z", np.array([0.0])).tolist(),
+                "created_at": self.world_field.event_count,
+                "features": anchor.get("features").tolist() if anchor.get("features") is not None else None,
+                "metacognition": metacognitive_eval
+            }
+            if trait_event not in self.world_field.question_stack:
+                self.world_field.question_stack.append(trait_event)
+                
+        return y_effective, trait_event
+
+    def idle_step(self, noise_scale: float = 0.04) -> Optional[Dict[str, Any]]:
+        thought = self.world_field.idle_step(noise_scale=noise_scale)
+        if thought:
+            thought_wave = np.random.randn(self.dim) * 0.1
+            self.trait_field.process_transmitted_wave(thought_wave, world_resonance_max=0.5)
+        return thought
+
+    def probe_resonance(self, query_x: np.ndarray, query_features: Optional[np.ndarray] = None, top_k: int = 3) -> List[Tuple[Neuron, float]]:
+        return self.world_field.probe_resonance(query_x, query_features=query_features, top_k=top_k)
+
+    def compute_resonance(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray) -> List[float]:
+        return self.world_field.compute_resonance(event_x, event_y, event_z)
+
+    def save(self, filepath: str = "universe.json"):
+        self.world_field.clean_connections()
+        data = {
+            "event_count": self.world_field.event_count,
+            "next_family_id": self.world_field.next_family_id,
+            "total_energy": float(sum(n.energy for n in self.world_field.neurons)),
+            "total_neurons": len(self.world_field.neurons),
+            "num_families": len(set(n.w for n in self.world_field.neurons)),
+            "total_connections": sum(len(n.synapses) for n in self.world_field.neurons),
+            "question_stack": self.world_field.question_stack,
+            "meta_learning": self.meta_field.get_state(),
+            "trait_attractors": {
+                name: {
+                    "energy": float(attr.energy),
+                    "last_activation": float(attr.last_activation)
+                } for name, attr in self.trait_field.attractors.items()
+            },
+            "trait_basins": {
+                name: {
+                    "coordinate": basin.x.tolist(),
+                    "valence": float(basin.valence),
+                    "radius": float(basin.radius),
+                    "energy": float(basin.energy),
+                    "decision_label": basin.decision_label
+                } for name, basin in self.trait_field.basins.items()
+            },
+            "neurons": [
+                {
+                    "id": i,
+                    "x": np.round(n.x, 4).tolist(),
+                    "y": np.round(n.y, 4).tolist(),
+                    "z": np.round(n.z, 4).tolist(),
+                    "w": int(n.w),
+                    "text": n.text,
+                    "energy": float(np.round(n.energy, 4)),
+                    "origin": float(np.round(n.origin, 2)),
+                    "epistemic_tension": float(np.round(n.epistemic_tension, 4)),
+                    "role": n.role,
+                    "age": int(n.age),
+                    "connections": [int(c) for c in n.synapses.keys() if c < len(self.world_field.neurons) and c != i],
+                    "synapses": {str(k): float(np.round(v, 4)) for k, v in n.synapses.items() if int(k) < len(self.world_field.neurons) and int(k) != i},
+                    "last_active": int(n.last_active)
+                }
+                for i, n in enumerate(self.world_field.neurons)
+            ]
+        }
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+    def load(self, filepath: str = "universe.json"):
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        self.world_field.event_count = data["event_count"]
+        self.world_field.next_family_id = data["next_family_id"]
+        self.world_field.question_stack = data.get("question_stack", [])
+        self.world_field.neurons = []
+        for d in data["neurons"]:
+            n = Neuron(
+                np.array(d["x"]),
+                np.array(d["y"]),
+                np.array(d["z"]),
+                d["w"],
+                text=d.get("text", ""),
+                origin=float(d.get("origin", 1.0)),
+                epistemic_tension=float(d.get("epistemic_tension", 0.0)),
+                role=d.get("role", "concept")
+            )
+            n.energy = float(d["energy"])
+            n.age = int(d["age"])
+            n.last_active = int(d.get("last_active", 0))
+            if "synapses" in d:
+                n.synapses = {int(k): float(v) for k, v in d["synapses"].items()}
+            elif "connections" in d:
+                n.synapses = {int(c): 0.5 for c in d["connections"]}
+            self.world_field.neurons.append(n)
+            
+        if "trait_attractors" in data:
+            for name, attr_data in data["trait_attractors"].items():
+                if name in self.trait_field.attractors:
+                    self.trait_field.attractors[name].energy = float(attr_data.get("energy", 1.5))
+                    
+        if "trait_basins" in data:
+            for name, b_data in data["trait_basins"].items():
+                self.trait_field.create_basin(
+                    name=name,
+                    coordinate=np.array(b_data["coordinate"]),
+                    valence=float(b_data.get("valence", 1.0)),
+                    radius=float(b_data.get("radius", 0.8)),
+                    decision_label=b_data.get("decision_label", name)
+                )
+                
+        if "meta_learning" in data:
+            m = data["meta_learning"]
+            self.meta_field.learning_rate = float(m.get("learning_rate", 0.25))
+            self.meta_field.damping_rate = float(m.get("damping_rate", 0.03))
+            self.meta_field.synaptic_rate = float(m.get("synaptic_rate", 0.15))
+            self.meta_field.birth_threshold = float(m.get("birth_threshold", 0.45))
+            self.meta_field.merge_threshold = float(m.get("merge_threshold", 0.15))

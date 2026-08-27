@@ -16,7 +16,7 @@ if sys.stdout.encoding != 'utf-8':
 import os
 import numpy as np
 from typing import Dict, Any, List
-from enn4d import ENN4D
+from enn4d import ENN4D, DualFieldENN
 from text_encoder import TextEncoder, encode_constellation
 from text_decoder import TextDecoder
 from mind_loop import MindLoop
@@ -26,7 +26,8 @@ class ENNChatBrain:
         self.universe_file = universe_file
         self.dim = dim
         
-        self.system = ENN4D(dim=self.dim)
+        # Coupled Dual-Network: World Knowledge Field <-> Trait Drive Field
+        self.system = DualFieldENN(dim=self.dim)
         self.encoder = TextEncoder(dim=self.dim)
         self.decoder = TextDecoder()
         
@@ -130,8 +131,43 @@ class ENNChatBrain:
                 "response": f"Integrated constellation ({new_neurons} nodes) into Family {family_id}."
             }
 
+    def is_reasoning_query(self, text: str) -> bool:
+        """Check if input requires multi-hop reasoning and decision phase collapse."""
+        t = text.strip().lower()
+        reasoning_keywords = {"why", "how", "should", "what if", "explain", "because", "decide", "reason", "if"}
+        first_word = t.split()[0] if t.split() else ""
+        return first_word in reasoning_keywords or any(kw in t for kw in ["what should", "what happens if", "why does", "how does"])
+
+    def reason(self, text: str) -> Dict[str, Any]:
+        """Execute multi-hop wave propagation and decision phase collapse."""
+        self.mind_loop.mark_user_activity()
+        with self.mind_loop.get_lock():
+            event = self.encoder.encode(text, time_step=0.0, origin=1.0)
+            query_x = event["x"]
+            features = event.get("features")
+            
+            reason_res = self.system.reason(query_x, query_features=features, query_text=text, max_steps=4)
+            matches = self.system.probe_resonance(query_x, query_features=features, top_k=1)
+            
+            top_text = matches[0][0].text if matches else "No active memory cluster"
+            
+            return {
+                "mode": "reason",
+                "text": text,
+                "response": top_text,
+                "decision": reason_res["decision"],
+                "basin": reason_res["basin"],
+                "confidence": reason_res["confidence"],
+                "explanation": reason_res["explanation"],
+                "wave_path": reason_res["wave_path"],
+                "total_neurons": len(self.system.neurons)
+            }
+
     def query(self, text: str) -> Dict[str, Any]:
         """Send a non-destructive probe wave into the field to find the most physically active resonant neuron."""
+        if self.is_reasoning_query(text):
+            return self.reason(text)
+            
         self.mind_loop.mark_user_activity()
         with self.mind_loop.get_lock():
             event = self.encoder.encode(text, time_step=0.0, origin=1.0)
@@ -159,19 +195,41 @@ class ENNChatBrain:
                 "total_neurons": len(self.system.neurons)
             }
 
+    def is_introspection_query(self, text: str) -> bool:
+        """Check if query is asking for self-awareness, identity, or introspection."""
+        t = text.strip().lower()
+        patterns = ["who are you", "what are you", "introspect", "self status", "your state", "what do you know", "what are your limits", "how do you feel", "tell me about yourself", "how is your mind"]
+        return any(p in t for p in patterns)
+
+    def introspect(self, text: str) -> Dict[str, Any]:
+        """Execute physical self-awareness introspection."""
+        self.mind_loop.mark_user_activity()
+        with self.mind_loop.get_lock():
+            report = self.system.introspect()
+            return {
+                "mode": "introspect",
+                "text": text,
+                "response": report["introspection_summary"],
+                "report": report,
+                "total_neurons": len(self.system.neurons)
+            }
+
     def process_input(self, user_text: str) -> Dict[str, Any]:
         """Process user input through living 4D physics."""
-        if self.is_probe_query(user_text):
+        if self.is_introspection_query(user_text):
+            return self.introspect(user_text)
+        elif self.is_reasoning_query(user_text):
+            return self.reason(user_text)
+        elif self.is_probe_query(user_text):
             return self.query(user_text)
         else:
             return self.learn(user_text)
 
 
 def run_interactive_chat():
-    """Run pure physical terminal chat with ENN 4D living traits & autonomous mind loop."""
+    """Run pure physical terminal chat with ENN 4D living traits, reasoning, meta-learning & self-awareness."""
     brain = ENNChatBrain()
     
-    # Callback to display autonomous reflections in the background
     def on_thought(thought: Dict[str, Any]):
         msg = thought.get("decoded_text", thought.get("message", ""))
         print(f"\n✨ [ENN Mind Rumination]: {msg}")
@@ -181,11 +239,11 @@ def run_interactive_chat():
     brain.mind_loop.start()
     
     print("=" * 75)
-    print("🧠 ENN 4D LIVING SYSTEM: AUTONOMOUS PHYSICAL CONSCIOUSNESS & CURIOSITY")
+    print("🧠 ENN 4D LIVING SYSTEM: META-LEARNING, SELF-AWARENESS & CONSCIOUSNESS")
     print("=" * 75)
     print(f"Universe Loaded: {len(brain.system.neurons)} neurons across {len(set(n.w for n in brain.system.neurons))} families.")
-    print("Traits Active: Epistemic Curiosity Vacuum | Relational Constellations | Autonomous Reflection")
-    print("Type your message below. Pause to let the system ruminate autonomously. Type 'exit' to quit.\n")
+    print("Engines Active: Meta-Learning Field (F_meta) | Self-Attractor (F_self) | Decision Basins | Mind Loop")
+    print("Type your message below. Try asking 'who are you?' or 'introspect'. Type 'exit' to quit.\n")
     
     try:
         while True:
@@ -199,7 +257,17 @@ def run_interactive_chat():
                 break
                 
             result = brain.process_input(user_input)
-            if result.get("mode") == "query":
+            if result.get("mode") == "introspect":
+                rep = result["report"]
+                meta = rep.get("meta_learning_parameters", {})
+                print(f"System (Self-Awareness & Introspection):")
+                print(f"  🪞 \"{result['response']}\"")
+                print(f"  [Physics: Self-Coordinate {rep.get('self_coordinate')} | Plasticity eta={meta.get('learning_rate', 0.25):.2f} | Damping gamma={meta.get('damping_rate', 0.03):.3f}]\n")
+            elif result.get("mode") == "reason":
+                print(f"System (Reasoning & Decision): \"{result['decision']}\"")
+                print(f"  🌊 [Wave Trajectory]: {result['explanation']}")
+                print(f"  [Physics: Attractor Basin '{result['basin']}' | Confidence: {result['confidence']*100:.1f}%]\n")
+            elif result.get("mode") == "query":
                 print(f"System (Resonant Memory): \"{result['response']}\"")
                 print(f"  [Physics: Probed Family {result['family_id']} | Energy: {result['energy']:.2f}]\n")
             else:
