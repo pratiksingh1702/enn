@@ -1,0 +1,5276 @@
+{
+  "step": 17235,
+  "running_time": 20809.2,
+  "sim_time": 20809.2,
+  "sun_intensity": 0.12,
+  "organisms": [
+    {
+      "id": "Alpha",
+      "pos": [
+        13.94,
+        8.7,
+        2.42
+      ],
+      "velocity": [
+        -1.66,
+        -1.5,
+        0.0
+      ],
+      "yaw": 3.877,
+      "pitch": 0.524,
+      "gait_phase": 4.04,
+      "is_grounded": true,
+      "outcome": "walking",
+      "curiosity_focus": "Curious: Foraging Resonant Ether Orb (8.2m)",
+      "morphed_powers": [
+        "resonance_crown",
+        "aero_wings",
+        "tractor_hands",
+        "matter_alchemy",
+        "quantum_dash",
+        "solar_core",
+        "kinetic_shield",
+        "flora_bloom",
+        "terra_sculpt"
+      ],
+      "reward": 0.0,
+      "energy": 15184.0,
+      "ether_harvested": 435,
+      "structures_built": 291,
+      "cells_morphed": 20,
+      "steps_walked": 3736,
+      "confidence": 0.997,
+      "friction": 0.0005,
+      "coherence": 0.378,
+      "anatomy": [
+        {
+          "name": "head_brain",
+          "type": "cognition",
+          "offset": [
+            0.0,
+            0.0,
+            0.75
+          ],
+          "mastery": 1.0,
+          "status": "Inward Conf: 1.00"
+        },
+        {
+          "name": "left_eye",
+          "type": "vision",
+          "offset": [
+            0.15,
+            0.1,
+            0.78
+          ],
+          "mastery": 0.1,
+          "status": "Perceiving Beta (1.6m)"
+        },
+        {
+          "name": "right_eye",
+          "type": "vision",
+          "offset": [
+            0.15,
+            -0.1,
+            0.78
+          ],
+          "mastery": 0.1,
+          "status": "Perceiving Beta (1.6m)"
+        },
+        {
+          "name": "left_ear",
+          "type": "acoustic",
+          "offset": [
+            0.0,
+            0.22,
+            0.75
+          ],
+          "mastery": 1.0,
+          "status": "Acoustic Hum (8.2m)"
+        },
+        {
+          "name": "right_ear",
+          "type": "acoustic",
+          "offset": [
+            0.0,
+            -0.22,
+            0.75
+          ],
+          "mastery": 1.0,
+          "status": "Acoustic Hum (8.2m)"
+        },
+        {
+          "name": "torso_core",
+          "type": "metabolic",
+          "offset": [
+            0.0,
+            0.0,
+            0.2
+          ],
+          "mastery": 1.0,
+          "status": "Solar Intake: 54 mW"
+        },
+        {
+          "name": "left_arm",
+          "type": "manipulator",
+          "offset": [
+            0.1,
+            0.4,
+            0.2
+          ],
+          "mastery": 1.0,
+          "status": "Carrying Matter in Hands"
+        },
+        {
+          "name": "right_arm",
+          "type": "manipulator",
+          "offset": [
+            0.1,
+            -0.4,
+            0.2
+          ],
+          "mastery": 1.0,
+          "status": "Carrying Matter in Hands"
+        },
+        {
+          "name": "left_leg",
+          "type": "locomotive",
+          "offset": [
+            0.0,
+            0.2,
+            -0.6
+          ],
+          "mastery": 1.0,
+          "status": "Stride (2.24 m/s)"
+        },
+        {
+          "name": "right_leg",
+          "type": "locomotive",
+          "offset": [
+            0.0,
+            -0.2,
+            -0.6
+          ],
+          "mastery": 1.0,
+          "status": "Stride (2.24 m/s)"
+        }
+      ],
+      "visual_rays": [
+        [
+          8.84,
+          4.08,
+          3.17
+        ],
+        [
+          11.03,
+          2.45,
+          3.17
+        ],
+        [
+          13.68,
+          1.78,
+          3.17
+        ],
+        [
+          14.2,
+          8.3,
+          3.17
+        ],
+        [
+          18.73,
+          3.59,
+          3.17
+        ],
+        [
+          20.35,
+          5.78,
+          3.17
+        ],
+        [
+          16.18,
+          8.67,
+          3.17
+        ],
+        [
+          20.62,
+          11.13,
+          3.17
+        ]
+      ],
+      "enn_metrics": {
+        "neurons_born_total": 178,
+        "synapses_active": 1381,
+        "synapses_pruned_total": 0,
+        "aspiration_level": 0.565,
+        "starvation_stress": 0.0,
+        "meta_learning_rate": 0.3897,
+        "active_basin": "Exploration Superposition",
+        "trait_pulls": {
+          "affirm": 0.129,
+          "inquire": 0.481,
+          "caution": 0.122,
+          "synthesize": 0.261,
+          "self_grounded": 0.408,
+          "self_ignorance": 0.154,
+          "self_conflict": 0.104,
+          "self_identity": 0.29
+        }
+      }
+    },
+    {
+      "id": "Beta",
+      "pos": [
+        10.9,
+        14.94,
+        1.98
+      ],
+      "velocity": [
+        -0.54,
+        -2.14,
+        0.0
+      ],
+      "yaw": 4.465,
+      "pitch": 0.524,
+      "gait_phase": 3.139,
+      "is_grounded": true,
+      "outcome": "walking",
+      "curiosity_focus": "Curious: Foraging Resonant Ether Orb (12.2m)",
+      "morphed_powers": [
+        "resonance_crown",
+        "aero_wings",
+        "tractor_hands",
+        "matter_alchemy",
+        "quantum_dash",
+        "solar_core",
+        "kinetic_shield",
+        "flora_bloom",
+        "terra_sculpt"
+      ],
+      "reward": 0.0,
+      "energy": 1068.2,
+      "ether_harvested": 23,
+      "structures_built": 18,
+      "cells_morphed": 20,
+      "steps_walked": 3748,
+      "confidence": 1.0,
+      "friction": 0.0002,
+      "coherence": 0.361,
+      "anatomy": [
+        {
+          "name": "head_brain",
+          "type": "cognition",
+          "offset": [
+            0.0,
+            0.0,
+            0.75
+          ],
+          "mastery": 1.0,
+          "status": "Inward Conf: 1.00"
+        },
+        {
+          "name": "left_eye",
+          "type": "vision",
+          "offset": [
+            0.15,
+            0.1,
+            0.78
+          ],
+          "mastery": 0.1,
+          "status": "Perceiving Alpha (7.2m)"
+        },
+        {
+          "name": "right_eye",
+          "type": "vision",
+          "offset": [
+            0.15,
+            -0.1,
+            0.78
+          ],
+          "mastery": 0.1,
+          "status": "Perceiving Alpha (7.2m)"
+        },
+        {
+          "name": "left_ear",
+          "type": "acoustic",
+          "offset": [
+            0.0,
+            0.22,
+            0.75
+          ],
+          "mastery": 1.0,
+          "status": "Acoustic Hum (12.2m)"
+        },
+        {
+          "name": "right_ear",
+          "type": "acoustic",
+          "offset": [
+            0.0,
+            -0.22,
+            0.75
+          ],
+          "mastery": 1.0,
+          "status": "Acoustic Hum (12.2m)"
+        },
+        {
+          "name": "torso_core",
+          "type": "metabolic",
+          "offset": [
+            0.0,
+            0.0,
+            0.2
+          ],
+          "mastery": 1.0,
+          "status": "Solar Intake: 54 mW"
+        },
+        {
+          "name": "left_arm",
+          "type": "manipulator",
+          "offset": [
+            0.1,
+            0.4,
+            0.2
+          ],
+          "mastery": 1.0,
+          "status": "Carrying Matter in Hands"
+        },
+        {
+          "name": "right_arm",
+          "type": "manipulator",
+          "offset": [
+            0.1,
+            -0.4,
+            0.2
+          ],
+          "mastery": 1.0,
+          "status": "Carrying Matter in Hands"
+        },
+        {
+          "name": "left_leg",
+          "type": "locomotive",
+          "offset": [
+            0.0,
+            0.2,
+            -0.6
+          ],
+          "mastery": 1.0,
+          "status": "Stride (2.21 m/s)"
+        },
+        {
+          "name": "right_leg",
+          "type": "locomotive",
+          "offset": [
+            0.0,
+            -0.2,
+            -0.6
+          ],
+          "mastery": 1.0,
+          "status": "Stride (2.21 m/s)"
+        },
+        {
+          "name": "aero_wings",
+          "type": "glider",
+          "offset": [
+            0.0,
+            0.0,
+            0.3
+          ],
+          "mastery": 0.1,
+          "status": "calibrating"
+        },
+        {
+          "name": "resonance_crown",
+          "type": "hyperspectral",
+          "offset": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "mastery": 0.1,
+          "status": "calibrating"
+        }
+      ],
+      "visual_rays": [
+        [
+          9.99,
+          11.36,
+          2.71
+        ],
+        [
+          11.48,
+          11.28,
+          2.71
+        ],
+        [
+          12.88,
+          11.78,
+          2.71
+        ],
+        [
+          13.98,
+          12.77,
+          2.71
+        ],
+        [
+          13.01,
+          14.52,
+          2.71
+        ],
+        [
+          14.69,
+          15.6,
+          2.71
+        ],
+        [
+          12.77,
+          16.15,
+          2.71
+        ],
+        [
+          12.21,
+          16.77,
+          2.71
+        ]
+      ],
+      "enn_metrics": {
+        "neurons_born_total": 176,
+        "synapses_active": 1370,
+        "synapses_pruned_total": 0,
+        "aspiration_level": 0.568,
+        "starvation_stress": 0.0,
+        "meta_learning_rate": 0.3935,
+        "active_basin": "Exploration Superposition",
+        "trait_pulls": {
+          "affirm": 0.121,
+          "inquire": 0.43,
+          "caution": 0.133,
+          "synthesize": 0.264,
+          "self_grounded": 0.461,
+          "self_ignorance": 0.147,
+          "self_conflict": 0.117,
+          "self_identity": 0.288
+        }
+      }
+    }
+  ],
+  "organism": {
+    "id": "Alpha",
+    "pos": [
+      13.94,
+      8.7,
+      2.42
+    ],
+    "velocity": [
+      -1.66,
+      -1.5,
+      0.0
+    ],
+    "yaw": 3.877,
+    "pitch": 0.524,
+    "gait_phase": 4.04,
+    "is_grounded": true,
+    "outcome": "walking",
+    "curiosity_focus": "Curious: Foraging Resonant Ether Orb (8.2m)",
+    "morphed_powers": [
+      "resonance_crown",
+      "aero_wings",
+      "tractor_hands",
+      "matter_alchemy",
+      "quantum_dash",
+      "solar_core",
+      "kinetic_shield",
+      "flora_bloom",
+      "terra_sculpt"
+    ],
+    "reward": 0.0,
+    "energy": 15184.0,
+    "ether_harvested": 435,
+    "structures_built": 291,
+    "cells_morphed": 20,
+    "steps_walked": 3736,
+    "confidence": 0.997,
+    "friction": 0.0005,
+    "coherence": 0.378,
+    "anatomy": [
+      {
+        "name": "head_brain",
+        "type": "cognition",
+        "offset": [
+          0.0,
+          0.0,
+          0.75
+        ],
+        "mastery": 1.0,
+        "status": "Inward Conf: 1.00"
+      },
+      {
+        "name": "left_eye",
+        "type": "vision",
+        "offset": [
+          0.15,
+          0.1,
+          0.78
+        ],
+        "mastery": 0.1,
+        "status": "Perceiving Beta (1.6m)"
+      },
+      {
+        "name": "right_eye",
+        "type": "vision",
+        "offset": [
+          0.15,
+          -0.1,
+          0.78
+        ],
+        "mastery": 0.1,
+        "status": "Perceiving Beta (1.6m)"
+      },
+      {
+        "name": "left_ear",
+        "type": "acoustic",
+        "offset": [
+          0.0,
+          0.22,
+          0.75
+        ],
+        "mastery": 1.0,
+        "status": "Acoustic Hum (8.2m)"
+      },
+      {
+        "name": "right_ear",
+        "type": "acoustic",
+        "offset": [
+          0.0,
+          -0.22,
+          0.75
+        ],
+        "mastery": 1.0,
+        "status": "Acoustic Hum (8.2m)"
+      },
+      {
+        "name": "torso_core",
+        "type": "metabolic",
+        "offset": [
+          0.0,
+          0.0,
+          0.2
+        ],
+        "mastery": 1.0,
+        "status": "Solar Intake: 54 mW"
+      },
+      {
+        "name": "left_arm",
+        "type": "manipulator",
+        "offset": [
+          0.1,
+          0.4,
+          0.2
+        ],
+        "mastery": 1.0,
+        "status": "Carrying Matter in Hands"
+      },
+      {
+        "name": "right_arm",
+        "type": "manipulator",
+        "offset": [
+          0.1,
+          -0.4,
+          0.2
+        ],
+        "mastery": 1.0,
+        "status": "Carrying Matter in Hands"
+      },
+      {
+        "name": "left_leg",
+        "type": "locomotive",
+        "offset": [
+          0.0,
+          0.2,
+          -0.6
+        ],
+        "mastery": 1.0,
+        "status": "Stride (2.24 m/s)"
+      },
+      {
+        "name": "right_leg",
+        "type": "locomotive",
+        "offset": [
+          0.0,
+          -0.2,
+          -0.6
+        ],
+        "mastery": 1.0,
+        "status": "Stride (2.24 m/s)"
+      }
+    ],
+    "visual_rays": [
+      [
+        8.84,
+        4.08,
+        3.17
+      ],
+      [
+        11.03,
+        2.45,
+        3.17
+      ],
+      [
+        13.68,
+        1.78,
+        3.17
+      ],
+      [
+        14.2,
+        8.3,
+        3.17
+      ],
+      [
+        18.73,
+        3.59,
+        3.17
+      ],
+      [
+        20.35,
+        5.78,
+        3.17
+      ],
+      [
+        16.18,
+        8.67,
+        3.17
+      ],
+      [
+        20.62,
+        11.13,
+        3.17
+      ]
+    ],
+    "enn_metrics": {
+      "neurons_born_total": 178,
+      "synapses_active": 1381,
+      "synapses_pruned_total": 0,
+      "aspiration_level": 0.565,
+      "starvation_stress": 0.0,
+      "meta_learning_rate": 0.3897,
+      "active_basin": "Exploration Superposition",
+      "trait_pulls": {
+        "affirm": 0.129,
+        "inquire": 0.481,
+        "caution": 0.122,
+        "synthesize": 0.261,
+        "self_grounded": 0.408,
+        "self_ignorance": 0.154,
+        "self_conflict": 0.104,
+        "self_identity": 0.29
+      }
+    }
+  },
+  "cells": [
+    {
+      "id": 1,
+      "pos": [
+        14.0,
+        14.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 2,
+      "pos": [
+        14.0,
+        14.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 3,
+      "pos": [
+        14.0,
+        14.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 4,
+      "pos": [
+        14.0,
+        14.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 5,
+      "pos": [
+        14.0,
+        15.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 6,
+      "pos": [
+        14.0,
+        15.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 7,
+      "pos": [
+        14.0,
+        15.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 8,
+      "pos": [
+        14.0,
+        15.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 9,
+      "pos": [
+        14.0,
+        16.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 10,
+      "pos": [
+        14.0,
+        16.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 11,
+      "pos": [
+        14.0,
+        16.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 12,
+      "pos": [
+        14.0,
+        16.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 13,
+      "pos": [
+        14.0,
+        17.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 14,
+      "pos": [
+        14.0,
+        17.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 15,
+      "pos": [
+        14.0,
+        17.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 16,
+      "pos": [
+        14.0,
+        17.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 17,
+      "pos": [
+        14.0,
+        18.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 18,
+      "pos": [
+        14.0,
+        18.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 19,
+      "pos": [
+        14.0,
+        18.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 20,
+      "pos": [
+        14.0,
+        18.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 21,
+      "pos": [
+        15.0,
+        14.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 22,
+      "pos": [
+        15.0,
+        14.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 23,
+      "pos": [
+        15.0,
+        14.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 24,
+      "pos": [
+        15.0,
+        14.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 25,
+      "pos": [
+        15.0,
+        15.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 26,
+      "pos": [
+        15.0,
+        16.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 27,
+      "pos": [
+        15.0,
+        17.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 28,
+      "pos": [
+        15.0,
+        18.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 29,
+      "pos": [
+        15.0,
+        18.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 30,
+      "pos": [
+        15.0,
+        18.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 31,
+      "pos": [
+        15.0,
+        18.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 32,
+      "pos": [
+        16.0,
+        14.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 33,
+      "pos": [
+        16.0,
+        14.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 34,
+      "pos": [
+        16.0,
+        14.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 35,
+      "pos": [
+        16.0,
+        14.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 36,
+      "pos": [
+        16.0,
+        15.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 37,
+      "pos": [
+        16.0,
+        16.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 38,
+      "pos": [
+        16.0,
+        17.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 39,
+      "pos": [
+        16.0,
+        18.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 40,
+      "pos": [
+        17.0,
+        14.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 41,
+      "pos": [
+        17.0,
+        14.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 42,
+      "pos": [
+        17.0,
+        14.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 43,
+      "pos": [
+        17.0,
+        14.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 44,
+      "pos": [
+        17.0,
+        15.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 45,
+      "pos": [
+        17.0,
+        16.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 46,
+      "pos": [
+        17.0,
+        17.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 47,
+      "pos": [
+        17.0,
+        18.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 48,
+      "pos": [
+        17.0,
+        18.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 49,
+      "pos": [
+        17.0,
+        18.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 50,
+      "pos": [
+        17.0,
+        18.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 51,
+      "pos": [
+        18.0,
+        14.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 52,
+      "pos": [
+        18.0,
+        14.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 53,
+      "pos": [
+        18.0,
+        14.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 54,
+      "pos": [
+        18.0,
+        14.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 55,
+      "pos": [
+        18.0,
+        15.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 56,
+      "pos": [
+        18.0,
+        15.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 57,
+      "pos": [
+        18.0,
+        15.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 58,
+      "pos": [
+        18.0,
+        15.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 59,
+      "pos": [
+        18.0,
+        16.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 60,
+      "pos": [
+        18.0,
+        16.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 61,
+      "pos": [
+        18.0,
+        16.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 62,
+      "pos": [
+        18.0,
+        16.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 63,
+      "pos": [
+        18.0,
+        17.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 64,
+      "pos": [
+        18.0,
+        17.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 65,
+      "pos": [
+        18.0,
+        17.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 66,
+      "pos": [
+        18.0,
+        17.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 67,
+      "pos": [
+        18.0,
+        18.0,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 68,
+      "pos": [
+        18.0,
+        18.0,
+        2.99
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 69,
+      "pos": [
+        18.0,
+        18.0,
+        3.89
+      ],
+      "type": "matter_wall",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 70,
+      "pos": [
+        18.0,
+        18.0,
+        4.89
+      ],
+      "type": "matter_wood",
+      "energy": 10.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 71,
+      "pos": [
+        7.87,
+        9.97,
+        2.52
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 72,
+      "pos": [
+        7.26,
+        9.49,
+        2.36
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 73,
+      "pos": [
+        6.63,
+        9.01,
+        2.24
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 74,
+      "pos": [
+        6.25,
+        8.31,
+        2.18
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 75,
+      "pos": [
+        22.62,
+        9.27,
+        1.83
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 76,
+      "pos": [
+        21.74,
+        8.9,
+        1.93
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 77,
+      "pos": [
+        23.43,
+        9.18,
+        1.74
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 78,
+      "pos": [
+        24.27,
+        9.02,
+        1.65
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 79,
+      "pos": [
+        24.72,
+        20.81,
+        3.09
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 80,
+      "pos": [
+        24.68,
+        21.69,
+        3.2
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 81,
+      "pos": [
+        24.92,
+        22.54,
+        3.26
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 82,
+      "pos": [
+        25.12,
+        23.39,
+        3.29
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 83,
+      "pos": [
+        7.01,
+        18.36,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 84,
+      "pos": [
+        7.31,
+        19.2,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 85,
+      "pos": [
+        8.06,
+        19.78,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 86,
+      "pos": [
+        8.55,
+        20.48,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 87,
+      "pos": [
+        10.34,
+        19.97,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 88,
+      "pos": [
+        12.06,
+        24.77,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 89,
+      "pos": [
+        12.56,
+        24.32,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 90,
+      "pos": [
+        11.4,
+        25.03,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 91,
+      "pos": [
+        25.11,
+        12.68,
+        1.84
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 92,
+      "pos": [
+        24.81,
+        13.39,
+        1.87
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 93,
+      "pos": [
+        25.57,
+        12.21,
+        1.78
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 94,
+      "pos": [
+        24.32,
+        13.99,
+        1.88
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 126,
+      "pos": [
+        10.81,
+        10.81,
+        2.94
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 128,
+      "pos": [
+        11.3,
+        23.29,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 131,
+      "pos": [
+        19.74,
+        19.66,
+        2.81
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 133,
+      "pos": [
+        19.18,
+        6.77,
+        2.48
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 136,
+      "pos": [
+        14.03,
+        24.73,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 138,
+      "pos": [
+        10.27,
+        7.61,
+        2.51
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 141,
+      "pos": [
+        24.02,
+        19.56,
+        3.19
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 143,
+      "pos": [
+        12.12,
+        15.71,
+        2.43
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 146,
+      "pos": [
+        25.97,
+        6.33,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 148,
+      "pos": [
+        16.21,
+        25.6,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 151,
+      "pos": [
+        15.9,
+        26.43,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 153,
+      "pos": [
+        14.05,
+        20.91,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 156,
+      "pos": [
+        5.94,
+        16.66,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 158,
+      "pos": [
+        8.15,
+        14.54,
+        2.23
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 161,
+      "pos": [
+        13.72,
+        9.06,
+        2.72
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 163,
+      "pos": [
+        24.89,
+        13.96,
+        1.89
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 166,
+      "pos": [
+        8.38,
+        24.82,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 168,
+      "pos": [
+        14.54,
+        7.54,
+        2.69
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 171,
+      "pos": [
+        8.22,
+        8.21,
+        2.52
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 173,
+      "pos": [
+        24.46,
+        20.16,
+        2.97
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 176,
+      "pos": [
+        22.29,
+        15.58,
+        2.41
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 178,
+      "pos": [
+        10.67,
+        7.53,
+        2.74
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 181,
+      "pos": [
+        19.69,
+        18.47,
+        2.41
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 183,
+      "pos": [
+        21.29,
+        15.28,
+        2.31
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 186,
+      "pos": [
+        7.06,
+        7.73,
+        2.47
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 188,
+      "pos": [
+        24.42,
+        17.22,
+        2.33
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 191,
+      "pos": [
+        23.95,
+        10.74,
+        1.56
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 193,
+      "pos": [
+        15.98,
+        13.99,
+        2.87
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 196,
+      "pos": [
+        13.12,
+        10.01,
+        2.96
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 198,
+      "pos": [
+        15.05,
+        10.44,
+        2.75
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 201,
+      "pos": [
+        18.86,
+        24.34,
+        1.87
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 203,
+      "pos": [
+        17.92,
+        23.51,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 206,
+      "pos": [
+        16.71,
+        12.94,
+        2.58
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 208,
+      "pos": [
+        16.8,
+        14.28,
+        2.46
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 211,
+      "pos": [
+        14.1,
+        14.1,
+        2.93
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 213,
+      "pos": [
+        12.94,
+        11.18,
+        3.03
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 216,
+      "pos": [
+        16.25,
+        21.12,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 218,
+      "pos": [
+        16.49,
+        11.73,
+        2.86
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 221,
+      "pos": [
+        18.19,
+        10.72,
+        2.46
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 223,
+      "pos": [
+        11.55,
+        23.67,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 226,
+      "pos": [
+        25.21,
+        12.51,
+        1.72
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 228,
+      "pos": [
+        16.26,
+        11.62,
+        2.64
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 230,
+      "pos": [
+        14.26,
+        15.51,
+        2.79
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 233,
+      "pos": [
+        13.68,
+        25.76,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 235,
+      "pos": [
+        20.63,
+        13.26,
+        2.1
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 238,
+      "pos": [
+        23.93,
+        10.55,
+        1.6
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 240,
+      "pos": [
+        11.19,
+        6.38,
+        2.52
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 243,
+      "pos": [
+        19.31,
+        22.99,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 245,
+      "pos": [
+        19.32,
+        20.35,
+        2.8
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 248,
+      "pos": [
+        20.96,
+        25.12,
+        2.84
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 250,
+      "pos": [
+        20.5,
+        24.43,
+        2.89
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 253,
+      "pos": [
+        20.96,
+        25.97,
+        2.57
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 255,
+      "pos": [
+        14.45,
+        14.74,
+        2.84
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 258,
+      "pos": [
+        4.66,
+        9.26,
+        1.7
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 260,
+      "pos": [
+        11.28,
+        20.84,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 263,
+      "pos": [
+        10.98,
+        19.6,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 265,
+      "pos": [
+        19.32,
+        24.91,
+        2.05
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 268,
+      "pos": [
+        15.96,
+        22.31,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 270,
+      "pos": [
+        5.76,
+        23.17,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 273,
+      "pos": [
+        10.22,
+        24.99,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 275,
+      "pos": [
+        14.12,
+        14.16,
+        2.67
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 278,
+      "pos": [
+        17.75,
+        27.0,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 280,
+      "pos": [
+        11.59,
+        9.5,
+        3.0
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 283,
+      "pos": [
+        11.82,
+        6.82,
+        2.65
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 285,
+      "pos": [
+        17.74,
+        18.54,
+        2.24
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 288,
+      "pos": [
+        23.72,
+        13.86,
+        2.12
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 290,
+      "pos": [
+        19.98,
+        16.55,
+        2.34
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 293,
+      "pos": [
+        5.83,
+        16.49,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 295,
+      "pos": [
+        6.31,
+        12.66,
+        1.9
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 298,
+      "pos": [
+        21.57,
+        21.59,
+        2.89
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 300,
+      "pos": [
+        17.51,
+        6.75,
+        2.57
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 303,
+      "pos": [
+        14.54,
+        7.84,
+        2.68
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 305,
+      "pos": [
+        13.21,
+        7.28,
+        2.61
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 308,
+      "pos": [
+        16.68,
+        21.43,
+        2.09
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 310,
+      "pos": [
+        22.41,
+        12.58,
+        1.59
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 313,
+      "pos": [
+        21.31,
+        18.11,
+        2.42
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 315,
+      "pos": [
+        10.8,
+        27.92,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 318,
+      "pos": [
+        19.49,
+        15.76,
+        2.15
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 320,
+      "pos": [
+        12.33,
+        25.63,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 323,
+      "pos": [
+        17.05,
+        22.34,
+        1.85
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 325,
+      "pos": [
+        6.03,
+        7.63,
+        2.35
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 328,
+      "pos": [
+        20.68,
+        10.55,
+        1.87
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 330,
+      "pos": [
+        20.9,
+        8.89,
+        1.82
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 333,
+      "pos": [
+        13.63,
+        17.29,
+        2.26
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 335,
+      "pos": [
+        10.86,
+        21.45,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 338,
+      "pos": [
+        17.63,
+        14.41,
+        2.38
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 340,
+      "pos": [
+        17.39,
+        11.09,
+        2.25
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 343,
+      "pos": [
+        14.78,
+        19.08,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 345,
+      "pos": [
+        19.56,
+        21.58,
+        2.4
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 348,
+      "pos": [
+        18.45,
+        25.58,
+        2.28
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 350,
+      "pos": [
+        22.45,
+        25.81,
+        2.75
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 353,
+      "pos": [
+        25.57,
+        26.2,
+        2.82
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 355,
+      "pos": [
+        10.79,
+        5.56,
+        2.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 358,
+      "pos": [
+        14.4,
+        8.07,
+        2.61
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 360,
+      "pos": [
+        19.84,
+        11.92,
+        1.98
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 363,
+      "pos": [
+        19.47,
+        9.53,
+        2.36
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 365,
+      "pos": [
+        26.52,
+        8.87,
+        1.62
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 368,
+      "pos": [
+        19.94,
+        24.66,
+        2.71
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 370,
+      "pos": [
+        8.92,
+        13.32,
+        2.07
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 373,
+      "pos": [
+        16.56,
+        9.56,
+        2.44
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 375,
+      "pos": [
+        10.19,
+        14.84,
+        2.53
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 378,
+      "pos": [
+        15.73,
+        16.87,
+        2.57
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 380,
+      "pos": [
+        11.16,
+        21.0,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 383,
+      "pos": [
+        21.84,
+        14.11,
+        1.91
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 385,
+      "pos": [
+        18.6,
+        13.01,
+        2.54
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 388,
+      "pos": [
+        16.52,
+        19.56,
+        2.22
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 390,
+      "pos": [
+        24.91,
+        19.01,
+        3.07
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 393,
+      "pos": [
+        12.6,
+        24.45,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 395,
+      "pos": [
+        24.27,
+        9.0,
+        1.54
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 398,
+      "pos": [
+        12.27,
+        11.42,
+        3.08
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 400,
+      "pos": [
+        11.72,
+        10.51,
+        3.07
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 403,
+      "pos": [
+        15.2,
+        25.9,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 405,
+      "pos": [
+        24.43,
+        14.11,
+        1.88
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 408,
+      "pos": [
+        25.46,
+        21.46,
+        3.18
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 410,
+      "pos": [
+        15.85,
+        14.95,
+        2.49
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 413,
+      "pos": [
+        9.32,
+        12.27,
+        2.64
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 415,
+      "pos": [
+        9.63,
+        25.07,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 418,
+      "pos": [
+        15.09,
+        7.72,
+        2.79
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 420,
+      "pos": [
+        13.43,
+        12.41,
+        2.98
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 423,
+      "pos": [
+        10.15,
+        10.29,
+        2.71
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 425,
+      "pos": [
+        10.11,
+        21.68,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 428,
+      "pos": [
+        19.33,
+        16.9,
+        2.39
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 430,
+      "pos": [
+        24.41,
+        23.06,
+        3.26
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 433,
+      "pos": [
+        19.56,
+        20.43,
+        2.42
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 435,
+      "pos": [
+        14.13,
+        22.78,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 438,
+      "pos": [
+        17.1,
+        12.87,
+        2.37
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 440,
+      "pos": [
+        5.99,
+        24.26,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 443,
+      "pos": [
+        20.06,
+        17.33,
+        2.47
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 445,
+      "pos": [
+        5.92,
+        22.51,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 448,
+      "pos": [
+        15.24,
+        20.84,
+        1.57
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 450,
+      "pos": [
+        12.39,
+        18.82,
+        1.6
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 453,
+      "pos": [
+        8.11,
+        22.51,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 455,
+      "pos": [
+        14.88,
+        16.58,
+        2.45
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 458,
+      "pos": [
+        25.86,
+        6.74,
+        1.52
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 460,
+      "pos": [
+        17.0,
+        22.13,
+        2.18
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 463,
+      "pos": [
+        17.9,
+        22.19,
+        2.36
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 465,
+      "pos": [
+        7.73,
+        19.41,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 468,
+      "pos": [
+        16.12,
+        22.36,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 470,
+      "pos": [
+        20.12,
+        22.92,
+        2.84
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 473,
+      "pos": [
+        15.84,
+        18.12,
+        1.95
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 475,
+      "pos": [
+        18.3,
+        5.98,
+        2.54
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 478,
+      "pos": [
+        10.91,
+        6.71,
+        2.62
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 480,
+      "pos": [
+        21.29,
+        18.54,
+        2.56
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 483,
+      "pos": [
+        21.89,
+        6.98,
+        1.96
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 485,
+      "pos": [
+        10.86,
+        25.93,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 488,
+      "pos": [
+        21.19,
+        20.63,
+        2.8
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 490,
+      "pos": [
+        9.52,
+        6.73,
+        2.55
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 493,
+      "pos": [
+        26.76,
+        20.79,
+        3.12
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 495,
+      "pos": [
+        16.4,
+        15.38,
+        2.61
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 498,
+      "pos": [
+        9.66,
+        16.75,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 500,
+      "pos": [
+        11.64,
+        23.86,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 503,
+      "pos": [
+        26.28,
+        25.67,
+        3.09
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 505,
+      "pos": [
+        9.63,
+        18.89,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 508,
+      "pos": [
+        11.31,
+        11.31,
+        2.9
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 510,
+      "pos": [
+        14.85,
+        20.82,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 513,
+      "pos": [
+        9.84,
+        16.66,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 515,
+      "pos": [
+        12.51,
+        16.6,
+        2.57
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 518,
+      "pos": [
+        21.44,
+        18.28,
+        2.55
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 520,
+      "pos": [
+        8.45,
+        6.33,
+        2.52
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 523,
+      "pos": [
+        15.69,
+        19.85,
+        1.96
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 525,
+      "pos": [
+        8.32,
+        20.05,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 528,
+      "pos": [
+        22.51,
+        19.74,
+        2.9
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 530,
+      "pos": [
+        15.32,
+        7.96,
+        2.67
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 533,
+      "pos": [
+        10.52,
+        9.02,
+        2.59
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 535,
+      "pos": [
+        21.97,
+        23.83,
+        3.2
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 538,
+      "pos": [
+        12.91,
+        19.38,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 540,
+      "pos": [
+        24.05,
+        9.57,
+        1.56
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 543,
+      "pos": [
+        9.65,
+        14.68,
+        2.06
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 545,
+      "pos": [
+        14.23,
+        12.95,
+        2.86
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 548,
+      "pos": [
+        18.3,
+        17.21,
+        2.3
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 550,
+      "pos": [
+        22.7,
+        14.45,
+        2.18
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 553,
+      "pos": [
+        8.93,
+        26.99,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 555,
+      "pos": [
+        18.47,
+        22.82,
+        1.71
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 558,
+      "pos": [
+        5.31,
+        5.97,
+        2.54
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 560,
+      "pos": [
+        5.94,
+        17.76,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 563,
+      "pos": [
+        18.06,
+        6.45,
+        2.38
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 565,
+      "pos": [
+        9.09,
+        9.46,
+        2.72
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 568,
+      "pos": [
+        15.75,
+        17.51,
+        2.44
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 570,
+      "pos": [
+        25.27,
+        24.4,
+        3.24
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 573,
+      "pos": [
+        16.59,
+        18.12,
+        1.9
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 575,
+      "pos": [
+        23.28,
+        22.13,
+        3.16
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 578,
+      "pos": [
+        19.5,
+        25.58,
+        2.35
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 580,
+      "pos": [
+        18.21,
+        24.82,
+        2.41
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 583,
+      "pos": [
+        21.7,
+        9.55,
+        1.95
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 585,
+      "pos": [
+        20.57,
+        23.08,
+        3.07
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 588,
+      "pos": [
+        19.77,
+        18.13,
+        2.51
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 590,
+      "pos": [
+        6.14,
+        10.36,
+        1.64
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 593,
+      "pos": [
+        22.13,
+        22.59,
+        3.01
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 595,
+      "pos": [
+        9.72,
+        14.42,
+        2.67
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 598,
+      "pos": [
+        17.51,
+        8.29,
+        2.62
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 600,
+      "pos": [
+        16.22,
+        25.11,
+        1.57
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 603,
+      "pos": [
+        9.29,
+        25.33,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 605,
+      "pos": [
+        16.37,
+        8.52,
+        2.73
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 608,
+      "pos": [
+        15.55,
+        10.68,
+        3.0
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 610,
+      "pos": [
+        14.3,
+        24.97,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 613,
+      "pos": [
+        12.28,
+        12.29,
+        2.89
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 615,
+      "pos": [
+        28.04,
+        9.02,
+        2.02
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 618,
+      "pos": [
+        12.75,
+        22.65,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 620,
+      "pos": [
+        7.15,
+        7.6,
+        2.54
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 623,
+      "pos": [
+        18.94,
+        10.6,
+        1.97
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 625,
+      "pos": [
+        12.41,
+        9.56,
+        2.87
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 628,
+      "pos": [
+        21.36,
+        15.19,
+        1.91
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 630,
+      "pos": [
+        23.88,
+        21.79,
+        3.19
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 633,
+      "pos": [
+        12.65,
+        11.5,
+        2.97
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 635,
+      "pos": [
+        11.98,
+        24.38,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 638,
+      "pos": [
+        11.36,
+        15.36,
+        1.95
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 640,
+      "pos": [
+        20.63,
+        10.98,
+        2.02
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 643,
+      "pos": [
+        12.22,
+        21.33,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 645,
+      "pos": [
+        10.05,
+        22.92,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 647,
+      "pos": [
+        7.44,
+        12.83,
+        1.97
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 650,
+      "pos": [
+        8.35,
+        13.73,
+        2.14
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 652,
+      "pos": [
+        9.49,
+        18.96,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 655,
+      "pos": [
+        10.25,
+        21.62,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 657,
+      "pos": [
+        13.25,
+        20.85,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 660,
+      "pos": [
+        13.62,
+        6.22,
+        2.45
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 662,
+      "pos": [
+        23.09,
+        15.68,
+        2.42
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 665,
+      "pos": [
+        19.5,
+        11.76,
+        2.03
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 667,
+      "pos": [
+        16.36,
+        16.29,
+        2.57
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 670,
+      "pos": [
+        25.72,
+        12.62,
+        1.81
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 672,
+      "pos": [
+        12.35,
+        25.64,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 675,
+      "pos": [
+        23.88,
+        6.05,
+        1.89
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 677,
+      "pos": [
+        16.03,
+        14.32,
+        2.83
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 680,
+      "pos": [
+        22.38,
+        8.79,
+        1.62
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 682,
+      "pos": [
+        10.65,
+        13.62,
+        2.31
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 685,
+      "pos": [
+        15.24,
+        3.77,
+        2.58
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 687,
+      "pos": [
+        6.97,
+        17.83,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 690,
+      "pos": [
+        22.29,
+        13.9,
+        1.79
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 692,
+      "pos": [
+        23.64,
+        25.29,
+        3.17
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 695,
+      "pos": [
+        18.33,
+        19.24,
+        2.34
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 697,
+      "pos": [
+        13.36,
+        7.15,
+        2.53
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 700,
+      "pos": [
+        19.8,
+        11.94,
+        1.9
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 702,
+      "pos": [
+        25.16,
+        10.8,
+        1.62
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 705,
+      "pos": [
+        11.72,
+        16.18,
+        1.67
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 707,
+      "pos": [
+        26.26,
+        22.27,
+        3.27
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 710,
+      "pos": [
+        14.06,
+        19.92,
+        1.6
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 712,
+      "pos": [
+        25.19,
+        9.81,
+        1.56
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 715,
+      "pos": [
+        4.92,
+        13.46,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 717,
+      "pos": [
+        20.67,
+        12.42,
+        2.06
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 720,
+      "pos": [
+        24.69,
+        7.65,
+        1.55
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 722,
+      "pos": [
+        6.21,
+        14.51,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 725,
+      "pos": [
+        19.15,
+        17.26,
+        2.44
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 727,
+      "pos": [
+        19.87,
+        11.92,
+        2.27
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 730,
+      "pos": [
+        9.11,
+        14.84,
+        2.24
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 732,
+      "pos": [
+        14.57,
+        7.82,
+        2.8
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 735,
+      "pos": [
+        22.89,
+        11.15,
+        1.66
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 737,
+      "pos": [
+        5.12,
+        15.63,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 740,
+      "pos": [
+        9.86,
+        11.68,
+        2.36
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 743,
+      "pos": [
+        18.57,
+        11.3,
+        2.29
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 745,
+      "pos": [
+        18.63,
+        12.84,
+        2.42
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 747,
+      "pos": [
+        19.34,
+        12.03,
+        2.26
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 750,
+      "pos": [
+        18.84,
+        20.24,
+        2.32
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 752,
+      "pos": [
+        8.11,
+        25.04,
+        1.5
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 755,
+      "pos": [
+        8.99,
+        9.84,
+        2.57
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 757,
+      "pos": [
+        21.19,
+        11.9,
+        1.93
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 759,
+      "pos": [
+        22.72,
+        12.49,
+        1.7
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 762,
+      "pos": [
+        13.68,
+        5.61,
+        2.52
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 764,
+      "pos": [
+        11.99,
+        6.42,
+        2.49
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 767,
+      "pos": [
+        14.79,
+        24.95,
+        1.5
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 769,
+      "pos": [
+        11.09,
+        22.47,
+        1.5
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 772,
+      "pos": [
+        13.48,
+        9.2,
+        3.0
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 774,
+      "pos": [
+        17.85,
+        24.88,
+        2.18
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 776,
+      "pos": [
+        17.13,
+        13.62,
+        2.66
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 779,
+      "pos": [
+        10.11,
+        23.92,
+        1.5
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 781,
+      "pos": [
+        15.19,
+        19.55,
+        1.59
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 784,
+      "pos": [
+        16.46,
+        19.52,
+        2.21
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 786,
+      "pos": [
+        20.29,
+        16.89,
+        2.24
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 789,
+      "pos": [
+        22.61,
+        15.13,
+        1.83
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 791,
+      "pos": [
+        8.48,
+        15.84,
+        1.86
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 793,
+      "pos": [
+        17.84,
+        20.45,
+        1.8
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 796,
+      "pos": [
+        22.69,
+        15.08,
+        1.88
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 798,
+      "pos": [
+        18.76,
+        21.58,
+        2.46
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 801,
+      "pos": [
+        24.56,
+        4.94,
+        2.11
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 803,
+      "pos": [
+        21.14,
+        13.53,
+        1.9
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 805,
+      "pos": [
+        19.48,
+        20.3,
+        2.49
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 808,
+      "pos": [
+        19.77,
+        8.49,
+        2.15
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 810,
+      "pos": [
+        6.27,
+        18.19,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 813,
+      "pos": [
+        15.19,
+        11.83,
+        3.01
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 815,
+      "pos": [
+        15.5,
+        20.24,
+        1.89
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 818,
+      "pos": [
+        11.03,
+        18.16,
+        1.5
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 820,
+      "pos": [
+        27.29,
+        17.25,
+        2.78
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 822,
+      "pos": [
+        6.88,
+        19.51,
+        1.5
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 825,
+      "pos": [
+        11.8,
+        5.29,
+        2.42
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 827,
+      "pos": [
+        20.04,
+        20.66,
+        1.83
+      ],
+      "type": "matter_stone",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 830,
+      "pos": [
+        9.31,
+        22.63,
+        1.5
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 832,
+      "pos": [
+        22.82,
+        5.32,
+        1.24
+      ],
+      "type": "matter_stone",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 835,
+      "pos": [
+        13.33,
+        14.43,
+        2.94
+      ],
+      "type": "matter_wall",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 837,
+      "pos": [
+        23.99,
+        16.06,
+        1.42
+      ],
+      "type": "matter_stone",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 839,
+      "pos": [
+        16.27,
+        11.91,
+        2.91
+      ],
+      "type": "matter_bridge",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    },
+    {
+      "id": 841,
+      "pos": [
+        7.95,
+        3.28,
+        3.99
+      ],
+      "type": "energy_ether",
+      "energy": 30.0,
+      "radius": 0.35,
+      "bonded": false
+    },
+    {
+      "id": 842,
+      "pos": [
+        27.95,
+        24.91,
+        2.06
+      ],
+      "type": "matter_stone",
+      "energy": 15.0,
+      "radius": 0.4,
+      "bonded": false
+    }
+  ]
+}

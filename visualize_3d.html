@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ENN 4D — Continuous 3D Self-Aware Organism Visualizer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #060913;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      overflow: hidden;
+      display: flex;
+      height: 100vh;
+    }
+    #viewport-container {
+      flex: 1;
+      position: relative;
+      background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+    }
+    #three-canvas { width: 100%; height: 100%; display: block; }
+
+    /* HUD Sidebar */
+    #hud-sidebar {
+      width: 420px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(16px);
+      border-left: 1px solid rgba(56, 189, 248, 0.2);
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      gap: 18px;
+      overflow-y: auto;
+      box-shadow: -8px 0 32px rgba(0,0,0,0.6);
+      z-index: 10;
+    }
+    .hud-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hud-subtitle { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; }
+
+    .card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(56, 189, 248, 0.15);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    .metric-label { color: #94a3b8; }
+    .metric-val { font-weight: 700; font-family: monospace; }
+
+    .bar-track {
+      width: 100%;
+      height: 7px;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.1s ease;
+    }
+    .fill-confidence { background: linear-gradient(90deg, #0284c7, #38bdf8); }
+    .fill-friction { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .fill-coherence { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
+    .fill-energy { background: linear-gradient(90deg, #10b981, #34d399); }
+
+    /* Overlay Controls */
+    #playback-bar {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 30px;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+    }
+    .btn {
+      background: #0284c7;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #38bdf8; transform: scale(1.05); }
+    input[type=range] {
+      width: 220px;
+      accent-color: #38bdf8;
+      cursor: pointer;
+    }
+
+    #legend {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <div id="viewport-container">
+    <canvas id="three-canvas"></canvas>
+
+    <div id="legend">
+      <div style="font-weight:700; color:#38bdf8; margin-bottom:4px;">3D MULTIMODAL UNIVERSE</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#38bdf8; box-shadow: 0 0 8px #38bdf8;"></div><span>Organism Body (Self)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#10b981; box-shadow: 0 0 8px #10b981;"></div><span>Acoustic Food Beacon (Goal)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f43f5e;"></div><span>Volumetric Barrier Partitions</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#818cf8;"></div><span>360° Visual Depth Raycast</span></div>
+    </div>
+
+    <div id="playback-bar">
+      <button id="btn-play" class="btn">Pause</button>
+      <input type="range" id="scrubber" min="0" max="499" value="0">
+      <span id="step-label" style="font-family:monospace; font-size:13px; font-weight:700; min-width:80px;">Step 0/500</span>
+      <button id="btn-speed" class="btn" style="background:#475569;">1x</button>
+    </div>
+  </div>
+
+  <div id="hud-sidebar">
+    <div>
+      <div class="hud-title">🧠 ENN 4D ORGANISM</div>
+      <div class="hud-subtitle">Inward Metacognitive Telemetry</div>
+    </div>
+
+    <!-- Metacognitive Inward State -->
+    <div class="card">
+      <div class="card-title">
+        <span>🪞 Metacognitive Mirror</span>
+        <span id="state-outcome" style="color:#10b981;">Gliding</span>
+      </div>
+      <div>
+        <div class="metric-row"><span class="metric-label">Inward Self-Confidence</span><span id="val-conf" class="metric-val" style="color:#38bdf8;">0.97</span></div>
+        <div class="bar-track"><div id="bar-conf" class="bar-fill fill-confidence" style="width: 97%;"></div></div>
+      </div>
+      <div>
+        <div class="metric-row"><span class="metric-label">Epistemic Friction (Turbulence)</span><span id="val-fric" class="metric-val" style="color:#f59e0b;">0.02</span></div>
+        <div class="bar-track"><div id="bar-fric" class="bar-fill fill-friction" style="width: 2%;"></div></div>
+      </div>
+      <div>
+        <div class="metric-row"><span class="metric-label">Body-World Phase Coherence</span><span id="val-cohere" class="metric-val" style="color:#ec4899;">0.85</span></div>
+        <div class="bar-track"><div id="bar-cohere" class="bar-fill fill-coherence" style="width: 85%;"></div></div>
+      </div>
+    </div>
+
+    <!-- Homeostatic Metabolism -->
+    <div class="card">
+      <div class="card-title">
+        <span>⚡ Homeostatic Metabolism</span>
+      </div>
+      <div>
+        <div class="metric-row"><span class="metric-label">Metabolic Energy Budget</span><span id="val-energy" class="metric-val" style="color:#34d399;">299.8</span></div>
+        <div class="bar-track"><div id="bar-energy" class="bar-fill fill-energy" style="width: 100%;"></div></div>
+      </div>
+      <div class="metric-row"><span class="metric-label">Starvation Stress Field</span><span id="val-stress" class="metric-val">0.00</span></div>
+      <div class="metric-row"><span class="metric-label">Goals Harvested</span><span id="val-goals" class="metric-val" style="color:#10b981;">0</span></div>
+      <div class="metric-row"><span class="metric-label">Barrier Collisions</span><span id="val-collisions" class="metric-val" style="color:#f43f5e;">0</span></div>
+    </div>
+
+    <!-- 3D Kinematics & Sensory Cortex -->
+    <div class="card">
+      <div class="card-title">
+        <span>🧭 3D Multimodal Cortex</span>
+      </div>
+      <div class="metric-row"><span class="metric-label">3D Coordinates (X, Y, Z)</span><span id="val-pos" class="metric-val">(2.0, 2.0, 1.5)</span></div>
+      <div class="metric-row"><span class="metric-label">Speed & Thrust</span><span id="val-speed" class="metric-val">0.10 m/s (100%)</span></div>
+      <div class="metric-row"><span class="metric-label">Orientation (Yaw / Pitch)</span><span id="val-orient" class="metric-val">0.0° / 0.0°</span></div>
+      <div class="metric-row"><span class="metric-label">Visual Proximity</span><span id="val-obs" class="metric-val">12.5 m</span></div>
+      <div class="metric-row"><span class="metric-label">Acoustic Pressure</span><span id="val-sound" class="metric-val">0.45 Pa</span></div>
+    </div>
+  </div>
+
+  <script>
+    let simData = null;
+    let currentIdx = 0;
+    let isPlaying = true;
+    let speedMult = 1;
+
+    // Three.js Setup
+    const canvas = document.getElementById('three-canvas');
+    const container = document.getElementById('viewport-container');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x060913, 0.025);
+
+    const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera.position.set(10, -18, 16);
+    camera.lookAt(10, 10, 2);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(10, 10, 2);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0x38bdf8, 0.35);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+    dirLight.position.set(10, 10, 20);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    // Floor Grid
+    const gridHelper = new THREE.GridHelper(24, 24, 0x38bdf8, 0x1e293b);
+    gridHelper.position.set(10, 10, 0);
+    gridHelper.rotation.x = Math.PI / 2;
+    scene.add(gridHelper);
+
+    // Agent Mesh
+    const agentGroup = new THREE.Group();
+    const agentGeo = new THREE.SphereGeometry(0.4, 24, 24);
+    const agentMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.6,
+      roughness: 0.2,
+      metalness: 0.8
+    });
+    const agentMesh = new THREE.Mesh(agentGeo, agentMat);
+    agentGroup.add(agentMesh);
+
+    // Heading Pointer
+    const ptrGeo = new THREE.ConeGeometry(0.18, 0.6, 16);
+    ptrGeo.rotateX(Math.PI / 2);
+    const ptrMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8 });
+    const ptrMesh = new THREE.Mesh(ptrGeo, ptrMat);
+    ptrMesh.position.set(0, 0.5, 0);
+    agentGroup.add(ptrMesh);
+    scene.add(agentGroup);
+
+    // Flight Trail
+    const maxTrailPts = 300;
+    const trailGeo = new THREE.BufferGeometry();
+    const trailPositions = new Float32Array(maxTrailPts * 3);
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+    const trailMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 });
+    const trailLine = new THREE.Line(trailGeo, trailMat);
+    scene.add(trailLine);
+
+    // Acoustic Goal Beacon
+    const beaconGroup = new THREE.Group();
+    const beaconGeo = new THREE.SphereGeometry(0.6, 24, 24);
+    const beaconMat = new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      emissive: 0x10b981,
+      emissiveIntensity: 0.8,
+      roughness: 0.1
+    });
+    const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
+    beaconGroup.add(beaconMesh);
+    scene.add(beaconGroup);
+
+    // Animated Sound Waves
+    const soundRings = [];
+    for (let r = 0; r < 4; r++) {
+      const ringGeo = new THREE.RingGeometry(0.8, 0.9, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      beaconGroup.add(ring);
+      soundRings.push(ring);
+    }
+
+    // Load Simulation JSON
+    fetch('simulation_3d.json')
+      .then(res => res.json())
+      .then(data => {
+        simData = data;
+        buildWorld(data.world);
+        document.getElementById('scrubber').max = data.trajectory.length - 1;
+      });
+
+    function buildWorld(world) {
+      if (world.beacons && world.beacons[0]) {
+        const bp = world.beacons[0].pos;
+        beaconGroup.position.set(bp[0], bp[1], bp[2]);
+      }
+
+      world.obstacles.forEach(obs => {
+        if (obs.label === 'floor' || obs.label === 'ceiling') return;
+        const dx = obs.max[0] - obs.min[0];
+        const dy = obs.max[1] - obs.min[1];
+        const dz = obs.max[2] - obs.min[2];
+        const cx = obs.min[0] + dx / 2;
+        const cy = obs.min[1] + dy / 2;
+        const cz = obs.min[2] + dz / 2;
+
+        const boxGeo = new THREE.BoxGeometry(dx, dy, dz);
+        const boxMat = new THREE.MeshStandardMaterial({
+          color: 0x1e293b,
+          roughness: 0.6,
+          metalness: 0.2,
+          transparent: true,
+          opacity: 0.85
+        });
+        const boxMesh = new THREE.Mesh(boxGeo, boxMat);
+        boxMesh.position.set(cx, cy, cz);
+        scene.add(boxMesh);
+
+        // Edge wireframe highlight
+        const edges = new THREE.EdgesGeometry(boxGeo);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xf43f5e, opacity: 0.4, transparent: true }));
+        line.position.set(cx, cy, cz);
+        scene.add(line);
+      });
+    }
+
+    // UI Updates
+    function updateHUD(frame) {
+      document.getElementById('step-label').innerText = `Step ${frame.step}/${simData.trajectory.length}`;
+      document.getElementById('scrubber').value = currentIdx;
+
+      document.getElementById('val-conf').innerText = frame.confidence.toFixed(2);
+      document.getElementById('bar-conf').style.width = `${Math.min(100, frame.confidence * 100)}%`;
+
+      document.getElementById('val-fric').innerText = frame.friction.toFixed(3);
+      document.getElementById('bar-fric').style.width = `${Math.min(100, (frame.friction / 2.0) * 100)}%`;
+
+      document.getElementById('val-cohere').innerText = frame.coherence.toFixed(2);
+      document.getElementById('bar-cohere').style.width = `${Math.min(100, frame.coherence * 100)}%`;
+
+      document.getElementById('val-energy').innerText = frame.energy.toFixed(1);
+      document.getElementById('bar-energy').style.width = `${Math.max(0, Math.min(100, (frame.energy / 300.0) * 100))}%`;
+
+      document.getElementById('val-stress').innerText = frame.stress.toFixed(2);
+      document.getElementById('val-pos').innerText = `(${frame.pos[0].toFixed(1)}, ${frame.pos[1].toFixed(1)}, ${frame.pos[2].toFixed(1)})`;
+      const speed = Math.sqrt(frame.velocity[0]**2 + frame.velocity[1]**2 + frame.velocity[2]**2);
+      document.getElementById('val-speed').innerText = `${speed.toFixed(2)} m/s (${(frame.thrust * 100).toFixed(0)}%)`;
+      document.getElementById('val-orient').innerText = `${(frame.yaw * 180 / Math.PI).toFixed(0)}° / ${(frame.pitch * 180 / Math.PI).toFixed(0)}°`;
+      document.getElementById('val-obs').innerText = `${frame.closest_obs.toFixed(1)} m`;
+      document.getElementById('val-sound').innerText = `${frame.sound_pressure.toFixed(2)} Pa`;
+
+      const outEl = document.getElementById('state-outcome');
+      outEl.innerText = frame.outcome.toUpperCase();
+      if (frame.outcome === 'goal_harvested') outEl.style.color = '#10b981';
+      else if (frame.outcome === 'barrier_collision') outEl.style.color = '#f43f5e';
+      else outEl.style.color = '#38bdf8';
+    }
+
+    // Controls
+    document.getElementById('btn-play').onclick = () => {
+      isPlaying = !isPlaying;
+      document.getElementById('btn-play').innerText = isPlaying ? 'Pause' : 'Play';
+    };
+    document.getElementById('scrubber').oninput = (e) => {
+      currentIdx = parseInt(e.target.value);
+    };
+    document.getElementById('btn-speed').onclick = () => {
+      if (speedMult === 1) speedMult = 2;
+      else if (speedMult === 2) speedMult = 5;
+      else speedMult = 1;
+      document.getElementById('btn-speed').innerText = `${speedMult}x`;
+    };
+
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // Animation Loop
+    let lastTime = performance.now();
+    let tickAcc = 0;
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      // Animate Sound Wave Rings
+      soundRings.forEach((ring, idx) => {
+        const scale = 1.0 + ((now * 0.002 + idx * 0.8) % 3.0);
+        ring.scale.set(scale, scale, 1);
+        ring.material.opacity = Math.max(0, 0.5 - (scale - 1.0) / 2.0);
+      });
+
+      if (simData && simData.trajectory) {
+        if (isPlaying) {
+          tickAcc += dt * 25 * speedMult;
+          if (tickAcc >= 1) {
+            const stepInc = Math.floor(tickAcc);
+            currentIdx = (currentIdx + stepInc) % simData.trajectory.length;
+            tickAcc -= stepInc;
+          }
+        }
+
+        const frame = simData.trajectory[currentIdx];
+        agentGroup.position.set(frame.pos[0], frame.pos[1], frame.pos[2]);
+        agentGroup.rotation.z = frame.yaw;
+        agentGroup.rotation.y = -frame.pitch;
+
+        // Update trail
+        const trailLen = Math.min(currentIdx, maxTrailPts);
+        for (let i = 0; i < trailLen; i++) {
+          const pt = simData.trajectory[currentIdx - i].pos;
+          trailPositions[i * 3] = pt[0];
+          trailPositions[i * 3 + 1] = pt[1];
+          trailPositions[i * 3 + 2] = pt[2];
+        }
+        trailGeo.setDrawRange(0, trailLen);
+        trailGeo.attributes.position.needsUpdate = true;
+
+        updateHUD(frame);
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

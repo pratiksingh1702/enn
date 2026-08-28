@@ -11,8 +11,8 @@ Synaptic Bridges operate as physical conductance channels:
 import sys
 import json
 import numpy as np
-from typing import List, Tuple, Optional, Dict, Any
-from collections import defaultdict
+from typing import List, Tuple, Optional, Dict, Any, Set
+from collections import defaultdict, deque
 from meta_learning import MetaField
 from self_awareness import MetacognitiveEngine
 
@@ -64,6 +64,42 @@ class Neuron:
     def connections(self) -> List[int]:
         return list(self.synapses.keys())
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "x": self.x.tolist(),
+            "y": self.y.tolist(),
+            "z": self.z.tolist(),
+            "w": int(self.w),
+            "text": str(self.text),
+            "features": self.features.tolist() if self.features is not None else None,
+            "origin": float(self.origin),
+            "epistemic_tension": float(self.epistemic_tension),
+            "role": str(self.role),
+            "energy": float(self.energy),
+            "age": int(self.age),
+            "last_active": int(self.last_active),
+            "synapses": {str(k): float(v) for k, v in self.synapses.items()}
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Neuron':
+        n = cls(
+            x=np.array(data["x"], dtype=float),
+            y=np.array(data["y"], dtype=float),
+            z=np.array(data["z"], dtype=float),
+            w=int(data["w"]),
+            text=str(data.get("text", "")),
+            features=np.array(data["features"], dtype=float) if data.get("features") is not None else None,
+            origin=float(data.get("origin", 1.0)),
+            epistemic_tension=float(data.get("epistemic_tension", 0.0)),
+            role=str(data.get("role", "concept"))
+        )
+        n.energy = float(data.get("energy", 1.0))
+        n.age = int(data.get("age", 0))
+        n.last_active = int(data.get("last_active", 0))
+        n.synapses = {int(k): float(v) for k, v in data.get("synapses", {}).items()}
+        return n
+
 
 class ENN4D:
     def __init__(self, dim: int = 4):
@@ -89,6 +125,7 @@ class ENN4D:
         self.momentum = 0.4                 # Spatial momentum
         self.baseline_energy = 0.15         # Basal metabolic floor
         self.min_energy = 0.05              # Pruning floor
+        self.eligibility_traces: Dict[Tuple[int, int], float] = defaultdict(float)
 
     def reset(self):
         """Reset the physical universe to an empty primordial state."""
@@ -98,6 +135,21 @@ class ENN4D:
         self.energy_history = []
         self.event_count = 0
         self.question_stack = []
+        self.eligibility_traces.clear()
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "dim": self.dim,
+            "next_family_id": self.next_family_id,
+            "event_count": self.event_count,
+            "neurons": [n.to_dict() for n in self.neurons]
+        }
+
+    def load_from_dict(self, data: Dict[str, Any]):
+        self.dim = int(data.get("dim", self.dim))
+        self.next_family_id = int(data.get("next_family_id", 0))
+        self.event_count = int(data.get("event_count", 0))
+        self.neurons = [Neuron.from_dict(n_data) for n_data in data.get("neurons", [])]
 
     # --- VECTORIZED MATRICES ---
     def _get_x_matrix(self) -> np.ndarray:
@@ -578,10 +630,16 @@ class ENN4D:
                 
                 # Synaptic conduction boost: forward wave propagates along synaptic highways
                 for target_idx, w_ij in n.synapses.items():
-                    if target_idx < len(self.neurons) and target_idx not in visited_neurons:
-                        target_n = self.neurons[target_idx]
-                        synaptic_wave = target_n.y * (node_weight * w_ij * 0.40)
-                        next_wave_components.append(synaptic_wave)
+                    if target_idx < len(self.neurons):
+                        # Pillar 2: Tag synaptic bridge with continuous eligibility trace
+                        trace_inc = float(f_val * amplitude * w_ij)
+                        pair_key = (int(idx), int(target_idx))
+                        self.eligibility_traces[pair_key] = 0.85 * self.eligibility_traces.get(pair_key, 0.0) + trace_inc
+                        
+                        if target_idx not in visited_neurons:
+                            target_n = self.neurons[target_idx]
+                            synaptic_wave = target_n.y * (node_weight * w_ij * 0.40)
+                            next_wave_components.append(synaptic_wave)
                         
             wave_path.extend(step_hops)
             
@@ -598,6 +656,33 @@ class ENN4D:
                 break
                 
         return current_wave, wave_path
+
+    def retrograde_reward_consolidation(self, reward: float, lr: float = 0.25):
+        """
+        Pillar 2: Retroactive Synaptic Path Consolidation.
+        Propagates retrograde dopamine/reward wave across all active synaptic eligibility traces.
+        Solidifies multi-step winning paths into superconductive synaptic highways.
+        """
+        if not self.eligibility_traces or abs(reward) < 1e-4:
+            return
+        
+        for (src_idx, tgt_idx), trace_val in list(self.eligibility_traces.items()):
+            if src_idx < len(self.neurons) and tgt_idx < len(self.neurons):
+                src_n = self.neurons[src_idx]
+                current_w = src_n.synapses.get(tgt_idx, 0.2)
+                delta_w = float(np.clip(reward * trace_val * lr, -0.3, 0.4))
+                new_w = float(np.clip(current_w + delta_w, 0.01, 1.0))
+                
+                if new_w >= self.synapse_prune_threshold:
+                    src_n.synapses[tgt_idx] = new_w
+                elif tgt_idx in src_n.synapses:
+                    del src_n.synapses[tgt_idx]
+                    
+        # Continuous decay of traces
+        for k in list(self.eligibility_traces.keys()):
+            self.eligibility_traces[k] *= 0.80
+            if self.eligibility_traces[k] < 0.01:
+                del self.eligibility_traces[k]
 
     # --- AUTONOMOUS REFLECTIVE CLOCK (IDLE STEP) ---
     def idle_step(self, noise_scale: float = 0.04) -> Optional[Dict[str, Any]]:
@@ -913,6 +998,7 @@ class TraitField:
         self.dim = dim
         self.attractors: Dict[str, TraitAttractor] = {}
         self.basins: Dict[str, AttractorBasin] = {}
+        self.spatial_beacons: Dict[Tuple[int, int], float] = {}
         self._init_attractors()
         self._init_default_basins()
 
@@ -921,6 +1007,100 @@ class TraitField:
         self.attractors["coherence"] = TraitAttractor("Coherence", np.array([-0.7071, -0.7071, 0.0, 0.0]), base_energy=1.5, drive_type="coherence")
         self.attractors["wonder"] = TraitAttractor("Wonder", np.array([0.0, 0.0, 0.7071, 0.7071]), base_energy=1.4, drive_type="wonder")
         self.attractors["ego"] = TraitAttractor("Ego", np.array([0.0, 0.0, -0.7071, -0.7071]), base_energy=2.0, drive_type="ego")
+        # Continuous Aspiration (Goal-Seeking / Will-to-Win) Attractor
+        self.aspiration = TraitAttractor("Aspiration", np.array([0.5, 0.5, 0.5, 0.5]), base_energy=1.5, drive_type="aspiration")
+        self.attractors["aspiration"] = self.aspiration
+
+    def update_aspiration(self, reward: float, current_pos_x: np.ndarray, eta_a: float = 0.30):
+        """
+        Continuous thermodynamic update of Aspiration Attractor:
+        - Positive reward (R > 0): attractor migrates toward state position, energy surges.
+        - Negative reward (R < 0): attractor repels away from state position, energy dampens.
+        - Neutral (R = 0): slow metabolic relaxation towards baseline.
+        """
+        curr_vec = np.array(current_pos_x, dtype=float).copy()
+        norm = np.linalg.norm(curr_vec)
+        if norm > 0:
+            curr_vec = curr_vec / norm
+
+        if reward > 0:
+            delta = curr_vec - self.aspiration.x
+            self.aspiration.x += eta_a * delta
+            norm_a = np.linalg.norm(self.aspiration.x)
+            if norm_a > 0:
+                self.aspiration.x = self.aspiration.x / norm_a
+            self.aspiration.energy = min(8.0, self.aspiration.energy + 0.15 * float(reward))
+        elif reward < 0:
+            delta = curr_vec - self.aspiration.x
+            self.aspiration.x -= eta_a * abs(float(reward)) * delta
+            norm_a = np.linalg.norm(self.aspiration.x)
+            if norm_a > 0:
+                self.aspiration.x = self.aspiration.x / norm_a
+            self.aspiration.energy = max(0.1, self.aspiration.energy - 0.08 * abs(float(reward)))
+        else:
+            self.aspiration.x *= 0.99
+            self.aspiration.energy = max(0.1, self.aspiration.energy * 0.995)
+
+    def get_aspiration_bias(self, direction_vector: np.ndarray, alpha_a: float = 0.50) -> float:
+        """
+        Compute continuous vector superposition bias toward Aspiration Attractor:
+        Bias = alpha * Energy_a * cos(theta(dir, a))
+        """
+        d_norm = np.linalg.norm(direction_vector)
+        a_norm = np.linalg.norm(self.aspiration.x)
+        if d_norm == 0 or a_norm == 0:
+            return 0.0
+        cos_sim = float(np.dot(direction_vector, self.aspiration.x) / (d_norm * a_norm))
+        return float(alpha_a * self.aspiration.energy * cos_sim)
+
+    def update_metabolic_state(self, energy_budget: float, critical_energy: float = 40.0):
+        """
+        Pillar 1: Homeostatic Starvation Field & Lotka-Volterra Drive Competition.
+        Computes continuous hunger potential sigma_stress = exp((E_crit - E) / tau).
+        - When Satiated (E > 100): sigma_stress -> 0, Curiosity rules exploration.
+        - When Starving (E < 30): sigma_stress explodes, Aspiration/Survival surges to max pull,
+          while Curiosity is suppressed.
+        """
+        stress_exponent = np.clip((critical_energy - energy_budget) / 25.0, -2.0, 4.0)
+        sigma_stress = float(np.exp(stress_exponent) - np.exp(-2.0))
+        sigma_stress = max(0.0, sigma_stress)
+        
+        # Non-linear competitive drive modulation
+        self.aspiration.energy = float(np.clip(1.5 * (1.0 + 1.5 * sigma_stress), 0.5, 12.0))
+        curiosity_attr = self.attractors.get("curiosity")
+        if curiosity_attr:
+            curiosity_attr.energy = float(np.clip(1.8 / (1.0 + 1.2 * sigma_stress), 0.05, 2.5))
+
+    def register_goal_beacon(self, goal_pos: Tuple[int, int], beacon_energy: float = 4.0):
+        """Hippocampal Spatial Cognitive Map: Register a discovered goal as a long-range beacon."""
+        self.spatial_beacons[goal_pos] = float(beacon_energy)
+
+    def get_beacon_gravitation(self, current_pos: Tuple[int, int], directional_offsets: Dict[str, Tuple[int, int]]) -> Dict[str, float]:
+        """
+        Hippocampal Long-Range Spatial Beacon Potential:
+        Starving agent experiences continuous gravitational gradient pulling toward discovered goal coordinates.
+        """
+        if not self.spatial_beacons:
+            return {d: 0.0 for d in directional_offsets}
+            
+        r_curr, c_curr = current_pos
+        pulls = {}
+        for d, (dr, dc) in directional_offsets.items():
+            r_next = r_curr + dr
+            c_next = c_curr + dc
+            net_potential = 0.0
+            for (r_g, c_g), beacon_energy in self.spatial_beacons.items():
+                curr_dist_sq = float((r_curr - r_g)**2 + (c_curr - c_g)**2)
+                next_dist_sq = float((r_next - r_g)**2 + (c_next - c_g)**2)
+                delta_dist = (curr_dist_sq - next_dist_sq) / (next_dist_sq + 4.0)
+                net_potential += beacon_energy * delta_dist
+            pulls[d] = float(net_potential)
+        return pulls
+
+    def reset_basins(self):
+        """Metabolic homeostatic reset of all attractor basins to base energy."""
+        for b in self.basins.values():
+            b.energy = float(b.base_energy)
 
     def _init_default_basins(self):
         # Action decision basins
@@ -967,7 +1147,12 @@ class TraitField:
         
         if confidence >= threshold:
             winning_basin = self.basins[best_name]
-            winning_basin.energy = min(5.0, winning_basin.energy + 0.10)
+            winning_basin.energy = min(3.0, winning_basin.energy + 0.05)
+            
+            # Homeostatic metabolic relaxation for all basins (prevents runaway gravitational traps)
+            for b in self.basins.values():
+                if b != winning_basin:
+                    b.energy += 0.02 * (b.base_energy - b.energy)
             return winning_basin, float(confidence), pulls
         else:
             return None, float(confidence), pulls
@@ -1005,6 +1190,314 @@ class TraitField:
         return y_b, activations
 
 
+# =====================================================================
+# EMBODIED SENSORY WAVE TRANSDUCER & SPONTANEOUS SYMMETRY BREAKER
+# =====================================================================
+
+class EmbodiedSensoryField:
+    """
+    Continuous physical sensory transducer in the neural sensory cortex.
+    Implements:
+    1. Non-Linear Lateral Mutual Inhibition (prevents opposing vectors from canceling to 0.0 at symmetric junctions).
+    2. Transverse Wall Shear Reflections (redirects frontal impact pressure into orthogonal kinetic flow).
+    3. Landau Spontaneous Symmetry Breaking & Thermal Fluctuations (delta_w ~ N(0, sigma^2)).
+    4. Global Thermodynamic Visitation Exhaustion Potentials (repels from over-visited territories).
+    """
+    def __init__(self, dim: int = 4, thermal_sigma: float = 0.20):
+        self.dim = dim
+        self.thermal_sigma = thermal_sigma
+        self.visitation_map: Dict[Any, float] = defaultdict(float)
+        self.spatial_trace: Dict[Any, float] = defaultdict(float)
+
+    def record_step(self, current_pos: Any, decay_local: float = 0.75, decay_global: float = 0.995):
+        """Update thermodynamic spatial trace and global visitation density."""
+        for pos in list(self.spatial_trace.keys()):
+            self.spatial_trace[pos] *= decay_local
+            if self.spatial_trace[pos] < 0.05:
+                del self.spatial_trace[pos]
+                
+        for pos in list(self.visitation_map.keys()):
+            self.visitation_map[pos] *= decay_global
+            if self.visitation_map[pos] < 0.01:
+                del self.visitation_map[pos]
+                
+        self.spatial_trace[current_pos] = 1.0
+        self.visitation_map[current_pos] += 1.0
+
+    def compute_exhaustion_penalty(self, target_pos: Any, strength: float = 1.2) -> float:
+        """Non-linear potential repelling from over-visited zones."""
+        v_count = self.visitation_map.get(target_pos, 0.0)
+        return -strength * min(1.5, (v_count / 2.0)**0.7)
+
+    def compose_symmetric_wave(
+        self,
+        directional_forces: Dict[str, float],
+        directional_vectors: Dict[str, np.ndarray],
+        last_heading: Optional[str] = None,
+        barrier_directions: Optional[Set[str]] = None,
+        aspiration_vector: Optional[np.ndarray] = None,
+        aspiration_strength: float = 0.50
+    ) -> np.ndarray:
+        """
+        Compose physical 4D sensory wave packet applying non-linear mutual inhibition,
+        transverse wall shear reflections, continuous aspiration bias, and Landau thermal symmetry breaking.
+        """
+        barrier_set = barrier_directions or set()
+        
+        # 1. Horizontal Axis (East vs West) Non-Linear Mutual Inhibition
+        f_east = directional_forces.get("east", 0.0)
+        f_west = directional_forces.get("west", 0.0)
+        noise_ew = np.random.randn() * self.thermal_sigma
+        delta_ew = (f_east - f_west) + noise_ew
+        max_ew = max(abs(f_east), abs(f_west), 0.1)
+        v_east = directional_vectors.get("east", np.array([0.0, 0.0, 1.0, 0.0]))
+        w_horizontal = v_east * (np.tanh(10.0 * delta_ew) * max_ew)
+        
+        # 2. Vertical Axis (North vs South) Non-Linear Mutual Inhibition
+        f_north = directional_forces.get("north", 0.0)
+        f_south = directional_forces.get("south", 0.0)
+        noise_ns = np.random.randn() * self.thermal_sigma
+        delta_ns = (f_north - f_south) + noise_ns
+        max_ns = max(abs(f_north), abs(f_south), 0.1)
+        v_north = directional_vectors.get("north", np.array([1.0, 0.0, 0.0, 0.0]))
+        w_vertical = v_north * (np.tanh(10.0 * delta_ns) * max_ns)
+        
+        # 3. Transverse Wall Shear Wave (converts frontal barrier pressure into perpendicular flow)
+        w_shear = np.zeros(self.dim)
+        if last_heading in ["north", "south"]:
+            if last_heading in barrier_set:
+                shear_sign = 1.0 if delta_ew >= 0 else -1.0
+                w_shear += v_east * (shear_sign * 1.8)
+        elif last_heading in ["east", "west"]:
+            if last_heading in barrier_set:
+                shear_sign = 1.0 if delta_ns >= 0 else -1.0
+                w_shear += v_north * (shear_sign * 1.8)
+                
+        # 4. Continuous Aspiration Field Bias
+        w_aspiration = np.zeros(self.dim)
+        if aspiration_vector is not None and np.linalg.norm(aspiration_vector) > 0:
+            a_norm = aspiration_vector / np.linalg.norm(aspiration_vector)
+            w_aspiration = a_norm * float(aspiration_strength)
+            
+        # 5. Thermodynamic noise
+        thermal_noise = np.random.randn(self.dim) * (self.thermal_sigma * 0.6)
+        
+        # Superposition
+        net_wave = w_horizontal + w_vertical + w_shear + w_aspiration + thermal_noise
+        norm = np.linalg.norm(net_wave)
+        if norm > 0:
+            net_wave = net_wave / norm
+        else:
+            net_wave = np.random.randn(self.dim) * 0.1
+            
+        return net_wave
+
+    def evaluate_premotor_resistance(self, candidate_direction: str, target_pos: Tuple[int, int], dir_vector: np.ndarray, world_field: 'ENN4D') -> float:
+        """
+        Pillar 3: Spatially-Indexed Pre-Motor Virtual Wave Probing (Lookahead).
+        Launches non-mutating virtual wave pulse into existing synaptic memory.
+        Evaluates barrier resonance specifically at the TARGET coordinate (target_pos).
+        Prevents global suppression of directions where no barrier exists.
+        """
+        if not world_field.neurons:
+            return 1.0
+            
+        forces = world_field.compute_resonance(dir_vector, dir_vector, np.array([0.0]))
+        if not forces:
+            return 1.0
+            
+        target_str = f"({target_pos[0]}, {target_pos[1]})"
+        barrier_resistance = 0.0
+        for i, f in enumerate(forces):
+            if f > 0.20:
+                text_lower = world_field.neurons[i].text.lower()
+                is_barrier = any(k in text_lower for k in ["barrier", "obstacle", "collision", "wall", "hazard", "peril"])
+                is_spatial_match = target_str in text_lower
+                
+                if is_barrier and is_spatial_match:
+                    barrier_resistance += float(f * world_field.neurons[i].energy * 2.5)
+                elif is_barrier and not any(f"({r}," in text_lower for r in range(100)):
+                    barrier_resistance += float(f * world_field.neurons[i].energy * 0.05)
+                    
+        return float(np.clip(np.exp(-2.0 * barrier_resistance), 0.15, 1.0))
+
+    def compute_centripetal_deflection(self, current_pos: Tuple[int, int], grid_shape: Tuple[int, int], border_strength: float = 1.2) -> Dict[str, float]:
+        """
+        Entorhinal Border Field: Continuous centripetal push away from outer perimeter boundaries (d <= 1).
+        Only activates when directly adjacent to outer boundaries, preventing 1D wall-sliding traps.
+        """
+        r, c = current_pos
+        h, w = grid_shape
+        d_north = r
+        d_south = (h - 1) - r
+        d_west = c
+        d_east = (w - 1) - c
+        
+        # Only activate when at the outer boundary perimeter
+        push_south = border_strength if d_north <= 1 else 0.0
+        push_north = border_strength if d_south <= 1 else 0.0
+        push_east = border_strength if d_west <= 1 else 0.0
+        push_west = border_strength if d_east <= 1 else 0.0
+        
+        return {
+            "north": float(push_south),
+            "south": float(push_north),
+            "east": float(push_east),
+            "west": float(push_west)
+        }
+
+
+class InwardSelfObserver:
+    """
+    The Metacognitive Mirror:
+    Maintains an active physical loop where the organism's internal states
+    are continuously observed as sensory objects by the Trait Field.
+    """
+    def __init__(self, dim: int = 4):
+        self.dim = dim
+        rng = np.random.RandomState(42)
+        v_init = rng.randn(dim)
+        self.self_identity_vector = v_init / np.linalg.norm(v_init)
+        self.last_intent_wave: Optional[np.ndarray] = None
+        self.epistemic_friction: float = 0.0
+        self.friction_history: deque = deque(maxlen=20)
+        self.self_confidence: float = 0.85
+        self.motor_history: deque = deque(maxlen=10)
+        self.sensory_delta_history: deque = deque(maxlen=10)
+        self.body_world_coherence: float = 0.90
+        self.energy_budget: float = 300.0
+        self.metabolic_stress: float = 0.0
+
+    def prepare_intention_wave(self, planned_action_vector: np.ndarray, current_sensory_wave: np.ndarray) -> np.ndarray:
+        w_motor = planned_action_vector / (np.linalg.norm(planned_action_vector) + 1e-6)
+        w_sensory = current_sensory_wave / (np.linalg.norm(current_sensory_wave) + 1e-6)
+        w_self = self.self_identity_vector
+        intent = 0.45 * w_sensory + 0.35 * w_motor + 0.20 * w_self
+        norm = np.linalg.norm(intent)
+        if norm > 0:
+            intent = intent / norm
+        self.last_intent_wave = intent.copy()
+        return intent
+
+    def observe_sensory_outcome(self, actual_outcome_wave: np.ndarray, motor_effort: np.ndarray) -> Dict[str, float]:
+        outcome_norm = actual_outcome_wave / (np.linalg.norm(actual_outcome_wave) + 1e-6)
+        if self.last_intent_wave is not None:
+            cos_sim = float(np.dot(self.last_intent_wave, outcome_norm))
+            cos_sim = float(np.clip(cos_sim, -1.0, 1.0))
+            self.epistemic_friction = float(np.clip(1.0 - cos_sim, 0.0, 2.0))
+        else:
+            self.epistemic_friction = 0.1
+            
+        self.friction_history.append(self.epistemic_friction)
+        avg_friction = float(np.mean(self.friction_history))
+        self.self_confidence = float(np.clip(np.exp(-1.5 * avg_friction), 0.1, 1.0))
+        
+        self.motor_history.append(float(np.linalg.norm(motor_effort)))
+        sensory_delta = float(np.linalg.norm(actual_outcome_wave - (self.last_intent_wave if self.last_intent_wave is not None else 0.0)))
+        self.sensory_delta_history.append(sensory_delta)
+        
+        if len(self.motor_history) >= 4:
+            m_arr = np.array(self.motor_history)
+            s_arr = np.array(self.sensory_delta_history)
+            std_m = np.std(m_arr)
+            std_s = np.std(s_arr)
+            if std_m > 1e-4 and std_s > 1e-4:
+                corr = np.corrcoef(m_arr, s_arr)[0, 1]
+                self.body_world_coherence = float(np.clip((corr + 1.0) / 2.0, 0.1, 1.0))
+                
+        eta_self = 0.03 * self.self_confidence
+        self.self_identity_vector = (1.0 - eta_self) * self.self_identity_vector + eta_self * outcome_norm
+        norm_id = np.linalg.norm(self.self_identity_vector)
+        if norm_id > 0:
+            self.self_identity_vector /= norm_id
+            
+        return {
+            "epistemic_friction": self.epistemic_friction,
+            "self_confidence": self.self_confidence,
+            "body_world_coherence": self.body_world_coherence
+        }
+
+    def generate_inward_self_wave(self, aspiration_strength: float = 0.5) -> np.ndarray:
+        stress_bias = np.array([1.0, -1.0, 0.5, -0.5]) * float(self.metabolic_stress * 0.3)
+        self_wave = self.self_identity_vector * float(self.self_confidence) + stress_bias
+        norm = np.linalg.norm(self_wave)
+        if norm > 0:
+            return self_wave / norm
+        return self.self_identity_vector.copy()
+
+    def update_metabolism(self, energy_budget: float, critical_energy: float = 50.0):
+        self.energy_budget = float(energy_budget)
+        exponent = np.clip((critical_energy - energy_budget) / 25.0, -2.0, 4.0)
+        self.metabolic_stress = float(max(0.0, np.exp(exponent) - np.exp(-2.0)))
+
+
+class MultimodalSensoryField3D:
+    """
+    Continuous 3D Multimodal Sensory Fusion Cortex:
+    - 360° Visual Depth Rays
+    - Diffractive Acoustic Helmholtz Sound Waves
+    - 3D Proprioception & Metabolism
+    - Inward Self-Observer Mirror Superposition
+    """
+    def __init__(self, dim: int = 4):
+        self.dim = dim
+        rng = np.random.RandomState(101)
+        q, _ = np.linalg.qr(rng.randn(dim, dim))
+        self.v_forward = q[:, 0]
+        self.v_turn_left = q[:, 1]
+        self.v_turn_right = -q[:, 1]
+        self.v_pitch_up = q[:, 2]
+        self.v_pitch_down = -q[:, 2]
+
+    def fuse_multimodal_3d(
+        self,
+        visual_depth_matrix: np.ndarray,
+        visual_ray_dirs: np.ndarray,
+        sound_pressure: float,
+        sound_flux_3d: np.ndarray,
+        current_yaw: float,
+        current_pitch: float,
+        inward_self_wave: np.ndarray,
+        metabolic_stress: float = 0.0,
+        spatial_trace_val: float = 0.0
+    ) -> np.ndarray:
+        vis_flux_3d = np.zeros(3)
+        for e in range(visual_depth_matrix.shape[0]):
+            for a in range(visual_depth_matrix.shape[1]):
+                d = visual_depth_matrix[e, a]
+                r_dir = visual_ray_dirs[e, a]
+                weight = (d / 15.0)**1.5 - (1.5 / (d + 0.5))
+                vis_flux_3d += r_dir * weight
+        if np.linalg.norm(vis_flux_3d) > 0:
+            vis_flux_3d /= np.linalg.norm(vis_flux_3d)
+
+        forward_dir = np.array([np.cos(current_pitch) * np.cos(current_yaw), np.cos(current_pitch) * np.sin(current_yaw), np.sin(current_pitch)])
+        lateral_dir = np.array([-np.sin(current_yaw), np.cos(current_yaw), 0.0])
+        up_dir = np.array([0.0, 0.0, 1.0])
+
+        f_vis_fwd = float(np.dot(vis_flux_3d, forward_dir))
+        f_vis_lat = float(np.dot(vis_flux_3d, lateral_dir))
+        f_vis_up  = float(np.dot(vis_flux_3d, up_dir))
+
+        w_vision = (f_vis_fwd * self.v_forward + 
+                    f_vis_lat * (self.v_turn_left if f_vis_lat > 0 else self.v_turn_right) + 
+                    f_vis_up * (self.v_pitch_up if f_vis_up > 0 else self.v_pitch_down))
+
+        f_snd_fwd = float(np.dot(sound_flux_3d, forward_dir))
+        f_snd_lat = float(np.dot(sound_flux_3d, lateral_dir))
+        f_snd_up  = float(np.dot(sound_flux_3d, up_dir))
+        stress_factor = float(1.0 + 1.5 * metabolic_stress)
+        w_sound = stress_factor * (f_snd_fwd * self.v_forward + 
+                                   f_snd_lat * (self.v_turn_left if f_snd_lat > 0 else self.v_turn_right) + 
+                                   f_snd_up * (self.v_pitch_up if f_snd_up > 0 else self.v_pitch_down))
+
+        w_proprio = (self.v_forward * max(0.1, 1.0 - spatial_trace_val)) * 0.8
+
+        net_wave = 0.35 * w_vision + 0.30 * w_sound + 0.15 * w_proprio + 0.20 * inward_self_wave
+        norm = np.linalg.norm(net_wave)
+        return net_wave / norm if norm > 0 else self.v_forward.copy()
+
+
 class DualFieldENN:
     """
     Coupled Dual-Network Universe:
@@ -1012,6 +1505,9 @@ class DualFieldENN:
     - Network B: Trait Drive Field (TraitField - Drives & Decision Attractor Basins)
     - Level 3: Meta-Learning Field (MetaField - Elastic Physics Parameters)
     - Metacognitive Engine: Self-Attractor Complex & Inward Mirror
+    - Inward Self Observer: Epistemic Friction, Confidence & Body-World Coherence
+    - Sensory Field 2D: EmbodiedSensoryField (Symmetry Breaking & Shear)
+    - Sensory Field 3D: MultimodalSensoryField3D (360° Vision Rays & Diffractive Acoustics)
     Coupled via continuous bidirectional wave conductance matrices W_AB and W_BA.
     """
     def __init__(self, dim: int = 4):
@@ -1022,6 +1518,9 @@ class DualFieldENN:
         # Meta-Learning & Self-Awareness Engines
         self.meta_field = MetaField()
         self.self_awareness = MetacognitiveEngine(self)
+        self.inward_observer = InwardSelfObserver(dim=self.dim)
+        self.sensory_field = EmbodiedSensoryField(dim=self.dim)
+        self.sensory_field_3d = MultimodalSensoryField3D(dim=self.dim)
         
         # Inter-field coupling matrices (orthogonal isometric mappings)
         rng = np.random.RandomState(42)
@@ -1032,6 +1531,23 @@ class DualFieldENN:
         
         # Superposition coupling strength
         self.coupling_lambda = 0.35
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "dim": self.dim,
+            "world_field": self.world_field.to_dict(),
+            "meta_field": {
+                "aspiration_strength": float(self.meta_field.aspiration_strength),
+                "aspiration_lr": float(self.meta_field.aspiration_lr)
+            }
+        }
+
+    def load_from_dict(self, data: Dict[str, Any]):
+        if "world_field" in data:
+            self.world_field.load_from_dict(data["world_field"])
+        if "meta_field" in data:
+            self.meta_field.aspiration_strength = float(data["meta_field"].get("aspiration_strength", 1.0))
+            self.meta_field.aspiration_lr = float(data["meta_field"].get("aspiration_lr", 0.05))
 
     @property
     def neurons(self):
@@ -1051,6 +1567,7 @@ class DualFieldENN:
         self.trait_field._init_default_basins()
         self.meta_field = MetaField()
         self.self_awareness = MetacognitiveEngine(self)
+        self.sensory_field = EmbodiedSensoryField(dim=self.dim)
 
     def birth(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, family: Optional[int] = None, text: str = "", features: Optional[np.ndarray] = None, origin: float = 1.0, epistemic_tension: float = 0.0, role: str = "concept") -> Neuron:
         return self.world_field.birth(x, y, z, family=family, text=text, features=features, origin=origin, epistemic_tension=epistemic_tension, role=role)
@@ -1067,6 +1584,18 @@ class DualFieldENN:
     def introspect(self) -> Dict[str, Any]:
         """Generate a real-time physical self-awareness and introspection report."""
         return self.self_awareness.generate_introspection_report()
+
+    def update_metabolic_state(self, energy_budget: float):
+        """Pillar 1: Update continuous homeostatic starvation potential in Trait Field."""
+        self.trait_field.update_metabolic_state(energy_budget)
+
+    def update_aspiration(self, reward: float, current_pos_x: np.ndarray):
+        """Self-tuning Aspiration & Retrograde Synaptic Consolidation across all 3 Fields."""
+        self.meta_field.observe_and_adapt_rewards(reward)
+        eta_a = self.meta_field.aspiration_lr
+        self.trait_field.update_aspiration(reward, current_pos_x, eta_a=eta_a)
+        # Pillar 2: Retroactive Synaptic Consolidation of the multi-step trajectory
+        self.world_field.retrograde_reward_consolidation(reward, lr=self.meta_field.synaptic_rate)
 
     def reason(self, query_x: np.ndarray, query_features: Optional[np.ndarray] = None, query_text: str = "", max_steps: int = 4) -> Dict[str, Any]:
         """
@@ -1095,6 +1624,59 @@ class DualFieldENN:
             "basin_pulls": {k: float(np.round(v, 4)) for k, v in basin_pulls.items()},
             "wave_path": wave_path,
             "explanation": explanation
+        }
+
+    def perceive_and_fuse_3d(
+        self,
+        visual_depth_matrix: np.ndarray,
+        visual_ray_dirs: np.ndarray,
+        sound_pressure: float,
+        sound_flux_3d: np.ndarray,
+        current_yaw: float,
+        current_pitch: float,
+        spatial_trace_val: float = 0.0
+    ) -> np.ndarray:
+        """Native 3D Multimodal Wave Perception & Fusion with Inward Metacognitive Mirror."""
+        inward_wave = self.inward_observer.generate_inward_self_wave(aspiration_strength=self.meta_field.aspiration_strength)
+        return self.sensory_field_3d.fuse_multimodal_3d(
+            visual_depth_matrix=visual_depth_matrix,
+            visual_ray_dirs=visual_ray_dirs,
+            sound_pressure=sound_pressure,
+            sound_flux_3d=sound_flux_3d,
+            current_yaw=current_yaw,
+            current_pitch=current_pitch,
+            inward_self_wave=inward_wave,
+            metabolic_stress=self.inward_observer.metabolic_stress,
+            spatial_trace_val=spatial_trace_val
+        )
+
+    def reason_3d(self, sensory_wave: np.ndarray) -> Dict[str, float]:
+        """
+        Continuous 3D Motor Phase Collapse:
+        Projects sensory wave into 3D continuous kinematics steering and thrust.
+        """
+        v_left = self.sensory_field_3d.v_turn_left
+        v_right = self.sensory_field_3d.v_turn_right
+        v_up = self.sensory_field_3d.v_pitch_up
+        v_down = self.sensory_field_3d.v_pitch_down
+        v_fwd = self.sensory_field_3d.v_forward
+
+        turn_pull = float(np.dot(sensory_wave, v_left) - np.dot(sensory_wave, v_right))
+        pitch_pull = float(np.dot(sensory_wave, v_up) - np.dot(sensory_wave, v_down))
+        fwd_pull = float(np.dot(sensory_wave, v_fwd))
+
+        d_yaw = float(np.clip(turn_pull * 0.45, -np.pi / 5.0, np.pi / 5.0))
+        d_pitch = float(np.clip(pitch_pull * 0.30, -np.pi / 8.0, np.pi / 8.0))
+        thrust = float(np.clip(0.3 + 0.7 * max(0.0, fwd_pull), 0.1, 1.0))
+        thrust *= self.inward_observer.self_confidence
+
+        return {
+            "d_yaw": d_yaw,
+            "d_pitch": d_pitch,
+            "thrust": thrust,
+            "turn_pull": turn_pull,
+            "pitch_pull": pitch_pull,
+            "fwd_pull": fwd_pull
         }
 
     def format_explanation(self, wave_path: List[Dict[str, Any]], winning_basin: Optional[AttractorBasin], confidence: float) -> str:

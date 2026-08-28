@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ENN 4D — Grand Multi-Agent Living Universe</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #f8fafc;
+      color: #1e293b;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      overflow: hidden;
+      display: flex;
+      height: 100vh;
+    }
+    #viewport-container {
+      flex: 1;
+      position: relative;
+      background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 60%, #f0fdf4 100%);
+    }
+    #three-canvas { width: 100%; height: 100%; display: block; }
+
+    #hud-sidebar {
+      width: 520px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(20px);
+      border-left: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 7px;
+      overflow-y: auto;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.06);
+      z-index: 10;
+    }
+    .hud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .hud-title {
+      font-size: 16px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #0284c7, #6366f1, #e11d48);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .live-badge {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      padding: 7px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0284c7;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .social-banner {
+      background: linear-gradient(135deg, #f0fdf4, #eff6ff);
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 5px 9px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #166534;
+    }
+
+    .dual-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+    .agent-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .agent-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .agent-alpha { color: #0284c7; border-left: 3px solid #0284c7; }
+    .agent-beta { color: #e11d48; border-left: 3px solid #e11d48; }
+
+    .curiosity-box {
+      font-size: 10px;
+      font-weight: 600;
+      color: #475569;
+      background: #ffffff;
+      border-radius: 5px;
+      padding: 3px 5px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .metric-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+    .metric-label { color: #64748b; font-weight: 500; }
+    .metric-val { font-weight: 700; font-family: monospace; color: #0f172a; }
+
+    /* Top Floating Camera Controls */
+    #cam-bar {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid #cbd5e1;
+      border-radius: 30px;
+      padding: 5px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      z-index: 5;
+    }
+    .cam-btn {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .cam-btn:hover { background: #e2e8f0; }
+    .cam-btn.active { background: #0284c7; color: white; border-color: #0284c7; }
+    .cam-btn.btn-reset { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+
+    /* Telepathy Box */
+    .telepathy-box { display: flex; gap: 6px; align-items: center; }
+    .telepathy-input {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 11px;
+      outline: none;
+    }
+    .telepathy-input:focus { border-color: #6366f1; }
+    .telepathy-btn {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #chronicle-container {
+      max-height: 85px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 10px;
+    }
+    .chronicle-entry {
+      background: #f8fafc;
+      border-left: 3px solid #6366f1;
+      padding: 3px 6px;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .chronicle-header { display: flex; justify-content: space-between; font-weight: 700; color: #6366f1; font-size: 10px; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <div id="viewport-container">
+    <canvas id="three-canvas"></canvas>
+
+    <div id="cam-bar">
+      <button id="cam-reset" class="cam-btn btn-reset">🔄 Reset Orbit View</button>
+      <button id="cam-alpha" class="cam-btn">🔵 Follow Alpha</button>
+      <button id="cam-beta" class="cam-btn">🔴 Follow Beta</button>
+      <button id="cam-alpha-eye" class="cam-btn">👁️ Alpha Eye</button>
+      <button id="cam-beta-eye" class="cam-btn">👁️ Beta Eye</button>
+      <button id="cam-orbit" class="cam-btn active">🌐 Panoramic Valley</button>
+      <button id="btn-spawn" class="cam-btn" style="background:#fef08a; color:#854d0e;">☄️ Drop Meteor</button>
+    </div>
+  </div>
+
+  <div id="hud-sidebar">
+    <div class="hud-header">
+      <div>
+        <div class="hud-title">🌌 GRAND LIVING UNIVERSE</div>
+        <div style="font-size: 10px; color: #64748b; font-weight: 600;">Ecosystem, Wildlife, Language & Telepathy</div>
+      </div>
+      <div class="live-badge"><div class="live-dot"></div><span id="val-weather">☀️ CLEAR</span></div>
+    </div>
+
+    <!-- Inter-Agent Social Dynamics Banner -->
+    <div class="social-banner">
+      <span id="val-social-mode">🤝 Distance: 1.8m</span>
+      <span id="val-social-status" style="color:#0284c7; font-weight:800;">TANDEM EXPEDITION</span>
+    </div>
+
+    <!-- 🔮 Divine Human Telepathy Console -->
+    <div class="card" style="border-left: 3px solid #8b5cf6;">
+      <div class="card-title">
+        <span>🔮 Divine Human Telepathy</span>
+        <select id="telepathy-target" style="font-size:10px; font-weight:700; border-radius:4px; border:1px solid #cbd5e1; padding:2px 4px;">
+          <option value="Alpha">To: Alpha (Blue)</option>
+          <option value="Beta">To: Beta (Crimson)</option>
+        </select>
+      </div>
+      <div class="telepathy-box">
+        <input type="text" id="telepathy-input" class="telepathy-input" placeholder="Type a divine thought to inject into 4D brain...">
+        <button id="telepathy-send" class="telepathy-btn">Transmit</button>
+      </div>
+    </div>
+
+    <!-- Dual Selves Side-by-Side HUD -->
+    <div class="dual-grid">
+      <!-- Humanoid Alpha -->
+      <div class="agent-card agent-alpha">
+        <div class="agent-header">
+          <span>🔵 Alpha (Builder)</span>
+          <span id="alpha-outcome" style="font-size:10px;">WALKING</span>
+        </div>
+        <div class="curiosity-box" id="alpha-curiosity">Exploring terrain</div>
+        <div class="metric-row"><span class="metric-label">3D Position</span><span id="alpha-pos" class="metric-val" style="color:#0284c7;">[12.2, 21.9]</span></div>
+        <div class="metric-row"><span class="metric-label">Ground Speed</span><span id="alpha-speed" class="metric-val" style="color:#0284c7;">2.2 m/s</span></div>
+        <div class="metric-row"><span class="metric-label">Stored Energy</span><span id="alpha-energy" class="metric-val" style="color:#0284c7;">14716</span></div>
+        <div class="metric-row"><span class="metric-label">Built / Harvested</span><span id="alpha-stats" class="metric-val">293 / 440</span></div>
+        <div class="metric-row"><span class="metric-label">4D Brain Neurons</span><span id="alpha-neurons" class="metric-val" style="color:#6366f1;">47</span></div>
+      </div>
+
+      <!-- Humanoid Beta -->
+      <div class="agent-card agent-beta">
+        <div class="agent-header">
+          <span>🔴 Beta (Explorer)</span>
+          <span id="beta-outcome" style="font-size:10px;">WALKING</span>
+        </div>
+        <div class="curiosity-box" id="beta-curiosity">Awakening in meadow</div>
+        <div class="metric-row"><span class="metric-label">3D Position</span><span id="beta-pos" class="metric-val" style="color:#e11d48;">[23.5, 21.4]</span></div>
+        <div class="metric-row"><span class="metric-label">Ground Speed</span><span id="beta-speed" class="metric-val" style="color:#e11d48;">2.2 m/s</span></div>
+        <div class="metric-row"><span class="metric-label">Stored Energy</span><span id="beta-energy" class="metric-val" style="color:#e11d48;">332.0</span></div>
+        <div class="metric-row"><span class="metric-label">Built / Harvested</span><span id="beta-stats" class="metric-val">2 / 3</span></div>
+        <div class="metric-row"><span class="metric-label">4D Brain Neurons</span><span id="beta-neurons" class="metric-val" style="color:#6366f1;">37</span></div>
+      </div>
+    </div>
+
+    <!-- Global Architecture Census & Wildlife -->
+    <div class="card" style="border-left: 3px solid #10b981;">
+      <div class="card-title">
+        <span>🏛️ Civilization & Wildlife</span>
+        <span id="val-total-structures" style="color:#10b981; font-weight:800;">387 CELLS</span>
+      </div>
+      <div class="metric-row"><span class="metric-label">🏰 Walls & Foundations</span><span id="val-walls" class="metric-val">329</span></div>
+      <div class="metric-row"><span class="metric-label">🌉 Arched Stone Bridges</span><span id="val-bridges" class="metric-val" style="color:#6366f1;">29 Bridges</span></div>
+      <div class="metric-row"><span class="metric-label">💾 State Preservation</span><span class="metric-val" style="color:#10b981;">Auto-Saved (5.8h Preserved)</span></div>
+    </div>
+
+    <!-- Live Minute Chronicle -->
+    <div class="card" style="flex:1;">
+      <div class="card-title"><span>📜 Multi-Agent Live Chronicle</span></div>
+      <div id="chronicle-container"></div>
+    </div>
+  </div>
+
+  <script>
+    let cameraMode = 'orbit'; // Default to Panoramic Valley so user sees both agents moving across the world!
+    let currentData = null;
+
+    // Three.js Scene Setup
+    const canvas = document.getElementById('three-canvas');
+    const container = document.getElementById('viewport-container');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xdbeafe);
+    scene.fog = new THREE.FogExp2(0xdbeafe, 0.015);
+
+    const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 180);
+    camera.position.set(16, -14, 18);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(16, 16, 2.0);
+    controls.update();
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfffaf0, 0.9);
+    sunLight.position.set(16, 16, 30);
+    sunLight.castShadow = true;
+    scene.add(sunLight);
+
+    // Terrain
+    const terrainSize = 32;
+    const terrainSubdiv = 64;
+    const terrainGeo = new THREE.PlaneGeometry(terrainSize, terrainSize, terrainSubdiv, terrainSubdiv);
+    const posAttr = terrainGeo.attributes.position;
+    for (let i = 0; i < posAttr.count; i++) {
+      const x = posAttr.getX(i) + terrainSize / 2;
+      const y = posAttr.getY(i) + terrainSize / 2;
+      const h1 = Math.sin(x * 0.15) * Math.cos(y * 0.15) * 1.5;
+      const h2 = Math.sin(x * 0.3 + 1.2) * Math.sin(y * 0.3 + 0.8) * 0.8;
+      posAttr.setZ(i, Math.max(0.2, 1.2 + h1 + h2));
+    }
+    terrainGeo.computeVertexNormals();
+
+    const terrainMat = new THREE.MeshStandardMaterial({ color: 0x86efac, roughness: 0.8, metalness: 0.1 });
+    const terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
+    terrainMesh.position.set(terrainSize/2, terrainSize/2, 0);
+    scene.add(terrainMesh);
+
+    // Factory to build Humanoid Avatars with Sound Rings
+    function createHumanoidAvatar(primaryColor, headColor, auraColor) {
+      const group = new THREE.Group();
+      group.scale.set(1.35, 1.35, 1.35);
+
+      const auraGeo = new THREE.RingGeometry(0.5, 0.65, 32);
+      const auraMat = new THREE.MeshBasicMaterial({ color: auraColor, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+      const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+      auraMesh.position.set(0, 0, -0.75);
+      group.add(auraMesh);
+
+      const torsoGeo = new THREE.CylinderGeometry(0.28, 0.22, 0.65, 16);
+      const torsoMesh = new THREE.Mesh(torsoGeo, new THREE.MeshStandardMaterial({ color: primaryColor, roughness: 0.3 }));
+      torsoMesh.position.set(0, 0, 0.2);
+      torsoMesh.rotation.x = Math.PI / 2;
+      group.add(torsoMesh);
+
+      const headGeo = new THREE.SphereGeometry(0.24, 16, 16);
+      const headMesh = new THREE.Mesh(headGeo, new THREE.MeshStandardMaterial({ color: headColor, roughness: 0.2 }));
+      headMesh.position.set(0, 0, 0.72);
+      group.add(headMesh);
+
+      const eyeMat = new THREE.MeshStandardMaterial({ color: auraColor, emissive: auraColor, emissiveIntensity: 1.0 });
+      const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
+      leftEye.position.set(0.2, 0.09, 0.75);
+      group.add(leftEye);
+      const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
+      rightEye.position.set(0.2, -0.09, 0.75);
+      group.add(rightEye);
+
+      const armMat = new THREE.MeshStandardMaterial({ color: primaryColor, roughness: 0.4 });
+      const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.55, 8), armMat);
+      leftArm.position.set(0.0, 0.38, 0.15);
+      group.add(leftArm);
+      const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.55, 8), armMat);
+      rightArm.position.set(0.0, -0.38, 0.15);
+      group.add(rightArm);
+
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+      const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.65, 8), legMat);
+      leftLeg.position.set(0.0, 0.16, -0.45);
+      group.add(leftLeg);
+      const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.65, 8), legMat);
+      rightLeg.position.set(0.0, -0.16, -0.45);
+      group.add(rightLeg);
+
+      const wingsMat = new THREE.MeshStandardMaterial({ color: auraColor, emissive: auraColor, emissiveIntensity: 0.8, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+      const wingsMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.45), wingsMat);
+      wingsMesh.position.set(-0.25, 0, 0.35);
+      wingsMesh.rotation.y = Math.PI / 2;
+      group.add(wingsMesh);
+
+      // Sound Wave Resonance Sphere
+      const soundGeo = new THREE.SphereGeometry(0.8, 16, 16);
+      const soundMat = new THREE.MeshBasicMaterial({ color: auraColor, wireframe: true, transparent: true, opacity: 0.0 });
+      const soundMesh = new THREE.Mesh(soundGeo, soundMat);
+      soundMesh.position.set(0, 0, 0.7);
+      group.add(soundMesh);
+
+      scene.add(group);
+      return { group, leftLeg, rightLeg, leftArm, rightArm, auraMesh, wingsMesh, soundMesh };
+    }
+
+    const avatarAlpha = createHumanoidAvatar(0x0284c7, 0x4f46e5, 0x06b6d4);
+    const avatarBeta = createHumanoidAvatar(0xe11d48, 0x9f1239, 0xf59e0b);
+
+    // Architectural Materials
+    const archMaterials = {
+      matter_wall: new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.7 }),
+      matter_roof: new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 }),
+      matter_bridge: new THREE.MeshStandardMaterial({ color: 0x6366f1, emissive: 0x4338ca, emissiveIntensity: 0.4, roughness: 0.6 }),
+      matter_tower: new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 }),
+      energy_shrine: new THREE.MeshStandardMaterial({ color: 0xa855f7, emissive: 0xa855f7, emissiveIntensity: 0.9 }),
+      matter_path: new THREE.MeshStandardMaterial({ color: 0xcfd8dc, roughness: 0.9 }),
+      energy_ether: new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.8 }),
+      energy_crystal: new THREE.MeshStandardMaterial({ color: 0xa855f7, emissive: 0xa855f7, emissiveIntensity: 0.9 }),
+      matter_wood: new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.9 }),
+      matter_stone: new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.8 })
+    };
+
+    const cellMeshes = {};
+    const faunaMeshes = {};
+
+    // Camera Controls
+    document.getElementById('cam-reset').onclick = () => {
+      cameraMode = 'orbit';
+      controls.enabled = true;
+      camera.position.set(16, -14, 18);
+      controls.target.set(16, 16, 2.0);
+      controls.update();
+      setCamMode('orbit');
+    };
+    document.getElementById('cam-alpha').onclick = () => setCamMode('alpha');
+    document.getElementById('cam-beta').onclick = () => setCamMode('beta');
+    document.getElementById('cam-alpha-eye').onclick = () => setCamMode('alpha-eye');
+    document.getElementById('cam-beta-eye').onclick = () => setCamMode('beta-eye');
+    document.getElementById('cam-orbit').onclick = () => setCamMode('orbit');
+
+    function setCamMode(mode) {
+      cameraMode = mode;
+      document.querySelectorAll('.cam-btn').forEach(b => {
+        if (!b.classList.contains('btn-reset') && b.id !== 'btn-spawn') b.classList.remove('active');
+      });
+      const el = document.getElementById(`cam-${mode}`);
+      if (el) el.classList.add('active');
+    }
+
+    // 🔮 Divine Telepathy Sender
+    document.getElementById('telepathy-send').onclick = async () => {
+      const input = document.getElementById('telepathy-input');
+      const target = document.getElementById('telepathy-target').value;
+      const text = input.value.trim();
+      if (!text) return;
+      
+      try {
+        await fetch('/api/telepathy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: target, message: text })
+        });
+        input.value = '';
+        input.placeholder = `Transmitted to ${target}!`;
+        setTimeout(() => input.placeholder = "Type a divine thought to inject into 4D brain...", 2500);
+      } catch (err) {}
+    };
+
+    // ☄️ God Hand Matter Spawner
+    document.getElementById('btn-spawn').onclick = async () => {
+      const rx = 6.0 + Math.random() * 20.0;
+      const ry = 6.0 + Math.random() * 20.0;
+      try {
+        await fetch('/api/spawn_matter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ x: rx, y: ry })
+        });
+      } catch (err) {}
+    };
+
+    async function fetchLiveTelemetry() {
+      try {
+        const res = await fetch('/api/live_state');
+        if (res.ok) {
+          const data = await res.json();
+          currentData = data;
+          updateWorldRender(data);
+          updateHUD(data);
+        }
+      } catch (err) {}
+      setTimeout(fetchLiveTelemetry, 100);
+    }
+
+    async function fetchChronicle() {
+      try {
+        const res = await fetch('/api/chronicle');
+        if (res.ok) {
+          const data = await res.json();
+          updateChronicleUI(data.chronicle);
+        }
+      } catch (err) {}
+      setTimeout(fetchChronicle, 1500);
+    }
+
+    function animateAvatar(avatar, org) {
+      avatar.group.position.set(org.pos[0], org.pos[1], org.pos[2]);
+      avatar.group.rotation.z = org.yaw;
+      const gait = org.gait_phase || 0;
+      avatar.leftLeg.rotation.y = Math.sin(gait) * 0.55;
+      avatar.rightLeg.rotation.y = -Math.sin(gait) * 0.55;
+      avatar.leftArm.rotation.y = -Math.sin(gait) * 0.45;
+      avatar.rightArm.rotation.y = Math.sin(gait) * 0.45;
+      avatar.auraMesh.rotation.z += 0.05;
+
+      if (org.vocal_chord) {
+        avatar.soundMesh.material.opacity = 0.7;
+        avatar.soundMesh.scale.set(1.5, 1.5, 1.5);
+      } else {
+        avatar.soundMesh.material.opacity = Math.max(0, avatar.soundMesh.material.opacity - 0.05);
+      }
+    }
+
+    function updateWorldRender(data) {
+      if (!data) return;
+      
+      const orgs = data.organisms || [data.organism];
+      if (orgs[0]) animateAvatar(avatarAlpha, orgs[0]);
+      if (orgs[1]) animateAvatar(avatarBeta, orgs[1]);
+
+      // Render Architecture Cells
+      data.cells.forEach(c => {
+        let mesh = cellMeshes[c.id];
+        if (!mesh) {
+          let geo;
+          if (c.type === 'matter_wall') geo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+          else if (c.type === 'matter_roof') geo = new THREE.ConeGeometry(0.7, 0.6, 4);
+          else if (c.type === 'matter_bridge') geo = new THREE.BoxGeometry(1.2, 0.8, 0.4);
+          else if (c.type === 'matter_tower') geo = new THREE.CylinderGeometry(0.4, 0.45, 1.0, 8);
+          else if (c.type === 'energy_shrine') geo = new THREE.OctahedronGeometry(0.6);
+          else if (c.type === 'matter_path') geo = new THREE.BoxGeometry(0.8, 0.8, 0.15);
+          else if (c.type === 'energy_ether') geo = new THREE.SphereGeometry(c.radius, 16, 16);
+          else geo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+
+          const mat = archMaterials[c.type] || archMaterials.matter_wall;
+          mesh = new THREE.Mesh(geo, mat);
+          scene.add(mesh);
+          cellMeshes[c.id] = mesh;
+        }
+        mesh.position.set(c.pos[0], c.pos[1], c.pos[2]);
+      });
+
+      // Render Wildlife Fauna
+      if (data.fauna) {
+        data.fauna.forEach(f => {
+          let fMesh = faunaMeshes[f.id];
+          if (!fMesh) {
+            let fGeo, fMat;
+            if (f.type === 'fauna_deer') {
+              fGeo = new THREE.BoxGeometry(0.5, 0.9, 0.6);
+              fMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.8 });
+            } else {
+              fGeo = new THREE.ConeGeometry(0.3, 0.6, 3);
+              fMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.6 });
+            }
+            fMesh = new THREE.Mesh(fGeo, fMat);
+            scene.add(fMesh);
+            faunaMeshes[f.id] = fMesh;
+          }
+          fMesh.position.set(f.pos[0], f.pos[1], f.pos[2]);
+          fMesh.rotation.z = f.yaw;
+        });
+      }
+
+      sunLight.intensity = 0.4 + data.sun_intensity * 0.85;
+      scene.background.setRGB(0.7 + 0.15 * data.sun_intensity, 0.85 + 0.1 * data.sun_intensity, 0.95);
+    }
+
+    function updateHUD(data) {
+      document.getElementById('val-weather').innerText = `⛅ ${data.weather.toUpperCase()}`;
+
+      const orgs = data.organisms || [data.organism];
+      if (orgs[0]) {
+        const a = orgs[0];
+        document.getElementById('alpha-outcome').innerText = a.outcome.toUpperCase();
+        document.getElementById('alpha-curiosity').innerText = a.curiosity_focus;
+        document.getElementById('alpha-pos').innerText = `[${a.pos[0].toFixed(1)}, ${a.pos[1].toFixed(1)}]`;
+        const spd = Math.sqrt(a.velocity[0]*a.velocity[0] + a.velocity[1]*a.velocity[1]);
+        document.getElementById('alpha-speed').innerText = `${spd.toFixed(1)} m/s`;
+        document.getElementById('alpha-energy').innerText = `${a.energy.toFixed(0)}`;
+        document.getElementById('alpha-stats').innerText = `${a.structures_built} / ${a.ether_harvested}`;
+        if (a.enn_metrics) {
+          document.getElementById('alpha-neurons').innerText = `${a.enn_metrics.neurons_born_total}`;
+        }
+      }
+      if (orgs[1]) {
+        const b = orgs[1];
+        document.getElementById('beta-outcome').innerText = b.outcome.toUpperCase();
+        document.getElementById('beta-curiosity').innerText = b.curiosity_focus;
+        document.getElementById('beta-pos').innerText = `[${b.pos[0].toFixed(1)}, ${b.pos[1].toFixed(1)}]`;
+        const spd = Math.sqrt(b.velocity[0]*b.velocity[0] + b.velocity[1]*b.velocity[1]);
+        document.getElementById('beta-speed').innerText = `${spd.toFixed(1)} m/s`;
+        document.getElementById('beta-energy').innerText = `${b.energy.toFixed(0)}`;
+        document.getElementById('beta-stats').innerText = `${b.structures_built} / ${b.ether_harvested}`;
+        if (b.enn_metrics) {
+          document.getElementById('beta-neurons').innerText = `${b.enn_metrics.neurons_born_total}`;
+        }
+      }
+
+      if (orgs[0] && orgs[1]) {
+        const dx = orgs[0].pos[0] - orgs[1].pos[0];
+        const dy = orgs[0].pos[1] - orgs[1].pos[1];
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        document.getElementById('val-social-mode').innerText = `🤝 Distance: ${dist.toFixed(1)}m`;
+      }
+
+      let walls = 0, bridges = 0;
+      data.cells.forEach(c => {
+        if (c.type === 'matter_wall') walls++;
+        else if (c.type === 'matter_bridge') bridges++;
+      });
+      document.getElementById('val-walls').innerText = walls;
+      document.getElementById('val-bridges').innerText = `${bridges} Bridges`;
+    }
+
+    function updateChronicleUI(chronicle) {
+      const container = document.getElementById('chronicle-container');
+      container.innerHTML = '';
+      chronicle.slice(-8).reverse().forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'chronicle-entry';
+        div.innerHTML = `
+          <div class="chronicle-header"><span>[Min ${entry.minute}] ${entry.time_str}</span><span>Step ${entry.step}</span></div>
+          <div>Alpha: <strong>${entry.alpha.action}</strong> | Beta: <strong>${entry.beta.action}</strong></div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (currentData && currentData.organisms) {
+        const orgAlpha = currentData.organisms[0];
+        const orgBeta = currentData.organisms[1];
+
+        if (cameraMode === 'alpha' && orgAlpha) {
+          controls.enabled = false;
+          const targetCam = new THREE.Vector3(
+            orgAlpha.pos[0] - Math.cos(orgAlpha.yaw) * 4.5,
+            orgAlpha.pos[1] - Math.sin(orgAlpha.yaw) * 4.5,
+            orgAlpha.pos[2] + 2.8
+          );
+          camera.position.lerp(targetCam, 0.08);
+          camera.lookAt(orgAlpha.pos[0], orgAlpha.pos[1], orgAlpha.pos[2] + 0.8);
+        } else if (cameraMode === 'beta' && orgBeta) {
+          controls.enabled = false;
+          const targetCam = new THREE.Vector3(
+            orgBeta.pos[0] - Math.cos(orgBeta.yaw) * 4.5,
+            orgBeta.pos[1] - Math.sin(orgBeta.yaw) * 4.5,
+            orgBeta.pos[2] + 2.8
+          );
+          camera.position.lerp(targetCam, 0.08);
+          camera.lookAt(orgBeta.pos[0], orgBeta.pos[1], orgBeta.pos[2] + 0.8);
+        } else if (cameraMode === 'alpha-eye' && orgAlpha) {
+          controls.enabled = false;
+          camera.position.set(orgAlpha.pos[0] + Math.cos(orgAlpha.yaw) * 0.25, orgAlpha.pos[1] + Math.sin(orgAlpha.yaw) * 0.25, orgAlpha.pos[2] + 0.9);
+          camera.lookAt(new THREE.Vector3(orgAlpha.pos[0] + Math.cos(orgAlpha.yaw) * 10, orgAlpha.pos[1] + Math.sin(orgAlpha.yaw) * 10, orgAlpha.pos[2] + 0.9));
+        } else if (cameraMode === 'beta-eye' && orgBeta) {
+          controls.enabled = false;
+          camera.position.set(orgBeta.pos[0] + Math.cos(orgBeta.yaw) * 0.25, orgBeta.pos[1] + Math.sin(orgBeta.yaw) * 0.25, orgBeta.pos[2] + 0.9);
+          camera.lookAt(new THREE.Vector3(orgBeta.pos[0] + Math.cos(orgBeta.yaw) * 10, orgBeta.pos[1] + Math.sin(orgBeta.yaw) * 10, orgBeta.pos[2] + 0.9));
+        } else {
+          controls.enabled = true;
+          controls.update();
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+    fetchLiveTelemetry();
+    fetchChronicle();
+  </script>
+</body>
+</html>

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ENN 4D — Genesis 3D Self-Aware Virtual World Visualizer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #030712;
+      color: #f3f4f6;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      overflow: hidden;
+      display: flex;
+      height: 100vh;
+    }
+    #viewport-container {
+      flex: 1;
+      position: relative;
+      background: radial-gradient(circle at center, #0b132b 0%, #02040a 100%);
+    }
+    #three-canvas { width: 100%; height: 100%; display: block; }
+
+    /* HUD Sidebar */
+    #hud-sidebar {
+      width: 440px;
+      background: rgba(11, 19, 43, 0.95);
+      backdrop-filter: blur(16px);
+      border-left: 1px solid rgba(139, 92, 246, 0.25);
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      gap: 16px;
+      overflow-y: auto;
+      box-shadow: -8px 0 36px rgba(0,0,0,0.7);
+      z-index: 10;
+    }
+    .hud-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #a855f7, #6366f1, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hud-subtitle { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; }
+
+    .card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #c084fc;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+    .metric-label { color: #94a3b8; }
+    .metric-val { font-weight: 700; font-family: monospace; }
+
+    .bar-track {
+      width: 100%;
+      height: 7px;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.1s ease; }
+    .fill-conf { background: linear-gradient(90deg, #6366f1, #a855f7); }
+    .fill-fric { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .fill-energy { background: linear-gradient(90deg, #10b981, #34d399); }
+
+    /* Controls */
+    #playback-bar {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(11, 19, 43, 0.9);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 30px;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+    }
+    .btn {
+      background: #7c3aed;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #a855f7; transform: scale(1.05); }
+    input[type=range] { width: 220px; accent-color: #a855f7; cursor: pointer; }
+
+    #legend {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(11, 19, 43, 0.85);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    .badge-storm {
+      background: #ef4444;
+      color: white;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse { from { opacity: 0.6; } to { opacity: 1.0; } }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <div id="viewport-container">
+    <canvas id="three-canvas"></canvas>
+
+    <div id="legend">
+      <div style="font-weight:700; color:#c084fc; margin-bottom:4px;">GENESIS 3D WORLD</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a855f7; box-shadow: 0 0 8px #a855f7;"></div><span>Organism Body (Self)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#eab308; box-shadow: 0 0 8px #eab308;"></div><span>Raw Stone Slabs (Bridging Matter)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#06b6d4;"></div><span>Acoustic Metal Reflectors</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#10b981; box-shadow: 0 0 8px #10b981;"></div><span>Energy Crystals (Food / Power)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#dc2626;"></div><span>The Great Chasm (Void)</span></div>
+    </div>
+
+    <div id="playback-bar">
+      <button id="btn-play" class="btn">Pause</button>
+      <input type="range" id="scrubber" min="0" max="599" value="0">
+      <span id="step-label" style="font-family:monospace; font-size:13px; font-weight:700; min-width:80px;">Step 0/600</span>
+      <button id="btn-speed" class="btn" style="background:#475569;">1x</button>
+    </div>
+  </div>
+
+  <div id="hud-sidebar">
+    <div>
+      <div class="hud-title">🌌 GENESIS 3D LIVING ORGANISM</div>
+      <div class="hud-subtitle">Morphogenesis & Environmental Engineering</div>
+    </div>
+
+    <!-- Active Action State -->
+    <div class="card">
+      <div class="card-title">
+        <span>🛠️ Active State</span>
+        <span id="state-outcome" style="color:#a855f7; font-weight:800;">GLIDING</span>
+      </div>
+      <div class="metric-row"><span class="metric-label">Environmental Weather</span><span id="val-weather" style="color:#10b981; font-weight:700;">CLEAR</span></div>
+      <div class="metric-row"><span class="metric-label">Shelter Status</span><span id="val-shelter">Exposed</span></div>
+    </div>
+
+    <!-- Metacognitive Inward Mirror -->
+    <div class="card">
+      <div class="card-title"><span>🪞 Inward Metacognition</span></div>
+      <div>
+        <div class="metric-row"><span class="metric-label">Inward Self-Confidence</span><span id="val-conf" class="metric-val" style="color:#a855f7;">1.00</span></div>
+        <div class="bar-track"><div id="bar-conf" class="bar-fill fill-conf" style="width: 100%;"></div></div>
+      </div>
+      <div>
+        <div class="metric-row"><span class="metric-label">Epistemic Friction (Turbulence)</span><span id="val-fric" class="metric-val" style="color:#f59e0b;">0.00</span></div>
+        <div class="bar-track"><div id="bar-fric" class="bar-fill fill-fric" style="width: 0%;"></div></div>
+      </div>
+      <div class="metric-row"><span class="metric-label">Body-World Coherence</span><span id="val-cohere" class="metric-val" style="color:#ec4899;">0.95</span></div>
+    </div>
+
+    <!-- Matter Engineering & Survival -->
+    <div class="card">
+      <div class="card-title"><span>🧱 Terraforming & Metabolism</span></div>
+      <div>
+        <div class="metric-row"><span class="metric-label">Metabolic Energy Budget</span><span id="val-energy" class="metric-val" style="color:#34d399;">300.0</span></div>
+        <div class="bar-track"><div id="bar-energy" class="bar-fill fill-energy" style="width: 100%;"></div></div>
+      </div>
+      <div class="metric-row"><span class="metric-label">Chasm Bridges Built</span><span id="val-bridges" class="metric-val" style="color:#eab308;">0</span></div>
+      <div class="metric-row"><span class="metric-label">Energy Crystals Harvested</span><span id="val-crystals" class="metric-val" style="color:#10b981;">0</span></div>
+      <div class="metric-row"><span class="metric-label">3D Position (X, Y, Z)</span><span id="val-pos" class="metric-val">(3.0, 3.0, 1.2)</span></div>
+    </div>
+  </div>
+
+  <script>
+    let simData = null;
+    let currentIdx = 0;
+    let isPlaying = true;
+    let speedMult = 1;
+
+    // Three.js Setup
+    const canvas = document.getElementById('three-canvas');
+    const container = document.getElementById('viewport-container');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x030712, 0.02);
+
+    const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 120);
+    camera.position.set(12, -22, 18);
+    camera.lookAt(12, 12, 2);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(12, 12, 2);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0x8b5cf6, 0.3);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    dirLight.position.set(12, 12, 24);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    // Floor Grids (Region A and Region B)
+    const gridA = new THREE.GridHelper(10, 10, 0x8b5cf6, 0x1e1b4b);
+    gridA.position.set(5, 12, 0);
+    gridA.rotation.x = Math.PI / 2;
+    scene.add(gridA);
+
+    const gridB = new THREE.GridHelper(10, 10, 0x10b981, 0x064e3b);
+    gridB.position.set(19, 12, 0);
+    gridB.rotation.x = Math.PI / 2;
+    scene.add(gridB);
+
+    // The Great Chasm (Red Void Floor)
+    const chasmGeo = new THREE.PlaneGeometry(4, 24);
+    const chasmMat = new THREE.MeshBasicMaterial({ color: 0x991b1b, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+    const chasmMesh = new THREE.Mesh(chasmGeo, chasmMat);
+    chasmMesh.position.set(12, 12, -0.1);
+    scene.add(chasmMesh);
+
+    // Organism Mesh Group
+    const agentGroup = new THREE.Group();
+    const bodyGeo = new THREE.SphereGeometry(0.5, 24, 24);
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0xa855f7,
+      emissive: 0x7c3aed,
+      emissiveIntensity: 0.7,
+      metalness: 0.8,
+      roughness: 0.2
+    });
+    const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+    agentGroup.add(bodyMesh);
+
+    // Tractor Beam Line
+    const beamGeo = new THREE.BufferGeometry();
+    const beamPos = new Float32Array(6);
+    beamGeo.setAttribute('position', new THREE.BufferAttribute(beamPos, 3));
+    const beamMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 });
+    const beamLine = new THREE.Line(beamGeo, beamMat);
+    scene.add(beamLine);
+
+    // Flight Trail
+    const maxTrailPts = 400;
+    const trailGeo = new THREE.BufferGeometry();
+    const trailPositions = new Float32Array(maxTrailPts * 3);
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+    const trailMat = new THREE.LineBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.5 });
+    const trailLine = new THREE.Line(trailGeo, trailMat);
+    scene.add(trailLine);
+    scene.add(agentGroup);
+
+    // Dynamic Block Meshes Map
+    const blockMeshes = {};
+
+    fetch('genesis_simulation.json')
+      .then(res => res.json())
+      .then(data => {
+        simData = data;
+        initBlocks(data.trajectory[0].blocks);
+        document.getElementById('scrubber').max = data.trajectory.length - 1;
+      });
+
+    function initBlocks(blocks) {
+      blocks.forEach(b => {
+        let geo, mat;
+        if (b.type === 'stone') {
+          geo = new THREE.BoxGeometry(1.8, 1.4, 0.4);
+          mat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.8 });
+        } else if (b.type === 'metal') {
+          geo = new THREE.BoxGeometry(0.3, 2.0, 2.0);
+          mat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, metalness: 0.9, roughness: 0.1 });
+        } else {
+          geo = new THREE.OctahedronGeometry(0.6);
+          mat = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 0.8 });
+        }
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(b.pos[0], b.pos[1], b.pos[2]);
+        scene.add(mesh);
+        blockMeshes[b.id] = mesh;
+      });
+    }
+
+    function updateHUD(frame) {
+      document.getElementById('step-label').innerText = `Step ${frame.step}/${simData.trajectory.length}`;
+      document.getElementById('scrubber').value = currentIdx;
+
+      document.getElementById('state-outcome').innerText = frame.outcome.toUpperCase();
+      document.getElementById('val-conf').innerText = frame.confidence.toFixed(2);
+      document.getElementById('bar-conf').style.width = `${Math.min(100, frame.confidence * 100)}%`;
+
+      document.getElementById('val-fric').innerText = frame.friction.toFixed(3);
+      document.getElementById('bar-fric').style.width = `${Math.min(100, (frame.friction / 2.0) * 100)}%`;
+
+      document.getElementById('val-cohere').innerText = frame.coherence.toFixed(2);
+      document.getElementById('val-energy').innerText = frame.energy.toFixed(1);
+      document.getElementById('bar-energy').style.width = `${Math.max(0, Math.min(100, (frame.energy / 300.0) * 100))}%`;
+
+      document.getElementById('val-bridges').innerText = frame.bridges;
+      document.getElementById('val-crystals').innerText = frame.crystals;
+      document.getElementById('val-pos').innerText = `(${frame.pos[0].toFixed(1)}, ${frame.pos[1].toFixed(1)}, ${frame.pos[2].toFixed(1)})`;
+
+      const weatherEl = document.getElementById('val-weather');
+      if (frame.storm) {
+        weatherEl.innerHTML = `<span class="badge-storm">⚡ ACID STORM (${(frame.storm_intensity * 100).toFixed(0)}%)</span>`;
+        scene.fog.color.setHex(0x3b0764);
+      } else {
+        weatherEl.innerHTML = `<span style="color:#10b981; font-weight:700;">CLEAR</span>`;
+        scene.fog.color.setHex(0x030712);
+      }
+      document.getElementById('val-shelter').innerText = frame.sheltered ? "🛡️ Under Shelter (Protected)" : "Exposed to Elements";
+    }
+
+    // Playback
+    document.getElementById('btn-play').onclick = () => {
+      isPlaying = !isPlaying;
+      document.getElementById('btn-play').innerText = isPlaying ? 'Pause' : 'Play';
+    };
+    document.getElementById('scrubber').oninput = (e) => {
+      currentIdx = parseInt(e.target.value);
+    };
+    document.getElementById('btn-speed').onclick = () => {
+      speedMult = (speedMult === 1) ? 2 : (speedMult === 2 ? 5 : 1);
+      document.getElementById('btn-speed').innerText = `${speedMult}x`;
+    };
+
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    let lastTime = performance.now();
+    let tickAcc = 0;
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      if (simData && simData.trajectory) {
+        if (isPlaying) {
+          tickAcc += dt * 25 * speedMult;
+          if (tickAcc >= 1) {
+            const stepInc = Math.floor(tickAcc);
+            currentIdx = (currentIdx + stepInc) % simData.trajectory.length;
+            tickAcc -= stepInc;
+          }
+        }
+
+        const frame = simData.trajectory[currentIdx];
+        agentGroup.position.set(frame.pos[0], frame.pos[1], frame.pos[2]);
+        agentGroup.rotation.z = frame.yaw;
+        agentGroup.rotation.y = -frame.pitch;
+
+        // Update block positions
+        frame.blocks.forEach(b => {
+          if (blockMeshes[b.id]) {
+            blockMeshes[b.id].position.set(b.pos[0], b.pos[1], b.pos[2]);
+            if (b.held) {
+              // Draw tractor beam from agent to held block
+              beamPos[0] = frame.pos[0]; beamPos[1] = frame.pos[1]; beamPos[2] = frame.pos[2];
+              beamPos[3] = b.pos[0]; beamPos[4] = b.pos[1]; beamPos[5] = b.pos[2];
+              beamGeo.attributes.position.needsUpdate = true;
+              beamLine.visible = true;
+            }
+          }
+        });
+        if (!frame.blocks.some(b => b.held)) {
+          beamLine.visible = false;
+        }
+
+        // Trail update
+        const trailLen = Math.min(currentIdx, maxTrailPts);
+        for (let i = 0; i < trailLen; i++) {
+          const pt = simData.trajectory[currentIdx - i].pos;
+          trailPositions[i * 3] = pt[0]; trailPositions[i * 3 + 1] = pt[1]; trailPositions[i * 3 + 2] = pt[2];
+        }
+        trailGeo.setDrawRange(0, trailLen);
+        trailGeo.attributes.position.needsUpdate = true;
+
+        updateHUD(frame);
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
