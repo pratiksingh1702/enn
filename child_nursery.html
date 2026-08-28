@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>👶 Aria: Continuous Conversational ENN 4D Child AI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090d16;
+      color: #f8fafc;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      overflow: hidden;
+      display: flex;
+      height: 100vh;
+    }
+    #main-container {
+      flex: 1;
+      display: flex;
+      position: relative;
+    }
+    #left-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: #020617;
+    }
+    #video-container {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    #webcam-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+    #gaze-reticle {
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      border: 2px dashed #38bdf8;
+      border-radius: 16px;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: all 0.2s ease-out;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8px;
+    }
+    .reticle-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: #38bdf8;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 2px 6px;
+      border-radius: 4px;
+      align-self: flex-start;
+    }
+
+    /* Dialogue & Live Speech Box */
+    #speech-bar-container {
+      padding: 12px 16px;
+      background: rgba(15, 23, 42, 0.95);
+      border-top: 1px solid #1e293b;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mic-status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-mic {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-mic.listening {
+      background: linear-gradient(135deg, #e11d48, #be123c);
+      animation: pulse-mic 1.5s infinite;
+    }
+    @keyframes pulse-mic {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); }
+    }
+
+    .speech-input-row { display: flex; gap: 8px; }
+    .speech-input {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: white;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      outline: none;
+    }
+    .speech-input:focus { border-color: #38bdf8; }
+    .btn-send {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #brain-canvas-container {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 260px;
+      height: 190px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+    #brain-canvas { width: 100%; height: 100%; display: block; }
+    .brain-tag {
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      font-size: 9px;
+      font-weight: 800;
+      color: #a855f7;
+      text-transform: uppercase;
+    }
+
+    /* Right Sidebar for Conscious Traits & Dialogue */
+    #sidebar {
+      width: 480px;
+      background: rgba(15, 23, 42, 0.98);
+      border-left: 1px solid #1e293b;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 10px;
+      overflow-y: auto;
+    }
+    .header-title {
+      font-size: 17px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #38bdf8, #a855f7, #f43f5e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Conscious Trait Banner */
+    .trait-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .trait-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .trait-label { font-size: 10px; color: #94a3b8; font-weight: 600; }
+    .trait-val { font-size: 12px; font-weight: 800; color: #38bdf8; font-family: monospace; }
+
+    /* Dialogue Transcript Box */
+    #dialogue-history {
+      flex: 1;
+      min-height: 180px;
+      max-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid #334155;
+    }
+    .msg-bubble {
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 90%;
+    }
+    .msg-parent {
+      background: #0284c7;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
+    .msg-aria {
+      background: #334155;
+      color: #f8fafc;
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+      border-left: 3px solid #a855f7;
+    }
+
+    .btn-praise {
+      background: linear-gradient(135deg, #e11d48, #be123c);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div id="main-container">
+    <div id="left-panel">
+      <div id="video-container">
+        <video id="webcam-video" autoplay playsinline muted></video>
+        <div id="gaze-reticle">
+          <span class="reticle-label">ARIA'S FOCUS</span>
+          <span id="gaze-target-name" style="font-size:11px; font-weight:800; color:white; background:rgba(0,0,0,0.7); padding:2px 4px; border-radius:3px;">LISTENING</span>
+        </div>
+
+        <div id="brain-canvas-container">
+          <span class="brain-tag">🧠 ENN 4D Neural Brain</span>
+          <canvas id="brain-canvas"></canvas>
+        </div>
+      </div>
+
+      <!-- Continuous Mic & Speech Input -->
+      <div id="speech-bar-container">
+        <div class="mic-status-row">
+          <button id="btn-toggle-mic" class="btn-mic">🎙️ Start Continuous Voice Listening</button>
+          <span id="mic-hint" style="font-size:11px; color:#94a3b8;">Click to speak freely via your laptop microphone</span>
+        </div>
+        <div class="speech-input-row">
+          <input type="text" id="input-speech" class="speech-input" placeholder="Or type any sentence to converse and teach Aria...">
+          <button id="btn-send-speech" class="btn-send">Speak</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="sidebar">
+      <div>
+        <div class="header-title">👶 ARIA: CONTINUOUS CONVERSATIONAL CHILD AI</div>
+        <div style="font-size: 11px; color: #94a3b8;">Listening, Reasoning, and Learning with pure ENN 4D</div>
+      </div>
+
+      <!-- Conscious Attractor Traits & Metacognition -->
+      <div class="card">
+        <div class="card-title">
+          <span>🧠 ENN 4D Cognitive State</span>
+          <span id="val-age-steps" style="color:#a855f7;">Step 0</span>
+        </div>
+        <div class="trait-grid">
+          <div class="trait-box">
+            <span class="trait-label">Active Trait Basin</span>
+            <span class="trait-val" id="val-trait" style="color:#38bdf8;">INQUIRE</span>
+          </div>
+          <div class="trait-box">
+            <span class="trait-label">Self-Confidence</span>
+            <span class="trait-val" id="val-confidence" style="color:#22c55e;">0.95</span>
+          </div>
+          <div class="trait-box">
+            <span class="trait-label">Epistemic Friction</span>
+            <span class="trait-val" id="val-friction" style="color:#f59e0b;">0.10</span>
+          </div>
+          <div class="trait-box">
+            <span class="trait-label">Learned 4D Neurons</span>
+            <span class="trait-val" id="val-neurons" style="color:#a855f7;">0 Neurons</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Internal Thought Stream -->
+      <div class="card" style="border-left: 3px solid #a855f7;">
+        <div class="card-title"><span>💭 Aria's Internal Conscious Thought</span></div>
+        <div id="val-thought" style="font-size:12px; font-weight:600; color:#e2e8f0; line-height:1.4;">
+          Listening to your voice with open curiosity...
+        </div>
+      </div>
+
+      <!-- Continuous Live Conversation Dialogue -->
+      <div class="card" style="flex:1;">
+        <div class="card-title"><span>💬 Live Spoken Dialogue Transcript</span></div>
+        <div id="dialogue-history">
+          <div class="msg-bubble msg-aria">Hello! I am listening to your voice. Tell me about anything, I want to learn from you!</div>
+        </div>
+      </div>
+
+      <!-- Parental Praise -->
+      <button id="btn-praise" class="btn-praise">❤️ Praise Aria / Good Job! (+3.0 Dopamine Reward)</button>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('webcam-video');
+    const reticle = document.getElementById('gaze-reticle');
+    let videoCanvas = document.createElement('canvas');
+    let videoCtx = videoCanvas.getContext('2d', { willReadFrequently: true });
+    let isWebcamReady = false;
+
+    // Start Webcam
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+        video.srcObject = stream;
+        video.onloadedmetadata = () => {
+          videoCanvas.width = 160;
+          videoCanvas.height = 120;
+          isWebcamReady = true;
+        };
+      } catch (err) {
+        console.warn("Camera fallback:", err);
+      }
+    }
+    startCamera();
+
+    // Three.js Brain Visualizer
+    const bCanvas = document.getElementById('brain-canvas');
+    const bContainer = document.getElementById('brain-canvas-container');
+    const bRenderer = new THREE.WebGLRenderer({ canvas: bCanvas, antialias: true, alpha: true });
+    bRenderer.setSize(bContainer.clientWidth, bContainer.clientHeight);
+
+    const bScene = new THREE.Scene();
+    const bCamera = new THREE.PerspectiveCamera(50, bContainer.clientWidth / bContainer.clientHeight, 0.1, 100);
+    bCamera.position.set(0, 0, 4.5);
+
+    const neuronMeshes = [];
+    const synapseLines = [];
+
+    function extractVisionFeatures() {
+      if (!isWebcamReady) return [0.5, 0.5, 0.5, 0.1, 0.5, 0.5];
+      try {
+        videoCtx.drawImage(video, 0, 0, 160, 120);
+        const imgData = videoCtx.getImageData(0, 0, 160, 120).data;
+        let rSum = 0, gSum = 0, bSum = 0, count = 0;
+        let cX = 0, cY = 0, brightCount = 0;
+
+        for (let i = 0; i < imgData.length; i += 16) {
+          const r = imgData[i]; const g = imgData[i+1]; const b = imgData[i+2];
+          rSum += r; gSum += g; bSum += b; count++;
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          if (lum > 120) {
+            const pixelIdx = i / 4;
+            cX += (pixelIdx % 160);
+            cY += Math.floor(pixelIdx / 160);
+            brightCount++;
+          }
+        }
+        const red = rSum / (count * 255.0);
+        const green = gSum / (count * 255.0);
+        const blue = bSum / (count * 255.0);
+        const normCX = brightCount > 0 ? (cX / brightCount) / 160.0 : 0.5;
+        const normCY = brightCount > 0 ? (cY / brightCount) / 120.0 : 0.5;
+        return [red, green, blue, 0.2, normCX, normCY];
+      } catch (e) {
+        return [0.5, 0.5, 0.5, 0.1, 0.5, 0.5];
+      }
+    }
+
+    // Continuous Speech Recognition Engine (Web Speech API)
+    let recognition = null;
+    let isListening = false;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRec();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event) => {
+        const lastIdx = event.results.length - 1;
+        const spokenText = event.results[lastIdx][0].transcript.trim();
+        if (spokenText) {
+          sendSpeechToENN(spokenText);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.warn("Speech error:", event.error);
+      };
+
+      recognition.onend = () => {
+        if (isListening) {
+          try { recognition.start(); } catch (e) {}
+        }
+      };
+    }
+
+    const micBtn = document.getElementById('btn-toggle-mic');
+    micBtn.onclick = () => {
+      if (!recognition) {
+        alert("Speech recognition is not supported in this browser. You can type in the box below!");
+        return;
+      }
+      isListening = !isListening;
+      if (isListening) {
+        try { recognition.start(); } catch (e) {}
+        micBtn.classList.add('listening');
+        micBtn.innerText = "🔴 Listening to your voice (Speak freely)...";
+        document.getElementById('mic-hint').innerText = "Aria is actively listening and learning from your words!";
+      } else {
+        try { recognition.stop(); } catch (e) {}
+        micBtn.classList.remove('listening');
+        micBtn.innerText = "🎙️ Start Continuous Voice Listening";
+        document.getElementById('mic-hint').innerText = "Click to speak freely via your laptop microphone";
+      }
+    };
+
+    // Send Speech to Conversational ENN 4D Engine
+    async function sendSpeechToENN(text) {
+      if (!text.trim()) return;
+      const vFeat = extractVisionFeatures();
+
+      try {
+        const res = await fetch('/api/child/converse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ speech: text, vision_features: vFeat })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          updateConsciousHUD(data);
+        }
+      } catch (err) {}
+    }
+
+    function updateConsciousHUD(data) {
+      document.getElementById('val-age-steps').innerText = `Step ${data.age_steps}`;
+      document.getElementById('val-trait').innerText = data.active_trait;
+      document.getElementById('val-confidence').innerText = `${data.self_confidence}`;
+      document.getElementById('val-friction').innerText = `${data.epistemic_friction}`;
+      document.getElementById('val-neurons').innerText = `${data.neurons_count} Neurons`;
+      document.getElementById('val-thought').innerText = data.last_thought;
+
+      // Update Transcript Dialogue Bubble
+      if (data.conversation_history) {
+        const histContainer = document.getElementById('dialogue-history');
+        histContainer.innerHTML = '';
+        data.conversation_history.forEach(m => {
+          const b = document.createElement('div');
+          b.className = `msg-bubble ${m.speaker === 'Parent' ? 'msg-parent' : 'msg-aria'}`;
+          b.innerText = `${m.speaker === 'Parent' ? '👨‍🏫 You: ' : '👶 Aria: '}${m.text}`;
+          histContainer.appendChild(b);
+        });
+        histContainer.scrollTop = histContainer.scrollHeight;
+      }
+
+      // Aria Speaks Aloud
+      if (data.last_response && window.speechSynthesis && !window.speechSynthesis.speaking) {
+        const utter = new SpeechSynthesisUtterance(data.last_response);
+        utter.pitch = 1.35;
+        utter.rate = 1.02;
+        window.speechSynthesis.speak(utter);
+      }
+
+      // Update Gaze Reticle
+      if (data.gaze_point) {
+        const x = (1.0 - data.gaze_point[0]) * window.innerWidth * 0.65;
+        const y = data.gaze_point[1] * window.innerHeight;
+        reticle.style.left = `${x}px`;
+        reticle.style.top = `${y}px`;
+      }
+    }
+
+    // Live Brain Graph Fetch
+    async function fetchBrainGraph() {
+      try {
+        const res = await fetch('/api/child/live_state');
+        if (res.ok) {
+          const data = await res.json();
+          renderBrain3D(data.neurons);
+        }
+      } catch (err) {}
+      setTimeout(fetchBrainGraph, 1000);
+    }
+    fetchBrainGraph();
+
+    function renderBrain3D(neurons) {
+      if (!neurons) return;
+      neuronMeshes.forEach(m => bScene.remove(m));
+      neuronMeshes.length = 0;
+      synapseLines.forEach(l => bScene.remove(l));
+      synapseLines.length = 0;
+
+      const nMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const nGeo = new THREE.SphereGeometry(0.12, 12, 12);
+
+      neurons.forEach((n, idx) => {
+        const mesh = new THREE.Mesh(nGeo, nMat);
+        mesh.position.set((n.x[0] - 0.5) * 3.5, (n.x[1] - 0.5) * 3.5, (n.x[2] - 0.5) * 3.5);
+        bScene.add(mesh);
+        neuronMeshes.push(mesh);
+      });
+
+      const lineMat = new THREE.LineBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.6 });
+      neurons.forEach((n, idx) => {
+        if (n.synapses) {
+          Object.keys(n.synapses).forEach(peerIdx => {
+            const p = parseInt(peerIdx);
+            if (p < neuronMeshes.length && p !== idx) {
+              const geo = new THREE.BufferGeometry().setFromPoints([
+                neuronMeshes[idx].position,
+                neuronMeshes[p].position
+              ]);
+              const line = new THREE.Line(geo, lineMat);
+              bScene.add(line);
+              synapseLines.push(line);
+            }
+          });
+        }
+      });
+    }
+
+    function animateBrain() {
+      requestAnimationFrame(animateBrain);
+      bScene.rotation.y += 0.01;
+      bRenderer.render(bScene, bCamera);
+    }
+    animateBrain();
+
+    // Manual Typed Speech Input
+    document.getElementById('btn-send-speech').onclick = () => {
+      const input = document.getElementById('input-speech');
+      const text = input.value.trim();
+      if (!text) return;
+      sendSpeechToENN(text);
+      input.value = '';
+    };
+    document.getElementById('input-speech').onkeydown = (e) => {
+      if (e.key === 'Enter') document.getElementById('btn-send-speech').click();
+    };
+
+    // Praise Button
+    document.getElementById('btn-praise').onclick = async () => {
+      try {
+        const res = await fetch('/api/child/praise', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          updateConsciousHUD(data);
+        }
+      } catch (err) {}
+    };
+  </script>
+</body>
+</html>
