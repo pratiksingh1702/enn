@@ -547,7 +547,7 @@ def simulation_loop():
                 last_saved_time = running_time
                 try:
                     save_data = dict(payload)
-                    save_data["full_organisms"] = [org_alpha.to_full_dict(), org_beta.to_full_dict()]
+                    save_data["full_organisms"] = [o.to_full_dict() for o in current_orgs]
                     with open(CHECKPOINT_FILE, "w", encoding='utf-8') as f:
                         json.dump(save_data, f, indent=2)
                 except Exception as ex:

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FELLA 3D — Continuous (X,Y,Z) Stacked Cognitive Universe</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #060913;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+        #canvas-container { flex: 1; height: 100%; position: relative; }
+        #hud-sidebar {
+            width: 380px;
+            background: rgba(13, 18, 30, 0.95);
+            backdrop-filter: blur(12px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            z-index: 10;
+            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+        }
+        .header { margin-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 12px; }
+        .header h1 { font-size: 20px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
+        .header p { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+        
+        .metric-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .metric-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+        .metric-label { color: #94a3b8; }
+        .metric-value { font-weight: 600; color: #f8fafc; }
+        
+        .trait-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            background: #0284c7;
+            color: white;
+            text-transform: uppercase;
+        }
+        
+        .progress-bar-bg {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            height: 6px;
+            width: 100%;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .chat-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .chat-log {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .msg { padding: 8px 12px; border-radius: 6px; line-height: 1.4; max-width: 90%; }
+        .msg-user { background: #1e3a8a; align-self: flex-end; color: #e0e7ff; }
+        .msg-fella { background: #1e293b; align-self: flex-start; color: #f1f5f9; border-left: 3px solid #38bdf8; }
+        
+        .input-row { display: flex; gap: 8px; margin-top: 8px; }
+        .chat-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #1d4ed8; }
+        .btn-action-row { display: flex; gap: 6px; margin-top: 4px; }
+        .btn-action {
+            flex: 1;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn-action:hover { background: #334155; color: #fff; }
+
+        #tooltip {
+            position: absolute;
+            display: none;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid #38bdf8;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 100;
+            color: #f8fafc;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="tooltip"></div>
+
+    <div id="hud-sidebar">
+        <div class="header">
+            <h1>🌌 FELLA 3D</h1>
+            <p>Stacked (X, Y, Z) Living Language & Curiosity Engine</p>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-row">
+                <span class="metric-label">Active Trait Attractor:</span>
+                <span id="trait-badge" class="trait-badge">INQUIRE</span>
+            </div>
+            <div class="metric-row" style="margin-top: 8px;">
+                <span class="metric-label">Epistemic Friction:</span>
+                <span id="val-friction" class="metric-value">0.05</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div id="bar-friction" class="progress-bar-fill" style="width: 10%; background: #f43f5e;"></div>
+            </div>
+            <div class="metric-row" style="margin-top: 8px;">
+                <span class="metric-label">Self-Confidence (Flow):</span>
+                <span id="val-confidence" class="metric-value">0.95</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div id="bar-confidence" class="progress-bar-fill" style="width: 95%; background: #10b981;"></div>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-row">
+                <span class="metric-label">Stacked Event Z-Plane:</span>
+                <span id="val-z" class="metric-value">Z = 0.0</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Living Neurons:</span>
+                <span id="val-neurons" class="metric-value">0</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Cross-Z Synapses:</span>
+                <span id="val-cross-z" class="metric-value" style="color: #fbbf24;">0</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Ollama Mentor:</span>
+                <span id="val-mentor" class="metric-value" style="color: #38bdf8;">Checking...</span>
+            </div>
+        </div>
+
+        <div class="chat-box">
+            <div id="chat-log" class="chat-log">
+                <div class="msg msg-fella">
+                    Hello! I am FELLA. I am learning words and ideas across my stacked event planes. Ask me anything or teach me!
+                </div>
+            </div>
+            <div class="input-row">
+                <input id="chat-input" class="chat-input" type="text" placeholder="Talk to FELLA..." onkeydown="if(event.key==='Enter') sendChat();">
+                <button class="btn" onclick="sendChat()">Send</button>
+            </div>
+        </div>
+
+        <div class="btn-action-row">
+            <button class="btn-action" onclick="triggerCuriosity()">✨ Ask Ollama</button>
+            <button class="btn-action" onclick="triggerDream()">🌙 Dream & Prune</button>
+            <button class="btn-action" onclick="fetchState()">🔄 Refresh 3D</button>
+        </div>
+    </div>
+
+    <script>
+        // -------------------------------------------------------------
+        // Three.js 3D Scene Initialization
+        // -------------------------------------------------------------
+        const container = document.getElementById('canvas-container');
+        const tooltip = document.getElementById('tooltip');
+        
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x060913, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(22, 18, 30);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+        dirLight.position.set(20, 40, 20);
+        scene.add(dirLight);
+
+        // Grid Plane Base
+        const baseGrid = new THREE.GridHelper(30, 30, 0x1e293b, 0x0f172a);
+        baseGrid.position.y = -0.1;
+        scene.add(baseGrid);
+
+        // Object containers
+        const neuronGroup = new THREE.Group();
+        const synapseGroup = new THREE.Group();
+        const planeGroup = new THREE.Group();
+        scene.add(planeGroup);
+        scene.add(synapseGroup);
+        scene.add(neuronGroup);
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let neuronMeshes = [];
+
+        // Colors
+        const roleColors = {
+            "letter": 0x94a3b8,
+            "word": 0x38bdf8,
+            "concept": 0x818cf8,
+            "anchor": 0xf43f5e,
+            "vacuum": 0xf59e0b,
+            "syntax": 0x10b981
+        };
+
+        // -------------------------------------------------------------
+        // Render / Update Loop
+        // -------------------------------------------------------------
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        // -------------------------------------------------------------
+        // Fetch & Render Substrate
+        // -------------------------------------------------------------
+        async function fetchState() {
+            try {
+                const res = await fetch('/api/state');
+                const data = await res.json();
+                renderBrain(data);
+            } catch (e) {
+                console.error("Could not fetch FELLA state:", e);
+            }
+        }
+
+        function renderBrain(data) {
+            const tel = data.telemetry;
+            const neurons = data.neurons || [];
+
+            // Update HUD
+            document.getElementById('trait-badge').innerText = tel.active_trait;
+            document.getElementById('val-friction').innerText = tel.epistemic_friction.toFixed(3);
+            document.getElementById('bar-friction').style.width = (tel.epistemic_friction * 100) + '%';
+            document.getElementById('val-confidence').innerText = tel.self_confidence.toFixed(3);
+            document.getElementById('bar-confidence').style.width = (tel.self_confidence * 100) + '%';
+            document.getElementById('val-z').innerText = `Z = ${tel.current_event_z.toFixed(1)}`;
+            document.getElementById('val-neurons').innerText = tel.total_neurons;
+            document.getElementById('val-cross-z').innerText = tel.synapse_stats.cross_z_inter_plane_synapses;
+            document.getElementById('val-mentor').innerText = tel.ollama_online ? `Online (${tel.ollama_model})` : 'Offline Oracle';
+
+            // Clear existing 3D groups
+            while(neuronGroup.children.length) neuronGroup.remove(neuronGroup.children[0]);
+            while(synapseGroup.children.length) synapseGroup.remove(synapseGroup.children[0]);
+            while(planeGroup.children.length) planeGroup.remove(planeGroup.children[0]);
+            neuronMeshes = [];
+
+            // Render Stacked Z-Planes (translucent discs)
+            const zSet = new Set(neurons.map(n => Math.round(n.z_plane * 2) / 2));
+            zSet.forEach(zVal => {
+                const planeGeom = new THREE.CylinderGeometry(8, 8, 0.05, 32);
+                const planeMat = new THREE.MeshBasicMaterial({
+                    color: 0x1e293b,
+                    transparent: true,
+                    opacity: 0.15,
+                    wireframe: true
+                });
+                const planeMesh = new THREE.Mesh(planeGeom, planeMat);
+                planeMesh.position.y = zVal * 4.0;
+                planeGroup.add(planeMesh);
+            });
+
+            // Map neurons by ID
+            const neuronMap = {};
+            const sphereGeom = new THREE.SphereGeometry(0.35, 16, 16);
+
+            neurons.forEach(n => {
+                neuronMap[n.id] = n;
+                const col = roleColors[n.role] || 0x38bdf8;
+                const mat = new THREE.MeshStandardMaterial({
+                    color: col,
+                    emissive: col,
+                    emissiveIntensity: 0.35,
+                    roughness: 0.2
+                });
+                const mesh = new THREE.Mesh(sphereGeom, mat);
+                mesh.position.set(n.pos_3d[0], n.pos_3d[2], n.pos_3d[1]); // y in Three.js is vertical Z in FELLA
+                const scale = Math.min(2.2, Math.max(0.7, 0.6 + n.energy * 0.3));
+                mesh.scale.set(scale, scale, scale);
+                mesh.userData = n;
+                neuronGroup.add(mesh);
+                neuronMeshes.push(mesh);
+            });
+
+            // Render Synaptic Bridges
+            neurons.forEach(n => {
+                const srcPos = new THREE.Vector3(n.pos_3d[0], n.pos_3d[2], n.pos_3d[1]);
+                for (const [targetId, cond] of Object.entries(n.synapses)) {
+                    const target = neuronMap[targetId];
+                    if (!target) continue;
+                    const dstPos = new THREE.Vector3(target.pos_3d[0], target.pos_3d[2], target.pos_3d[1]);
+                    
+                    const isCrossZ = Math.abs(n.z_plane - target.z_plane) > 0.01;
+                    const lineMat = new THREE.LineBasicMaterial({
+                        color: isCrossZ ? 0xfbbf24 : 0x38bdf8,
+                        transparent: true,
+                        opacity: Math.min(0.85, Math.max(0.15, cond * 0.9))
+                    });
+
+                    const geom = new THREE.BufferGeometry().setFromPoints([srcPos, dstPos]);
+                    const line = new THREE.Line(geom, lineMat);
+                    synapseGroup.add(line);
+                }
+            });
+        }
+
+        // -------------------------------------------------------------
+        // Interaction & Controls
+        // -------------------------------------------------------------
+        async function sendChat() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const chatLog = document.getElementById('chat-log');
+            chatLog.innerHTML += `<div class="msg msg-user">${text}</div>`;
+            input.value = '';
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            try {
+                const res = await fetch('/api/converse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+                const tel = await res.json();
+                chatLog.innerHTML += `<div class="msg msg-fella">${tel.last_response}</div>`;
+                chatLog.scrollTop = chatLog.scrollHeight;
+                fetchState();
+            } catch (e) {
+                console.error("Chat error:", e);
+            }
+        }
+
+        async function triggerCuriosity() {
+            const chatLog = document.getElementById('chat-log');
+            chatLog.innerHTML += `<div class="msg msg-fella" style="border-left-color: #f59e0b;"><em>✨ FELLA is consulting mentor Ollama...</em></div>`;
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            try {
+                const res = await fetch('/api/curiosity', { method: 'POST' });
+                const data = await res.json();
+                if (data.result) {
+                    chatLog.innerHTML += `<div class="msg msg-fella"><strong>[Learned '${data.result.concept}']:</strong> ${data.result.explanation}</div>`;
+                }
+                chatLog.scrollTop = chatLog.scrollHeight;
+                fetchState();
+            } catch (e) {
+                console.error("Curiosity error:", e);
+            }
+        }
+
+        async function triggerDream() {
+            const chatLog = document.getElementById('chat-log');
+            chatLog.innerHTML += `<div class="msg msg-fella" style="border-left-color: #10b981;"><em>🌙 FELLA entered dream consolidation & pruned weak synapses...</em></div>`;
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            try {
+                const res = await fetch('/api/dream', { method: 'POST' });
+                fetchState();
+            } catch (e) {
+                console.error("Dream error:", e);
+            }
+        }
+
+        // Tooltip on Hover
+        window.addEventListener('mousemove', (e) => {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(neuronMeshes);
+
+            if (intersects.length > 0) {
+                const n = intersects[0].object.userData;
+                tooltip.style.display = 'block';
+                tooltip.style.left = (e.clientX + 12) + 'px';
+                tooltip.style.top = (e.clientY + 12) + 'px';
+                tooltip.innerHTML = `<strong>${n.text || 'Neuron ' + n.id}</strong><br>Role: ${n.role}<br>Z-Plane: ${n.z_plane.toFixed(1)}<br>Energy: ${n.energy.toFixed(2)}`;
+            } else {
+                tooltip.style.display = 'none';
+            }
+        });
+
+        // Initial fetch & auto poll
+        fetchState();
+        setInterval(fetchState, 4000);
+    </script>
+</body>
+</html>
