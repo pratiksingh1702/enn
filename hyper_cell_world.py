@@ -12,6 +12,7 @@ import numpy as np
 import os
 import json
 import threading
+import math
 from typing import Dict, Any, Tuple, List, Optional
 
 
@@ -86,12 +87,15 @@ class EcosystemFauna:
 
 class OrganicWorld3D:
     """3D continuous physics world supporting wildlife, weather, multi-agents, and thread safety."""
-    def __init__(self, size_x: float = 32.0, size_y: float = 32.0, max_height: float = 14.0, restore_file: Optional[str] = None):
+    def __init__(self, size_x: float = 64.0, size_y: float = 64.0, max_height: float = 18.0, restore_file: Optional[str] = None):
         self.size_x = float(size_x)
         self.size_y = float(size_y)
         self.max_height = float(max_height)
         self.cells: Dict[int, HyperCell] = {}
         self.cells_lock = threading.Lock()
+        self._cached_cell_positions = np.empty((0, 3), dtype=np.float32)
+        self._cached_cell_radii = np.empty((0,), dtype=np.float32)
+        self._cells_dirty = True
         self.fauna: List[EcosystemFauna] = []
         self.next_cell_id = 1
         self.sim_time = 0.0
@@ -111,16 +115,16 @@ class OrganicWorld3D:
         self._spawn_wildlife()
 
     def get_terrain_height(self, x: float, y: float) -> float:
-        """Continuous multi-scale harmonic terrain heightmap: z = h(x, y)."""
-        x_c = np.clip(x, 0.0, self.size_x)
-        y_c = np.clip(y, 0.0, self.size_y)
+        """Continuous multi-scale harmonic terrain heightmap: z = h(x, y). Fast scalar math."""
+        x_c = max(0.0, min(self.size_x, float(x)))
+        y_c = max(0.0, min(self.size_y, float(y)))
         
-        h1 = np.sin(x_c * 0.15) * np.cos(y_c * 0.15) * 1.5
-        h2 = np.sin(x_c * 0.30 + 1.2) * np.sin(y_c * 0.30 + 0.8) * 0.8
-        h3 = np.cos(np.sqrt((x_c - 16.0)**2 + (y_c - 16.0)**2) * 0.25) * 0.6
+        h1 = math.sin(x_c * 0.08) * math.cos(y_c * 0.08) * 2.2
+        h2 = math.sin(x_c * 0.16 + 1.2) * math.sin(y_c * 0.16 + 0.8) * 1.2
+        h3 = math.cos(math.sqrt((x_c - 32.0)**2 + (y_c - 32.0)**2) * 0.12) * 0.8
         
-        base_h = 1.2 + h1 + h2 + h3
-        return float(np.clip(base_h, 0.2, self.max_height - 1.0))
+        base_h = 1.6 + h1 + h2 + h3
+        return max(0.2, min(self.max_height - 1.0, base_h))
 
     def _spawn_wildlife(self):
         self.fauna = [
@@ -141,31 +145,22 @@ class OrganicWorld3D:
                     cell_id=cid,
                     pos=tuple(c_data["pos"]),
                     cell_type=c_data["type"],
-                    energy=c_data.get("energy", 10.0),
-                    radius=c_data.get("radius", 0.4)
+                    energy=float(c_data["energy"]),
+                    radius=float(c_data["radius"])
                 )
                 self.cells[cid] = c
                 if cid >= self.next_cell_id:
                     self.next_cell_id = cid + 1
             print(f"Restored {len(self.cells)} hyper-cells from {file_path} successfully!")
         except Exception as e:
-            print(f"Error restoring world: {e}")
+            print(f"Error restoring world state: {e}")
             self._populate_initial_world()
 
     def _populate_initial_world(self):
-        ground_center = self.get_terrain_height(16.0, 16.0)
-        for x in range(14, 19):
-            for y in range(14, 19):
-                is_wall = (x == 14 or x == 18 or y == 14 or y == 18)
-                is_door = (x == 16 and y == 18)
-                if is_wall and not is_door:
-                    for z_lvl in range(1, 4):
-                        z_pos = ground_center + z_lvl * 0.9
-                        self.spawn_cell((float(x), float(y), z_pos), cell_type="matter_wall", energy=10.0)
-                self.spawn_cell((float(x), float(y), ground_center + 3.7), cell_type="matter_wood", energy=10.0)
-
         for _ in range(25):
             self._spawn_random_ether()
+        for _ in range(16):
+            self._spawn_random_stone()
 
     def _spawn_random_ether(self):
         ex = np.random.uniform(3.0, self.size_x - 3.0)
@@ -190,101 +185,154 @@ class OrganicWorld3D:
             cell = HyperCell(cell_id=self.next_cell_id, pos=pos, cell_type=cell_type, energy=energy, mass=mass, radius=radius, frequency=frequency)
             self.cells[self.next_cell_id] = cell
             self.next_cell_id += 1
+            self._cells_dirty = True
             return cell
 
-    def update_physics(self, dt: float = 0.1):
+    def _sync_cell_buffers(self):
+        """Synchronizes contiguous NumPy array buffers of cell positions and radii."""
+        if not self._cells_dirty and self._cached_cell_positions is not None:
+            return
+        if not self.cells:
+            self._cached_cell_positions = np.empty((0, 3), dtype=np.float32)
+            self._cached_cell_radii = np.empty((0,), dtype=np.float32)
+        else:
+            unbonded = [c for c in self.cells.values() if not c.bonded_to_agent]
+            if unbonded:
+                self._cached_cell_positions = np.array([c.pos for c in unbonded], dtype=np.float32)
+                self._cached_cell_radii = np.array([c.radius + 0.25 for c in unbonded], dtype=np.float32)
+            else:
+                self._cached_cell_positions = np.empty((0, 3), dtype=np.float32)
+                self._cached_cell_radii = np.empty((0,), dtype=np.float32)
+        self._cells_dirty = False
+
+    def update_physics(self, dt: float = 0.1, is_headless: bool = False):
         """Update environmental time, weather transitions, wildlife, daylight, and ether blooming."""
         self.sim_time += dt
-        solar_phase = (self.sim_time / 240.0) * 2.0 * np.pi
-        self.sun_intensity = float(max(0.12, (np.sin(solar_phase) + 1.0) / 2.0))
+        solar_phase = (self.sim_time / 240.0) * 2.0 * math.pi
+        self.sun_intensity = max(0.12, (math.sin(solar_phase) + 1.0) / 2.0)
 
         # Weather Transitions
         self.weather_timer += dt
         if self.weather_timer > 90.0:
             self.weather_timer = 0.0
             weathers = ["clear", "rain", "storm", "aurora", "clear"]
-            self.weather_type = weathers[np.random.randint(0, len(weathers))]
+            self.weather_type = weathers[int(np.random.randint(0, len(weathers)))]
 
-        # Update Wildlife
-        for f in self.fauna:
-            f.update(self, dt)
+        # Update Wildlife (Skipped in headless or every 10 steps)
+        if not is_headless:
+            for f in self.fauna:
+                f.update(self, dt)
 
         # Regrowth
         with self.cells_lock:
             cells_list = list(self.cells.values())
             
-        active_ether_count = sum(1 for c in cells_list if c.cell_type == "energy_ether")
-        if active_ether_count < 28 and (self.sim_time - self.last_ether_spawn > 3.0):
-            self.last_ether_spawn = self.sim_time
-            self._spawn_random_ether()
+        if self.sim_time - self.last_ether_spawn > 3.0:
+            active_ether_count = sum(1 for c in cells_list if c.cell_type == "energy_ether")
+            if active_ether_count < 28:
+                self.last_ether_spawn = self.sim_time
+                self._spawn_random_ether()
 
-        active_stone_count = sum(1 for c in cells_list if c.cell_type == "matter_stone")
-        if active_stone_count < 16 and (self.sim_time - self.last_stone_spawn > 5.0):
-            self.last_stone_spawn = self.sim_time
-            self._spawn_random_stone()
+        if self.sim_time - self.last_stone_spawn > 5.0:
+            active_stone_count = sum(1 for c in cells_list if c.cell_type == "matter_stone")
+            if active_stone_count < 16:
+                self.last_stone_spawn = self.sim_time
+                self._spawn_random_stone()
 
-        for cell in cells_list:
-            cell.update_phase(dt)
-            if cell.cell_type == "energy_ether" and not cell.bonded_to_agent:
-                cell.pos[2] += np.sin(cell.phase) * 0.025 * dt
-                ground_z = self.get_terrain_height(cell.pos[0], cell.pos[1])
-                if cell.pos[2] < ground_z + 0.6:
-                    cell.pos[2] = ground_z + 0.6
+        if not is_headless:
+            for cell in cells_list:
+                cell.update_phase(dt)
+                if cell.cell_type == "energy_ether" and not cell.bonded_to_agent:
+                    cell.pos[2] += math.sin(cell.phase) * 0.025 * dt
+                    ground_z = self.get_terrain_height(cell.pos[0], cell.pos[1])
+                    if cell.pos[2] < ground_z + 0.6:
+                        cell.pos[2] = ground_z + 0.6
 
     def cast_visual_rays(self, origin: np.ndarray, yaw: float, pitch: float, other_agent_pos: Optional[np.ndarray] = None,
                           num_azimuth: int = 16, num_elevation: int = 3, max_range: float = 22.0) -> Dict[str, Any]:
-        """Thread-safe continuous visual depth raycast probing terrain, architecture, and other organisms."""
+        """Vectorized high-speed continuous visual depth raycast probing terrain, architecture, and other organisms."""
         azimuths = np.linspace(0.0, 2.0 * np.pi, num_azimuth, endpoint=False)
         elevations = np.linspace(-np.pi / 6.0, np.pi / 6.0, num_elevation)
-
-        depths = np.zeros((num_elevation, num_azimuth))
-        ray_dirs = np.zeros((num_elevation, num_azimuth, 3))
-        closest_dist = max_range
+        
+        # Grid of ray directions shape: (num_elevation, num_azimuth, 3)
+        el_grid, az_grid = np.meshgrid(elevations, azimuths, indexing='ij')
+        
+        dx = np.cos(pitch + el_grid) * np.cos(yaw + az_grid)
+        dy = np.cos(pitch + el_grid) * np.sin(yaw + az_grid)
+        dz = np.sin(pitch + el_grid)
+        ray_dirs = np.stack([dx, dy, dz], axis=-1)  # shape: (E, A, 3)
+        flat_dirs = ray_dirs.reshape(-1, 3)         # shape: (48, 3)
+        
+        # Default all depths to max_range
+        depths_flat = np.full(len(flat_dirs), max_range, dtype=np.float32)
         spotted_other_agent = False
 
+        # 1. Vectorized Other-Agent Sphere Intersection
+        if other_agent_pos is not None:
+            v_other = other_agent_pos - origin
+            proj = np.dot(flat_dirs, v_other)
+            perp_sq = np.sum(v_other**2) - proj**2
+            mask = (proj > 0.3) & (perp_sq < 0.64) & (proj < max_range)
+            if np.any(mask):
+                depths_flat[mask] = np.minimum(depths_flat[mask], proj[mask])
+                spotted_other_agent = True
+
+        # 2. Vectorized Contiguous Matrix Cell Intersection with BLAS Filter
+        ox, oy = origin[0], origin[1]
         with self.cells_lock:
-            current_cells = list(self.cells.values())
+            self._sync_cell_buffers()
+            all_pos = self._cached_cell_positions
+            all_radii = self._cached_cell_radii
 
-        for e_idx, el in enumerate(elevations):
-            for a_idx, az in enumerate(azimuths):
-                dx = np.cos(pitch + el) * np.cos(yaw + az)
-                dy = np.cos(pitch + el) * np.sin(yaw + az)
-                dz = np.sin(pitch + el)
-                r_dir = np.array([dx, dy, dz], dtype=float)
-                ray_dirs[e_idx, a_idx] = r_dir
+        if len(all_pos) > 0:
+            dx_c = all_pos[:, 0] - ox
+            dy_c = all_pos[:, 1] - oy
+            mask_near = (np.abs(dx_c) <= max_range) & (np.abs(dy_c) <= max_range)
+            
+            cand_pos = all_pos[mask_near]
+            cand_radii = all_radii[mask_near]
+            
+            if len(cand_pos) > 48:
+                dist_sq = dx_c[mask_near]**2 + dy_c[mask_near]**2
+                top_idx = np.argpartition(dist_sq, 48)[:48]
+                cand_pos = cand_pos[top_idx]
+                cand_radii = cand_radii[top_idx]
 
-                ray_dist = max_range
-                for step_d in np.linspace(0.5, max_range, 14):
-                    probe_pt = origin + r_dir * step_d
-                    
-                    if other_agent_pos is not None:
-                        dist_to_other = np.linalg.norm(probe_pt - other_agent_pos)
-                        if dist_to_other < 0.8:
-                            ray_dist = float(step_d)
-                            spotted_other_agent = True
-                            break
+            if len(cand_pos) > 0:
+                v_cells = cand_pos - origin  # (N, 3)
+                projs = np.dot(flat_dirs, v_cells.T) # (48, N)
+                v_cells_sq = np.sum(v_cells**2, axis=1) # (N,)
+                perp_sq = v_cells_sq - projs**2 # (48, N)
+                
+                valid_hits = (projs > 0.4) & (projs < max_range) & (perp_sq < (cand_radii**2))
+                dist_matrix = np.where(valid_hits, projs, max_range)
+                min_cell_dists = np.min(dist_matrix, axis=1)
+                depths_flat = np.minimum(depths_flat, min_cell_dists)
 
-                    if 0.0 <= probe_pt[0] <= self.size_x and 0.0 <= probe_pt[1] <= self.size_y:
-                        ter_z = self.get_terrain_height(probe_pt[0], probe_pt[1])
-                        if probe_pt[2] <= ter_z:
-                            ray_dist = float(step_d)
-                            break
-                        
-                        hit_cell = False
-                        for cell in current_cells:
-                            if not cell.bonded_to_agent and np.linalg.norm(probe_pt - cell.pos) < cell.radius + 0.25:
-                                ray_dist = float(step_d)
-                                hit_cell = True
-                                break
-                        if hit_cell:
-                            break
-                    else:
-                        ray_dist = float(step_d)
-                        break
+        # 3. Vectorized Terrain Ground Horizon Probe
+        # Test 5 sample points along each ray for ground collision
+        sample_dists = np.array([1.5, 3.5, 7.0, 12.0, 18.0], dtype=np.float32) # (5,)
+        # probe points: (48, 5, 3)
+        probes = origin[None, None, :] + flat_dirs[:, None, :] * sample_dists[None, :, None]
+        
+        px = probes[:, :, 0]
+        py = probes[:, :, 1]
+        pz = probes[:, :, 2]
+        
+        # Vectorized terrain calculation: h = 1.2 + sin(x*0.15)*cos(y*0.15)*1.5 + sin(x*0.3+1.2)*sin(y*0.3+0.8)*0.8
+        h1 = np.sin(px * 0.15) * np.cos(py * 0.15) * 1.5
+        h2 = np.sin(px * 0.3 + 1.2) * np.sin(py * 0.3 + 0.8) * 0.8
+        ter_z = np.maximum(0.2, 1.2 + h1 + h2)
+        
+        below_ground = (pz <= ter_z) | (px < 0) | (px > self.size_x) | (py < 0) | (py > self.size_y)
+        # Find first distance below ground
+        has_ground_hit = np.any(below_ground, axis=1)
+        first_ground_idx = np.argmax(below_ground, axis=1)
+        ground_hit_dists = np.where(has_ground_hit, sample_dists[first_ground_idx], max_range)
+        depths_flat = np.minimum(depths_flat, ground_hit_dists)
 
-                depths[e_idx, a_idx] = ray_dist
-                if ray_dist < closest_dist:
-                    closest_dist = ray_dist
+        depths = depths_flat.reshape(num_elevation, num_azimuth)
+        closest_dist = float(np.min(depths))
 
         return {
             "depth_matrix": depths,
@@ -292,3 +340,4 @@ class OrganicWorld3D:
             "closest_obstacle_dist": closest_dist,
             "spotted_other_agent": spotted_other_agent
         }
+

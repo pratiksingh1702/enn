@@ -13,6 +13,10 @@ import json
 import numpy as np
 from typing import List, Tuple, Optional, Dict, Any, Set
 from collections import defaultdict, deque
+try:
+    from scipy.spatial import cKDTree
+except ImportError:
+    cKDTree = None
 from meta_learning import MetaField
 from self_awareness import MetacognitiveEngine
 
@@ -126,6 +130,34 @@ class ENN4D:
         self.baseline_energy = 0.15         # Basal metabolic floor
         self.min_energy = 0.05              # Pruning floor
         self.eligibility_traces: Dict[Tuple[int, int], float] = defaultdict(float)
+        
+        # High-Performance Contiguous Buffer Caches & Spatial Indices
+        self._cached_x = np.empty((0, dim), dtype=np.float32)
+        self._cached_y = np.empty((0, dim), dtype=np.float32)
+        self._cached_e = np.empty((0,), dtype=np.float32)
+        self._cached_kdtree_x = None
+        self._is_buffer_dirty = True
+        self._cached_prototypes: Dict[int, np.ndarray] = {}
+        self._prototypes_dirty = True
+
+    def _sync_buffers(self):
+        """Synchronizes contiguous NumPy array buffers and spatial k-d trees."""
+        if not self._is_buffer_dirty:
+            return
+        if not self.neurons:
+            self._cached_x = np.empty((0, self.dim), dtype=np.float32)
+            self._cached_y = np.empty((0, self.dim), dtype=np.float32)
+            self._cached_e = np.empty((0,), dtype=np.float32)
+            self._cached_kdtree_x = None
+        else:
+            self._cached_x = np.array([n.x for n in self.neurons], dtype=np.float32)
+            self._cached_y = np.array([n.y for n in self.neurons], dtype=np.float32)
+            self._cached_e = np.array([n.energy for n in self.neurons], dtype=np.float32)
+            if cKDTree is not None and len(self.neurons) >= 32:
+                self._cached_kdtree_x = cKDTree(self._cached_x)
+            else:
+                self._cached_kdtree_x = None
+        self._is_buffer_dirty = False
 
     def reset(self):
         """Reset the physical universe to an empty primordial state."""
@@ -136,6 +168,9 @@ class ENN4D:
         self.event_count = 0
         self.question_stack = []
         self.eligibility_traces.clear()
+        self._cached_kdtree_x = None
+        self._is_buffer_dirty = True
+        self._prototypes_dirty = True
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -150,36 +185,41 @@ class ENN4D:
         self.next_family_id = int(data.get("next_family_id", 0))
         self.event_count = int(data.get("event_count", 0))
         self.neurons = [Neuron.from_dict(n_data) for n_data in data.get("neurons", [])]
+        self._is_buffer_dirty = True
+        self._prototypes_dirty = True
 
     # --- VECTORIZED MATRICES ---
     def _get_x_matrix(self) -> np.ndarray:
-        if not self.neurons:
-            return np.empty((0, self.dim))
-        return np.array([n.x for n in self.neurons])
+        self._sync_buffers()
+        return self._cached_x
 
     def _get_y_matrix(self) -> np.ndarray:
-        if not self.neurons:
-            return np.empty((0, self.dim))
-        return np.array([n.y for n in self.neurons])
+        self._sync_buffers()
+        return self._cached_y
 
     def _get_energy_vector(self) -> np.ndarray:
-        if not self.neurons:
-            return np.empty((0,))
-        return np.array([n.energy for n in self.neurons])
+        self._sync_buffers()
+        return self._cached_e
 
     # --- FAMILY PROTOTYPES ---
     def get_all_family_prototypes(self) -> Dict[int, np.ndarray]:
-        """Compute energy-weighted centroids for all active families."""
+        """Compute energy-weighted centroids for all active families with caching."""
+        if not self._prototypes_dirty and self._cached_prototypes:
+            return self._cached_prototypes
+            
         families = defaultdict(list)
         for n in self.neurons:
             families[n.w].append(n)
             
         prototypes = {}
         for w, members in families.items():
-            energies = np.array([m.energy for m in members])
-            xs = np.array([m.x for m in members])
+            energies = np.array([m.energy for m in members], dtype=np.float32)
+            xs = np.array([m.x for m in members], dtype=np.float32)
             total_e = np.sum(energies)
             prototypes[w] = (np.sum(xs * energies[:, None], axis=0) / total_e) if total_e > 0 else np.mean(xs, axis=0)
+            
+        self._cached_prototypes = prototypes
+        self._prototypes_dirty = False
         return prototypes
 
     def find_best_family(self, event_x: np.ndarray) -> Tuple[Optional[int], float]:
@@ -189,7 +229,7 @@ class ENN4D:
             return None, 0.0
             
         fam_ids = list(prototypes.keys())
-        proto_mat = np.array([prototypes[w] for w in fam_ids])
+        proto_mat = np.array([prototypes[w] for w in fam_ids], dtype=np.float32)
         
         dist_sq = np.sum((proto_mat - event_x) ** 2, axis=1)
         forces = 1.0 / (1.0 + 3.0 * dist_sq)
@@ -197,18 +237,63 @@ class ENN4D:
         best_idx = np.argmax(forces)
         return fam_ids[best_idx], float(forces[best_idx])
 
-    # --- 1. VECTORIZED RESONANCE ---
-    def compute_resonance(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray) -> List[float]:
-        """Vectorized field resonance force calculation."""
+    # --- 1. SPARSE k-NN & VECTORIZED RESONANCE ---
+    def compute_resonance(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray, top_k: int = 32) -> List[float]:
+        """
+        Sparse k-NN & Vectorized Field Resonance Force Calculation.
+        When N > 64, executes in O(k log N) spatial time via cKDTree.
+        """
         if not self.neurons:
             return []
-        x_mat = self._get_x_matrix()
-        y_mat = self._get_y_matrix()
-        
-        dx_sq = np.sum((x_mat - event_x) ** 2, axis=1)
-        dy_sq = np.sum((y_mat - event_y) ** 2, axis=1)
-        forces = 1.0 / (1.0 + 3.0 * (dx_sq + dy_sq))
-        return forces.tolist()
+        self._sync_buffers()
+        n_count = len(self.neurons)
+
+        if n_count > 64 and self._cached_kdtree_x is not None:
+            # Sparse k-NN spatial tree query
+            k_val = min(n_count, top_k)
+            _, candidate_indices = self._cached_kdtree_x.query(event_x, k=k_val)
+            if isinstance(candidate_indices, (int, np.integer)):
+                candidate_indices = np.array([candidate_indices])
+            
+            cand_x = self._cached_x[candidate_indices]
+            cand_y = self._cached_y[candidate_indices]
+            dx_sq = np.sum((cand_x - event_x) ** 2, axis=1)
+            dy_sq = np.sum((cand_y - event_y) ** 2, axis=1)
+            cand_forces = 1.0 / (1.0 + 3.0 * (dx_sq + dy_sq))
+            
+            # Sparse force vector: non-neighbors have 0.0 force
+            forces = np.zeros(n_count, dtype=np.float32)
+            forces[candidate_indices] = cand_forces
+            return forces.tolist()
+        else:
+            # Direct BLAS vectorized matrix projection for small populations
+            dx_sq = np.sum((self._cached_x - event_x) ** 2, axis=1)
+            dy_sq = np.sum((self._cached_y - event_y) ** 2, axis=1)
+            forces = 1.0 / (1.0 + 3.0 * (dx_sq + dy_sq))
+            return forces.tolist()
+
+    # --- SYNAPTIC CONDUCTANCE PRUNING & GARBAGE COLLECTION ---
+    def prune_synapses(self, min_weight: float = 0.05, max_synapses: int = 16) -> int:
+        """
+        Thermodynamic Synaptic Pruning Phase Transition:
+        Removes connections with conductance below critical threshold W_ij < min_weight,
+        caps max channels to top-k highest conductance bridges, and removes dangling indices.
+        """
+        pruned_count = 0
+        n_count = len(self.neurons)
+        for n in self.neurons:
+            cleaned = {}
+            for target_idx, w in n.synapses.items():
+                if target_idx < n_count and w >= min_weight:
+                    cleaned[target_idx] = w
+                else:
+                    pruned_count += 1
+            if len(cleaned) > max_synapses:
+                sorted_syn = sorted(cleaned.items(), key=lambda kv: kv[1], reverse=True)[:max_synapses]
+                pruned_count += (len(cleaned) - max_synapses)
+                cleaned = dict(sorted_syn)
+            n.synapses = cleaned
+        return pruned_count
 
     # --- 2. VECTORIZED SYNAPTIC INTERFERENCE ---
     def interfere(self, event_x: np.ndarray, forces: List[float], event_y: Optional[np.ndarray] = None) -> np.ndarray:
@@ -219,27 +304,27 @@ class ENN4D:
         if not self.neurons:
             return event_y.copy() if event_y is not None else np.zeros(self.dim)
             
-        f_arr = np.array(forces)
-        e_arr = self._get_energy_vector()
+        self._sync_buffers()
+        f_arr = np.array(forces, dtype=np.float32)
+        direct_weights = f_arr * self._cached_e
         
-        # Base direct field activation
-        direct_weights = f_arr * e_arr
-        
-        # Synaptically conducted lateral wave activation
-        synaptic_boost = np.zeros(len(self.neurons))
-        for i, n in enumerate(self.neurons):
-            if f_arr[i] > 0.05:
-                for target_idx, conductance in n.synapses.items():
+        # Only active neurons with force > 0.05 propagate lateral wave
+        active_indices = np.where(f_arr > 0.05)[0]
+        if len(active_indices) > 0:
+            synaptic_boost = np.zeros(len(self.neurons), dtype=np.float32)
+            for i in active_indices:
+                f_val = f_arr[i]
+                for target_idx, conductance in self.neurons[i].synapses.items():
                     if target_idx < len(self.neurons):
-                        synaptic_boost[target_idx] += f_arr[i] * conductance * 0.35
-                        
-        total_effective_weights = direct_weights + synaptic_boost * e_arr
+                        synaptic_boost[target_idx] += f_val * conductance * 0.35
+            total_effective_weights = direct_weights + synaptic_boost * self._cached_e
+        else:
+            total_effective_weights = direct_weights
+
         mask = total_effective_weights > 0.05
-        
         total_w = np.sum(total_effective_weights[mask])
         if total_w > 0:
-            y_mat = self._get_y_matrix()
-            return np.sum(y_mat[mask] * total_effective_weights[mask, None], axis=0) / total_w
+            return np.sum(self._cached_y[mask] * total_effective_weights[mask, None], axis=0) / total_w
         return event_y.copy() if event_y is not None else np.zeros(self.dim)
 
     # --- 3. HEBBIAN SYNAPTIC POTENTIATION & AMPLIFICATION ---
@@ -328,7 +413,11 @@ class ENN4D:
                 forces = self.compute_resonance(event_x, event_y, event_z)
                 max_force = max(forces) if forces else 0.0
                 
-                if max_force < self.epsilon and proto_force < self.family_resonance_threshold:
+                # Adaptive Dynamic Novelty Threshold
+                n_count = len(self.neurons)
+                effective_epsilon = self.epsilon + 0.12 * (n_count / (n_count + 2000.0))
+                
+                if max_force < effective_epsilon and proto_force < self.family_resonance_threshold:
                     self.birth(event_x, event_y, event_z, None, text=text, features=features)
                 else:
                     target_fam = best_family if best_family is not None else 0
@@ -339,6 +428,7 @@ class ENN4D:
             self.check_family_capacities()
             self.merge_neurons()
             self.clean_connections()
+            self.prune_synapses(min_weight=self.synapse_prune_threshold, max_synapses=self.max_synapses)
 
     def detect_epistemic_void(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray, text: str, max_force: float, features: Optional[np.ndarray] = None) -> Optional[Dict[str, Any]]:
         """
@@ -394,6 +484,8 @@ class ENN4D:
                     self.neurons[peer_idx].synapses[new_idx] = w_ij
                 
         self.neurons.append(new_neuron)
+        self._is_buffer_dirty = True
+        self._prototypes_dirty = True
         return new_neuron
 
     def birth_constellation(self, nodes: List[Dict[str, Any]], family: Optional[int] = None) -> List[Neuron]:
@@ -461,6 +553,7 @@ class ENN4D:
         for idx in member_indices:
             if np.dot(self.neurons[idx].x - mean_pt, v0) > 0:
                 self.neurons[idx].w = new_fam_id
+        self._prototypes_dirty = True
 
     def clean_connections(self):
         """Sanitize, deduplicate, and prune synaptic channels."""
@@ -516,6 +609,8 @@ class ENN4D:
                 n.synapses = remapped_synapses
             self.neurons = surviving
             self.clean_connections()
+            self._is_buffer_dirty = True
+            self._prototypes_dirty = True
 
     # --- PHYSICAL STEP & CONSTELLATION STEP ---
     def step(self, event_x: np.ndarray, event_y: np.ndarray, event_z: np.ndarray, text: str = "", features: Optional[np.ndarray] = None, origin: float = 1.0) -> Tuple[np.ndarray, Optional[Dict[str, Any]]]:

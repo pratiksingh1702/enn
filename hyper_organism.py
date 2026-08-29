@@ -84,8 +84,8 @@ class HumanoidENNOrganism:
         
         # Curiosity & Attention Focus
         self.curiosity_focus: str = f"Organism {self.agent_id}: Awakening in meadow"
-        self.target_quadrant_idx = np.random.randint(0, 5)
-        self.quadrants = [(6.0, 6.0), (26.0, 6.0), (26.0, 26.0), (6.0, 26.0), (16.0, 16.0), (8.0, 16.0), (24.0, 16.0)]
+        self.target_quadrant_idx = np.random.randint(0, 7)
+        self.quadrants = [(10.0, 10.0), (54.0, 10.0), (54.0, 54.0), (10.0, 54.0), (32.0, 32.0), (16.0, 32.0), (48.0, 32.0)]
         
         # Metabolic Life Energy & Telemetry
         self.energy_budget = 350.0
@@ -100,6 +100,17 @@ class HumanoidENNOrganism:
         # Spatial Memory Traces for Anti-Looping & Neurogenesis
         self.visited_grid_voxels: set = set()
         self.spatial_trace_map: Dict[Tuple[int, int], float] = {}
+
+        # Saccade Caching (Biological 200ms Cognitive Update)
+        self.step_counter: int = 0
+        self.saccade_stride: int = 10
+        self._cached_sensory_wave = np.array([0.5, 0.5, 0.5, 0.5], dtype=np.float32)
+        self._cached_vis_data = None
+        self._cached_curiosity_pull = np.zeros(3, dtype=np.float32)
+        self._cached_motor = {"d_yaw": 0.0, "d_pitch": 0.0, "thrust": 1.0}
+        self._cached_winning_basin = None
+        self._cached_basin_pulls = {}
+        self._cached_reflection = {"self_confidence": 0.998, "epistemic_friction": 0.01, "body_world_coherence": 1.0}
 
     @property
     def total_mass(self) -> float:
@@ -159,10 +170,10 @@ class HumanoidENNOrganism:
         )
         self.curiosity_focus = f"Received Divine Telepathy: '{message[:25]}...'"
 
-    def step(self, world: OrganicWorld3D, dt: float = 0.1, other_organism: Optional["HumanoidENNOrganism"] = None) -> Dict[str, Any]:
+    def step(self, world: OrganicWorld3D, dt: float = 0.1, other_organism: Optional["HumanoidENNOrganism"] = None, is_headless: bool = False) -> Dict[str, Any]:
         """Execute one embodied humanoid physical perception-reasoning-action-reflection cycle."""
-        with world.cells_lock:
-            current_cells = list(world.cells.items())
+        is_saccade = (self.step_counter % self.saccade_stride == 0)
+        self.step_counter += 1
 
         # 1. Homeostatic Metabolism & Solar Photosynthesis Absorption
         metabolic_drain = 0.08 + (0.02 if np.linalg.norm(self.velocity[:2]) > 0.1 else 0.0)
@@ -175,126 +186,142 @@ class HumanoidENNOrganism:
         self.limbs["torso_core"].mastery_score = min(1.0, self.limbs["torso_core"].mastery_score + 0.002)
         self.limbs["torso_core"].last_action_desc = f"Solar Intake: {int(solar_intake*1000)} mW"
 
-        # 2. Eye & Ear Sensory Perception
         head_pos = self.pos + self.limbs["head_brain"].offset
-        other_pos = other_organism.pos if other_organism is not None else None
-        vis_data = world.cast_visual_rays(head_pos, self.yaw, self.pitch, other_agent_pos=other_pos, num_azimuth=16, num_elevation=3)
-        
-        if vis_data.get("spotted_other_agent") and other_organism is not None:
-            dist_to_other = float(np.linalg.norm(self.pos - other_organism.pos))
-            self.limbs["left_eye"].last_action_desc = f"Perceiving {other_organism.agent_id} ({dist_to_other:.1f}m)"
-            self.limbs["right_eye"].last_action_desc = f"Perceiving {other_organism.agent_id} ({dist_to_other:.1f}m)"
 
-        # Binaural Ear Acoustic Flux Calculation & Chord Decoding
-        ether_flux = np.zeros(3)
-        nearest_ether_dist = 999.0
-        nearest_stone_dist = 999.0
-        nearest_stone_pos = None
-        nearest_ether_pos = None
+        if is_saccade or self._cached_vis_data is None:
+            with world.cells_lock:
+                current_cells = list(world.cells.items())
 
-        for cell_id, cell in current_cells:
-            delta = cell.pos - head_pos
-            d = float(np.linalg.norm(delta))
-            if cell.cell_type in ["energy_ether", "energy_crystal", "energy_shrine"] and not cell.bonded_to_agent:
-                if 0 < d < 25.0:
-                    ether_flux += (delta / d) * (cell.energy / (d + 0.5))
-                    if d < nearest_ether_dist:
-                        nearest_ether_dist = d
-                        nearest_ether_pos = cell.pos.copy()
-            elif cell.cell_type == "matter_stone" and not cell.bonded_to_agent:
-                if d < nearest_stone_dist:
-                    nearest_stone_dist = d
-                    nearest_stone_pos = cell.pos.copy()
+            # 2. Eye & Ear Sensory Perception on Saccade Tick
+            other_pos = other_organism.pos if other_organism is not None else None
+            vis_data = world.cast_visual_rays(head_pos, self.yaw, self.pitch, other_agent_pos=other_pos, num_azimuth=16, num_elevation=3)
+            self._cached_vis_data = vis_data
 
-        # 🗣️ Decode Vocal Chords Emitted by the Other Organism
-        if other_organism is not None and other_organism.current_vocal_chord is not None:
-            chord = other_organism.current_vocal_chord
-            d_other = float(np.linalg.norm(self.pos - other_organism.pos))
-            if d_other < 25.0:
-                self.limbs["left_ear"].last_action_desc = f"Heard {other_organism.agent_id}: {chord['tag']}"
-                self.limbs["right_ear"].last_action_desc = f"Heard {other_organism.agent_id}: {chord['tag']}"
-                if np.random.uniform(0, 1) < 0.08:
-                    self.system.world_field.birth(
-                        x=np.array([chord["freq"]/2400.0, d_other/32.0, self.pos[0]/32.0, self.pos[1]/32.0]),
-                        y=np.array([1.0, 1.0, 0.0, 1.0]),
-                        z=np.array([float(world.sim_time), 0, 0, 0]),
-                        text=f"Acoustic Chord: {chord['tag']}",
-                        role="concept"
-                    )
+            # Binaural Ear Acoustic Flux Calculation & Chord Decoding
+            ether_flux = np.zeros(3, dtype=np.float32)
+            nearest_ether_dist = 999.0
+            nearest_stone_dist = 999.0
+            nearest_stone_pos = None
+            nearest_ether_pos = None
 
-        # Spatial Memory Trace Decay
-        cur_cell = (int(self.pos[0]), int(self.pos[1]))
-        for k in list(self.spatial_trace_map.keys()):
-            self.spatial_trace_map[k] *= 0.97
-            if self.spatial_trace_map[k] < 0.02:
-                del self.spatial_trace_map[k]
-        self.spatial_trace_map[cur_cell] = 1.0
-        
-        forward_step_cell = (int(self.pos[0] + np.cos(self.yaw) * 1.8), int(self.pos[1] + np.sin(self.yaw) * 1.8))
-        fwd_trace = self.spatial_trace_map.get(forward_step_cell, 0.0)
-
-        # Fuse into 4D Brain Sensory Wave
-        sensory_wave = self.system.perceive_and_fuse_3d(
-            visual_depth_matrix=vis_data["depth_matrix"],
-            visual_ray_dirs=vis_data["ray_dirs"],
-            sound_pressure=float(np.linalg.norm(ether_flux)),
-            sound_flux_3d=ether_flux * 1.5,
-            current_yaw=self.yaw,
-            current_pitch=self.pitch,
-            spatial_trace_val=fwd_trace
-        )
-
-        # 3. Curiosity Drive: Epistemic Object & Architectural Targeting
-        curiosity_pull_vec = np.zeros(3)
-        if self.held_cell_id is not None:
-            # Carrying stone: Navigate toward foundation anchor
-            nearest_wall_dist = 999.0
-            nearest_wall_pos = np.array([16.0, 16.0, 1.5])
             for cell_id, cell in current_cells:
-                if cell_id != self.held_cell_id and cell.cell_type in ["matter_wall", "matter_stone", "matter_roof", "matter_bridge", "matter_tower"]:
-                    d = float(np.linalg.norm(self.pos - cell.pos))
-                    if d < nearest_wall_dist:
-                        nearest_wall_dist = d
-                        nearest_wall_pos = cell.pos.copy()
-            target_vec = nearest_wall_pos - self.pos
-            curiosity_pull_vec = target_vec / (np.linalg.norm(target_vec) + 1e-5)
-            self.curiosity_focus = f"Carrying Matter: Navigating to Foundation ({nearest_wall_dist:.1f}m)"
-        elif nearest_ether_pos is not None and nearest_ether_dist < 20.0:
-            target_vec = nearest_ether_pos - self.pos
-            curiosity_pull_vec = target_vec / (np.linalg.norm(target_vec) + 1e-5)
-            self.curiosity_focus = f"Curious: Foraging Resonant Ether Orb ({nearest_ether_dist:.1f}m)"
-        elif nearest_stone_pos is not None and nearest_stone_dist < 18.0:
-            target_vec = nearest_stone_pos - self.pos
-            curiosity_pull_vec = target_vec / (np.linalg.norm(target_vec) + 1e-5)
-            self.curiosity_focus = f"Curious: Approaching Raw Stone Boulder ({nearest_stone_dist:.1f}m)"
-        else:
-            # Sweep toward next frontier quadrant
-            target_q = np.array([self.quadrants[self.target_quadrant_idx][0], self.quadrants[self.target_quadrant_idx][1], 2.0])
-            dist_to_q = float(np.linalg.norm(self.pos[:2] - target_q[:2]))
-            if dist_to_q < 4.5:
-                self.target_quadrant_idx = (self.target_quadrant_idx + 1) % len(self.quadrants)
-            target_vec = target_q - self.pos
-            curiosity_pull_vec = target_vec / (np.linalg.norm(target_vec) + 1e-5)
-            self.curiosity_focus = f"Frontier Patrol: Exploring Sector ({target_q[0]:.0f}, {target_q[1]:.0f})"
+                if cell.bonded_to_agent or cell.cell_type not in ["energy_ether", "energy_crystal", "energy_shrine", "matter_stone"]:
+                    continue
+                if abs(cell.pos[0] - head_pos[0]) > 25.0 or abs(cell.pos[1] - head_pos[1]) > 25.0:
+                    continue
+                delta = cell.pos - head_pos
+                d = float(np.linalg.norm(delta))
+                if cell.cell_type in ["energy_ether", "energy_crystal", "energy_shrine"]:
+                    if 0 < d < 25.0:
+                        ether_flux += (delta / d) * (cell.energy / (d + 0.5))
+                        if d < nearest_ether_dist:
+                            nearest_ether_dist = d
+                            nearest_ether_pos = cell.pos.copy()
+                elif cell.cell_type == "matter_stone":
+                    if d < nearest_stone_dist:
+                        nearest_stone_dist = d
+                        nearest_stone_pos = cell.pos.copy()
 
-        # Continuous Neurogenesis in ENN World Field (Network A)
-        voxel = (int(self.pos[0] / 2.0), int(self.pos[1] / 2.0), int(self.pos[2] / 2.0))
-        if voxel not in self.visited_grid_voxels:
-            self.visited_grid_voxels.add(voxel)
-            n_x = sensory_wave.copy()
-            n_y = np.array([self.pos[0]/32.0, self.pos[1]/32.0, self.pos[2]/12.0, 1.0])
-            n_z = np.array([float(world.sim_time), 0.0, 0.0, 0.0])
-            self.system.world_field.birth(
-                x=n_x, y=n_y, z=n_z,
-                text=f"Terrain Meadow Sector {voxel}",
-                role="concept"
+            # Spatial Memory Trace Decay
+            cur_cell = (int(self.pos[0]), int(self.pos[1]))
+            for k in list(self.spatial_trace_map.keys()):
+                self.spatial_trace_map[k] *= 0.97
+                if self.spatial_trace_map[k] < 0.02:
+                    del self.spatial_trace_map[k]
+            self.spatial_trace_map[cur_cell] = 1.0
+            
+            forward_step_cell = (int(self.pos[0] + np.cos(self.yaw) * 1.8), int(self.pos[1] + np.sin(self.yaw) * 1.8))
+            fwd_trace = self.spatial_trace_map.get(forward_step_cell, 0.0)
+
+            # Fuse into 4D Brain Sensory Wave
+            sensory_wave = self.system.perceive_and_fuse_3d(
+                visual_depth_matrix=vis_data["depth_matrix"],
+                visual_ray_dirs=vis_data["ray_dirs"],
+                sound_pressure=float(np.linalg.norm(ether_flux)),
+                sound_flux_3d=ether_flux * 1.5,
+                current_yaw=self.yaw,
+                current_pitch=self.pitch,
+                spatial_trace_val=fwd_trace
             )
+            self._cached_sensory_wave = sensory_wave
 
-        # 4. Metacognitive Forward Intention Wave
-        self.system.inward_observer.prepare_intention_wave(sensory_wave, sensory_wave)
+            # 3. Curiosity Drive: Epistemic Object & Architectural Targeting
+            curiosity_pull_vec = np.zeros(3, dtype=np.float32)
+            if self.held_cell_id is not None:
+                nearest_anchor_dist = 999.0
+                nearest_anchor_pos = np.array([16.0, 16.0, 1.5], dtype=np.float32)
+                anchor_type = "Foundation"
+                
+                with world.cells_lock:
+                    held = world.cells.get(self.held_cell_id)
+                is_crystal = (held is not None and held.cell_type == "energy_crystal")
+                
+                for cell_id, cell in current_cells:
+                    if cell_id != self.held_cell_id and cell.cell_type in ["matter_wall", "matter_stone", "matter_roof", "matter_bridge", "matter_tower", "matter_wood", "energy_shrine"]:
+                        d = float(np.linalg.norm(self.pos - cell.pos))
+                        if is_crystal and cell.cell_type in ["energy_shrine", "matter_tower"]:
+                            if d < nearest_anchor_dist:
+                                nearest_anchor_dist = d
+                                nearest_anchor_pos = cell.pos.copy()
+                                anchor_type = "Solar Shrine Apex"
+                        elif d < nearest_anchor_dist:
+                            nearest_anchor_dist = d
+                            nearest_anchor_pos = cell.pos.copy()
+                            anchor_type = cell.cell_type.replace('_', ' ').title()
+                            
+                target_vec = nearest_anchor_pos - self.pos
+                curiosity_pull_vec = target_vec / (np.linalg.norm(target_vec) + 1e-5)
+                self.curiosity_focus = f"Stigmergic Intent: Navigating to {anchor_type} ({nearest_anchor_dist:.1f}m)"
+            elif nearest_ether_pos is not None and nearest_ether_dist < 20.0:
+                target_vec = nearest_ether_pos - self.pos
+                curiosity_pull_vec = target_vec / (np.linalg.norm(target_vec) + 1e-5)
+                self.curiosity_focus = f"Curious: Foraging Resonant Ether Orb ({nearest_ether_dist:.1f}m)"
+            elif nearest_stone_pos is not None and nearest_stone_dist < 18.0:
+                target_vec = nearest_stone_pos - self.pos
+                curiosity_pull_vec = target_vec / (np.linalg.norm(target_vec) + 1e-5)
+                self.curiosity_focus = f"Curious: Approaching Raw Stone Boulder ({nearest_stone_dist:.1f}m)"
+            else:
+                target_q = np.array([self.quadrants[self.target_quadrant_idx][0], self.quadrants[self.target_quadrant_idx][1], 2.0])
+                dist_to_q = float(np.linalg.norm(self.pos[:2] - target_q[:2]))
+                if dist_to_q < 4.5:
+                    self.target_quadrant_idx = (self.target_quadrant_idx + 1) % len(self.quadrants)
+                target_vec = target_q - self.pos
+                curiosity_pull_vec = target_vec / (np.linalg.norm(target_vec) + 1e-5)
+                self.curiosity_focus = f"Frontier Patrol: Exploring Sector ({target_q[0]:.0f}, {target_q[1]:.0f})"
+            self._cached_curiosity_pull = curiosity_pull_vec
 
-        # 5. Continuous Motor Phase Collapse & Trait Attractor Pulls
-        motor = self.system.reason_3d(sensory_wave)
+            # Continuous Neurogenesis in ENN World Field (Network A)
+            voxel = (int(self.pos[0] / 2.0), int(self.pos[1] / 2.0), int(self.pos[2] / 2.0))
+            if voxel not in self.visited_grid_voxels:
+                self.visited_grid_voxels.add(voxel)
+                n_x = sensory_wave.copy()
+                n_y = np.array([self.pos[0]/64.0, self.pos[1]/64.0, self.pos[2]/18.0, 1.0])
+                n_z = np.array([float(world.sim_time), 0.0, 0.0, 0.0])
+                self.system.world_field.birth(
+                    x=n_x, y=n_y, z=n_z,
+                    text=f"Terrain Meadow Sector {voxel}",
+                    role="concept"
+                )
+
+            # 4. Metacognitive Forward Intention Wave
+            self.system.inward_observer.prepare_intention_wave(sensory_wave, sensory_wave)
+
+            # 5. Continuous Motor Phase Collapse & Trait Attractor Pulls
+            motor = self.system.reason_3d(sensory_wave)
+            self._cached_motor = motor
+            winning_basin, confidence, basin_pulls = self.system.trait_field.collapse_phase(sensory_wave)
+            self._cached_winning_basin = winning_basin
+            self._cached_basin_pulls = basin_pulls
+        else:
+            # Intermediate Saccade Sub-tick: Fast Interpolation
+            vis_data = self._cached_vis_data
+            sensory_wave = self._cached_sensory_wave
+            curiosity_pull_vec = self._cached_curiosity_pull
+            motor = self._cached_motor
+            winning_basin = self._cached_winning_basin
+            basin_pulls = self._cached_basin_pulls
+            nearest_ether_dist = 999.0
+
         d_yaw = motor["d_yaw"]
         d_pitch = motor["d_pitch"]
         walk_thrust = motor["thrust"]
@@ -334,110 +361,149 @@ class HumanoidENNOrganism:
                 self.velocity[1] += repulsion_dir[1] * 1.8
                 self.curiosity_focus = f"Kinetic Contact with Organism {other_organism.agent_id}!"
 
-        # Sample Trait Field Attractor Basins
-        winning_basin, confidence, basin_pulls = self.system.trait_field.collapse_phase(sensory_wave)
-
         # 6. Hand Manipulation & Open-Ended Architectural Construction
         action_outcome = "walking"
         reward = 0.0
 
-        # Power: 🛡️ Kinetic Shield Aura
-        if "kinetic_shield" in self.morphed_powers:
-            for cell_id, cell in current_cells:
-                if cell.cell_type == "energy_ether" and not cell.bonded_to_agent:
-                    d_shield = float(np.linalg.norm(self.pos - cell.pos))
-                    if d_shield < 6.0:
-                        pull_dir = (self.pos - cell.pos) / d_shield
-                        cell.pos += pull_dir * 1.5 * dt
+        if is_saccade:
+            # Spatial Broadphase Cell Filter (reduces 700 cells to ~5 nearby cells)
+            px, py = self.pos[0], self.pos[1]
+            nearby_cells = [(cid, c) for cid, c in current_cells if abs(c.pos[0] - px) < 6.5 and abs(c.pos[1] - py) < 6.5]
 
-        # Hand Action A: Harvest Free Energy Ether with Hands
-        for cell_id, cell in current_cells:
-            if cell.cell_type in ["energy_ether", "energy_crystal", "energy_shrine"] and not cell.bonded_to_agent:
-                dist_to_hands = float(np.linalg.norm(self.pos - cell.pos))
-                if dist_to_hands < self.hand_reach:
-                    self.energy_budget += cell.energy
-                    self.ether_harvested += 1
-                    reward += 1.5
-                    action_outcome = "harvested_ether_hand"
-                    self.curiosity_focus = f"Absorbed {cell.cell_type.replace('_', ' ').title()} via Hands"
-                    self.limbs["left_arm"].mastery_score = min(1.0, self.limbs["left_arm"].mastery_score + 0.02)
-                    self.limbs["right_arm"].mastery_score = min(1.0, self.limbs["right_arm"].mastery_score + 0.02)
-                    self.limbs["left_arm"].last_action_desc = "Absorbing Ether"
-                    self.limbs["right_arm"].last_action_desc = "Absorbing Ether"
-                    
-                    self.system.world_field.birth(
-                        x=sensory_wave, y=np.array([1.0, 1.0, 0.0, 0.0]), z=np.array([float(world.sim_time), 0, 0, 0]),
-                        text="Discovered Ether Absorption Skill", role="insight"
-                    )
-                    with world.cells_lock:
-                        if cell_id in world.cells:
-                            del world.cells[cell_id]
-                    break
+            # Power: 🛡️ Kinetic Shield Aura
+            if "kinetic_shield" in self.morphed_powers:
+                for cell_id, cell in nearby_cells:
+                    if cell.cell_type == "energy_ether" and not cell.bonded_to_agent:
+                        d_shield = float(np.linalg.norm(self.pos - cell.pos))
+                        if d_shield < 6.0:
+                            pull_dir = (self.pos - cell.pos) / d_shield
+                            cell.pos += pull_dir * 1.5 * dt
 
-        # Hand Action B: Pick up stone matter with Left/Right Hand & Transmute
-        forward_dir_temp = np.array([np.cos(self.yaw), np.sin(self.yaw), 0.0])
-        if self.held_cell_id is None:
-            for cell_id, cell in current_cells:
-                if cell.cell_type == "matter_stone" and not cell.bonded_to_agent:
-                    d = float(np.linalg.norm(self.pos - cell.pos))
-                    if d < self.hand_reach:
-                        self.held_cell_id = cell_id
-                        cell.bonded_to_agent = True
-                        action_outcome = "grabbed_stone_hands"
+            # Hand Action A: Harvest Free Energy Ether with Hands
+            for cell_id, cell in nearby_cells:
+                if cell.cell_type in ["energy_ether", "energy_crystal", "energy_shrine"] and not cell.bonded_to_agent:
+                    dist_to_hands = float(np.linalg.norm(self.pos - cell.pos))
+                    if dist_to_hands < self.hand_reach:
+                        self.energy_budget += cell.energy
+                        self.ether_harvested += 1
+                        reward += 1.5
+                        action_outcome = "harvested_ether_hand"
+                        self.curiosity_focus = f"Absorbed {cell.cell_type.replace('_', ' ').title()} via Hands"
+                        self.limbs["left_arm"].mastery_score = min(1.0, self.limbs["left_arm"].mastery_score + 0.02)
+                        self.limbs["right_arm"].mastery_score = min(1.0, self.limbs["right_arm"].mastery_score + 0.02)
+                        self.limbs["left_arm"].last_action_desc = "Absorbing Ether"
+                        self.limbs["right_arm"].last_action_desc = "Absorbing Ether"
                         
-                        if "matter_alchemy" in self.morphed_powers and np.random.uniform(0, 1) < 0.35:
-                            cell.cell_type = "energy_crystal"
-                            action_outcome = "transmuted_matter_crystal"
-                            self.curiosity_focus = "Alchemy Transmutation: Transmuted Stone to Radiant Crystal!"
-                        else:
-                            self.curiosity_focus = "Somatic Curiosity: Gripped Stone Block in Hands"
-                            
-                        self.limbs["left_arm"].mastery_score = min(1.0, self.limbs["left_arm"].mastery_score + 0.03)
-                        self.limbs["right_arm"].mastery_score = min(1.0, self.limbs["right_arm"].mastery_score + 0.03)
-                        self.limbs["left_arm"].last_action_desc = "Gripping Heavy Matter"
-                        self.limbs["right_arm"].last_action_desc = "Gripping Heavy Matter"
-                        reward += 1.0
+                        self.system.world_field.birth(
+                            x=sensory_wave, y=np.array([1.0, 1.0, 0.0, 0.0]), z=np.array([float(world.sim_time), 0, 0, 0]),
+                            text="Discovered Ether Absorption Skill", role="insight"
+                        )
+                        with world.cells_lock:
+                            if cell_id in world.cells:
+                                del world.cells[cell_id]
                         break
-        else:
-            # Carrying matter in hands -> Geometric Open-Ended Architecture Formation
-            with world.cells_lock:
-                held_cell = world.cells.get(self.held_cell_id)
-            if held_cell is not None:
-                held_cell.pos = self.pos + forward_dir_temp * 1.2 + np.array([0, 0, 0.4])
-                self.limbs["left_arm"].last_action_desc = "Carrying Matter in Hands"
-                self.limbs["right_arm"].last_action_desc = "Carrying Matter in Hands"
-                
-                ground_z_here = world.get_terrain_height(held_cell.pos[0], held_cell.pos[1])
-                
-                for other_id, other_cell in current_cells:
-                    if other_id != self.held_cell_id and other_cell.cell_type in ["matter_wall", "matter_stone", "matter_roof", "matter_bridge", "matter_tower", "energy_crystal"]:
-                        d_other = float(np.linalg.norm(held_cell.pos - other_cell.pos))
-                        if 1.0 < d_other < 3.5:
-                            if held_cell.pos[2] >= ground_z_here + 2.2:
-                                held_cell.cell_type = "matter_tower"
-                                action_outcome = "built_observation_tower"
-                                self.curiosity_focus = "Architectural Mastery: Erected Observation Tower Spire!"
-                            elif held_cell.pos[2] > ground_z_here + 1.2 and np.linalg.norm(held_cell.pos[:2] - other_cell.pos[:2]) > 1.8:
-                                held_cell.cell_type = "matter_bridge"
-                                action_outcome = "built_arched_bridge"
-                                self.curiosity_focus = "Architectural Mastery: Constructed Arched Stone Bridge!"
-                            elif held_cell.cell_type == "energy_crystal" and ground_z_here > 2.0:
-                                held_cell.cell_type = "energy_shrine"
-                                held_cell.energy = 150.0
-                                action_outcome = "built_crystal_shrine"
-                                self.curiosity_focus = "Architectural Mastery: Consecrated Resonant Solar Shrine!"
-                            elif self.structures_built % 7 == 0 and held_cell.pos[2] >= ground_z_here + 1.8:
-                                held_cell.cell_type = "matter_roof"
-                                action_outcome = "built_cottage_roof"
-                                self.curiosity_focus = "Architectural Mastery: Constructed Pitched Cottage Roof!"
-                            elif held_cell.pos[2] <= ground_z_here + 0.5:
-                                held_cell.cell_type = "matter_path"
-                                action_outcome = "paved_stone_path"
-                                self.curiosity_focus = "Architectural Mastery: Paved Ground Stone Pathway!"
+
+            # Hand Action B: Pick up stone matter with Left/Right Hand & Transmute
+            forward_dir_temp = np.array([np.cos(self.yaw), np.sin(self.yaw), 0.0])
+            if self.held_cell_id is None:
+                for cell_id, cell in nearby_cells:
+                    if cell.cell_type == "matter_stone" and not cell.bonded_to_agent:
+                        d = float(np.linalg.norm(self.pos - cell.pos))
+                        if d < self.hand_reach:
+                            self.held_cell_id = cell_id
+                            cell.bonded_to_agent = True
+                            action_outcome = "grabbed_stone_hands"
+                            
+                            if "matter_alchemy" in self.morphed_powers and np.random.uniform(0, 1) < 0.35:
+                                cell.cell_type = "energy_crystal"
+                                action_outcome = "transmuted_matter_crystal"
+                                self.curiosity_focus = "Alchemy Transmutation: Transmuted Stone to Radiant Crystal!"
                             else:
+                                self.curiosity_focus = "Somatic Curiosity: Gripped Stone Block in Hands"
+                                
+                            self.limbs["left_arm"].mastery_score = min(1.0, self.limbs["left_arm"].mastery_score + 0.03)
+                            self.limbs["right_arm"].mastery_score = min(1.0, self.limbs["right_arm"].mastery_score + 0.03)
+                            self.limbs["left_arm"].last_action_desc = "Gripping Heavy Matter"
+                            self.limbs["right_arm"].last_action_desc = "Gripping Heavy Matter"
+                            reward += 1.0
+                            break
+            else:
+                # Stigmergic Architectural Grammar Construction Engine
+                with world.cells_lock:
+                    held_cell = world.cells.get(self.held_cell_id)
+                if held_cell is not None:
+                    held_cell.pos = self.pos + forward_dir_temp * 1.0 + np.array([0, 0, 0.3])
+                    self.limbs["left_arm"].last_action_desc = "Carrying Matter in Hands"
+                    self.limbs["right_arm"].last_action_desc = "Carrying Matter in Hands"
+                    
+                    ground_z_here = world.get_terrain_height(held_cell.pos[0], held_cell.pos[1])
+                    
+                    # Find candidate architectural anchor among nearby cells
+                    arch_candidates = [
+                        (oid, oc) for oid, oc in nearby_cells 
+                        if oid != self.held_cell_id and oc.cell_type in ["matter_wall", "matter_stone", "matter_roof", "matter_bridge", "matter_tower", "matter_wood", "energy_crystal", "energy_shrine"]
+                    ]
+                    
+                    for other_id, other_cell in arch_candidates:
+                        d_other = float(np.linalg.norm(held_cell.pos - other_cell.pos))
+                        if 0.8 < d_other < 2.8:
+                            # 1. GRAMMAR A: Consecrated Solar Shrine Apex
+                            if held_cell.cell_type == "energy_crystal":
+                                held_cell.cell_type = "energy_shrine"
+                                held_cell.energy = 250.0
+                                held_cell.pos[0] = round(other_cell.pos[0], 1)
+                                held_cell.pos[1] = round(other_cell.pos[1], 1)
+                                held_cell.pos[2] = other_cell.pos[2] + 0.85
+                                action_outcome = "consecrated_solar_shrine"
+                                self.curiosity_focus = "Stigmergy: Consecrated Central Solar Energy Shrine!"
+                            
+                            # 2. GRAMMAR B: Level Viaduct / Mountain Bridge Extension
+                            elif other_cell.cell_type == "matter_bridge" or (other_cell.pos[2] > ground_z_here + 1.2 and np.linalg.norm(held_cell.pos[:2] - other_cell.pos[:2]) > 1.2):
+                                delta_2d = held_cell.pos[:2] - other_cell.pos[:2]
+                                norm_2d = np.linalg.norm(delta_2d)
+                                span_dir = (delta_2d / norm_2d) if norm_2d > 0 else np.array([1.0, 0.0])
+                                
+                                held_cell.cell_type = "matter_bridge"
+                                held_cell.pos[0] = round(other_cell.pos[0] + span_dir[0] * 1.0, 1)
+                                held_cell.pos[1] = round(other_cell.pos[1] + span_dir[1] * 1.0, 1)
+                                held_cell.pos[2] = round(other_cell.pos[2], 2)  # Maintain level horizontal bridge deck
+                                action_outcome = "extended_viaduct_span"
+                                self.curiosity_focus = "Stigmergy: Extended Level Mountain Viaduct Span!"
+                                
+                            # 3. GRAMMAR C: Gabled Cottage Roof / Ceiling Sealing
+                            elif (self.structures_built % 5 == 0 or other_cell.cell_type == "matter_wood") and held_cell.pos[2] >= ground_z_here + 1.8:
+                                held_cell.cell_type = "matter_roof"
+                                held_cell.pos[0] = round(held_cell.pos[0], 1)
+                                held_cell.pos[1] = round(held_cell.pos[1], 1)
+                                held_cell.pos[2] = ground_z_here + 2.4
+                                action_outcome = "installed_gabled_roof"
+                                self.curiosity_focus = "Stigmergy: Installed Weatherproof Cottage Roof!"
+                                
+                            # 4. GRAMMAR D: High Ridge Watchtower Spire
+                            elif ground_z_here > 2.2 and other_cell.cell_type in ["matter_tower", "matter_wall"] and held_cell.pos[2] >= ground_z_here + 1.8:
+                                held_cell.cell_type = "matter_tower"
+                                held_cell.pos[0] = other_cell.pos[0]
+                                held_cell.pos[1] = other_cell.pos[1]
+                                held_cell.pos[2] = other_cell.pos[2] + 0.85
+                                action_outcome = "erected_watchtower_spire"
+                                self.curiosity_focus = "Stigmergy: Erected High Ridge Watchtower Spire!"
+                                
+                            # 5. GRAMMAR E: Structured Perimeter Enclosure Wall
+                            else:
+                                delta_xy = held_cell.pos[:2] - other_cell.pos[:2]
+                                if abs(delta_xy[0]) > abs(delta_xy[1]):
+                                    step_x = 0.95 if delta_xy[0] > 0 else -0.95
+                                    step_y = 0.0
+                                else:
+                                    step_x = 0.0
+                                    step_y = 0.95 if delta_xy[1] > 0 else -0.95
+                                    
                                 held_cell.cell_type = "matter_wall"
-                                action_outcome = "built_wall_hands"
-                                self.curiosity_focus = "Architectural Mastery: Constructed Wall Unit!"
+                                held_cell.pos[0] = round(other_cell.pos[0] + step_x, 2)
+                                held_cell.pos[1] = round(other_cell.pos[1] + step_y, 2)
+                                held_cell.pos[2] = ground_z_here + 0.85
+                                action_outcome = "aligned_perimeter_wall"
+                                self.curiosity_focus = "Stigmergy: Aligned Structured Perimeter Wall!"
 
                             held_cell.bonded_to_agent = False
                             self.held_cell_id = None
@@ -445,10 +511,10 @@ class HumanoidENNOrganism:
                             
                             self.limbs["left_arm"].mastery_score = min(1.0, self.limbs["left_arm"].mastery_score + 0.05)
                             self.limbs["right_arm"].mastery_score = min(1.0, self.limbs["right_arm"].mastery_score + 0.05)
-                            reward += 4.0
+                            reward += 4.5
                             self.system.world_field.birth(
                                 x=sensory_wave, y=np.array([0.0, 1.0, 1.0, 0.0]), z=np.array([float(world.sim_time), 0, 0, 0]),
-                                text=f"Constructed {held_cell.cell_type.replace('_', ' ').title()}", role="anchor"
+                                text=f"Stigmergic Construction: {held_cell.cell_type.replace('_', ' ').title()}", role="anchor"
                             )
                             break
 
@@ -510,15 +576,19 @@ class HumanoidENNOrganism:
         self.pitch = float(np.clip(self.pitch + d_pitch, -np.pi / 6.0, np.pi / 6.0))
         forward_dir = np.array([np.cos(self.yaw), np.sin(self.yaw), 0.0])
 
-        base_speed = 1.3
-        if "quantum_dash" in self.morphed_powers and np.random.uniform(0, 1) < 0.3:
-            base_speed = 3.8
+        # Tripled bipedal locomotion kinematics (Fast Agile Navigation)
+        base_speed = 3.45  # Tripled walking pace (3.45 m/s)
+        if self.held_cell_id is not None:
+            base_speed = 2.25  # Tripled construction stride (2.25 m/s)
+        elif "quantum_dash" in self.morphed_powers and np.random.uniform(0, 1) < 0.04:
+            base_speed = 6.30  # High-speed quantum sprint (6.30 m/s)
             
-        walk_speed = max(base_speed, walk_thrust * 3.8)
+        walk_speed = max(base_speed, walk_thrust * 4.2)
         walk_force_2d = forward_dir[:2] * walk_speed
         
-        self.velocity[0] = self.velocity[0] * 0.75 + walk_force_2d[0] * dt * 3.0
-        self.velocity[1] = self.velocity[1] * 0.75 + walk_force_2d[1] * dt * 3.0
+        # Ground momentum with responsive agile acceleration
+        self.velocity[0] = self.velocity[0] * 0.70 + walk_force_2d[0] * dt * 4.5
+        self.velocity[1] = self.velocity[1] * 0.70 + walk_force_2d[1] * dt * 4.5
         
         effective_gravity = self.gravity * (0.60 if self.has_wings else 1.0)
         self.velocity[2] += effective_gravity * dt
@@ -549,29 +619,33 @@ class HumanoidENNOrganism:
         self.pos[1] = float(np.clip(self.pos[1], 1.5, world.size_y - 1.5))
         self.flight_path.append(tuple(self.pos.copy()))
 
-        # 9. Inward Metacognitive Reflection & Synaptic Consolidation
-        motor_effort = np.array([walk_force_2d[0], walk_force_2d[1], self.velocity[2]])
-        reflection = self.system.inward_observer.observe_sensory_outcome(sensory_wave, motor_effort=motor_effort)
-        self.limbs["head_brain"].mastery_score = min(1.0, self.limbs["head_brain"].mastery_score + 0.002)
-        self.limbs["head_brain"].last_action_desc = f"Inward Conf: {reflection['self_confidence']:.2f}"
+        if is_saccade:
+            # 9. Inward Metacognitive Reflection & Synaptic Consolidation on Saccade Tick
+            motor_effort = np.array([walk_force_2d[0], walk_force_2d[1], self.velocity[2]], dtype=np.float32)
+            reflection = self.system.inward_observer.observe_sensory_outcome(sensory_wave, motor_effort=motor_effort)
+            self._cached_reflection = reflection
+            self.limbs["head_brain"].mastery_score = min(1.0, self.limbs["head_brain"].mastery_score + 0.002)
+            self.limbs["head_brain"].last_action_desc = f"Inward Conf: {reflection['self_confidence']:.2f}"
 
-        action_4d = np.array([forward_dir[0], forward_dir[1], 0.0, walk_thrust], dtype=float)
-        norm_4d = np.linalg.norm(action_4d)
-        if norm_4d > 0:
-            action_4d /= norm_4d
-        self.system.update_aspiration(reward, current_pos_x=action_4d)
+            action_4d = np.array([forward_dir[0], forward_dir[1], 0.0, walk_thrust], dtype=float)
+            norm_4d = np.linalg.norm(action_4d)
+            if norm_4d > 0:
+                action_4d /= norm_4d
+            self.system.update_aspiration(reward, current_pos_x=action_4d)
+            self._cached_active_synapses = sum(len(n.synapses) for n in self.system.world_field.neurons)
+        else:
+            reflection = self._cached_reflection
 
-        # Sample Visual Eye Ray Endpoints
-        visual_ray_endpoints = []
-        flat_dirs = vis_data["ray_dirs"].reshape(-1, 3)
-        flat_depths = vis_data["depth_matrix"].flatten()
-        for i in range(min(8, len(flat_dirs))):
-            r_dir = flat_dirs[i]
-            r_dist = float(flat_depths[i])
-            pt = head_pos + r_dir * min(r_dist, 7.0)
-            visual_ray_endpoints.append([round(float(pt[0]), 2), round(float(pt[1]), 2), round(float(pt[2]), 2)])
+        active_synapses = getattr(self, "_cached_active_synapses", 4000)
 
-        active_synapses = sum(len(n.synapses) for n in self.system.world_field.neurons)
+        if is_headless:
+            return {
+                "id": self.agent_id,
+                "pos": self.pos,
+                "outcome": action_outcome,
+                "energy": self.energy_budget,
+                "structures_built": self.structures_built
+            }
 
         return {
             "id": self.agent_id,
@@ -595,7 +669,6 @@ class HumanoidENNOrganism:
             "friction": round(float(reflection["epistemic_friction"]), 4),
             "coherence": round(float(reflection["body_world_coherence"]), 3),
             "anatomy": [l.to_dict() for l in self.limbs.values()],
-            "visual_rays": visual_ray_endpoints,
             
             # Core ENN 4D Neural Metrics
             "enn_metrics": {

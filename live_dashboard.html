@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ENN 4D — Grand Multi-Agent Living Universe</title>
+  <title>ENN 4D — Complete Multi-Agent Living Universe & Substrate Metrics</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background-color: #f8fafc;
-      color: #1e293b;
+      background-color: #020617;
+      color: #f8fafc;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
       overflow: hidden;
       display: flex;
@@ -16,21 +16,110 @@
     #viewport-container {
       flex: 1;
       position: relative;
-      background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 60%, #f0fdf4 100%);
+      background: #020617;
+      height: 100vh;
+      min-height: 100vh;
+      overflow: hidden;
     }
-    #three-canvas { width: 100%; height: 100%; display: block; }
+    #three-canvas { width: 100%; height: 100%; display: block; outline: none; }
 
+    /* Top Mode Switcher Bar */
+    #top-nav-bar {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid #334155;
+      border-radius: 30px;
+      padding: 5px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      z-index: 20;
+    }
+    .nav-btn {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover { background: #334155; color: white; }
+    .nav-btn.active {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      border-color: #38bdf8;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+    }
+
+    /* Sub-Controls for World Camera */
+    #world-cam-bar {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid #334155;
+      border-radius: 30px;
+      padding: 4px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(12px);
+      z-index: 15;
+    }
+    .cam-btn {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cam-btn.active { background: #0284c7; color: white; border-color: #38bdf8; }
+
+    /* Tooltip */
+    #neuron-tooltip {
+      position: absolute;
+      display: none;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid #38bdf8;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: white;
+      pointer-events: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      z-index: 30;
+      max-width: 260px;
+    }
+
+    /* Sidebar Styling */
     #hud-sidebar {
-      width: 520px;
-      background: rgba(255, 255, 255, 0.96);
+      width: 540px;
+      background: rgba(15, 23, 42, 0.98);
       backdrop-filter: blur(20px);
-      border-left: 1px solid #e2e8f0;
+      border-left: 1px solid #1e293b;
       display: flex;
       flex-direction: column;
-      padding: 12px;
-      gap: 7px;
+      padding: 14px;
+      gap: 8px;
       overflow-y: auto;
-      box-shadow: -4px 0 24px rgba(0,0,0,0.06);
+      box-shadow: -4px 0 32px rgba(0,0,0,0.5);
       z-index: 10;
     }
     .hud-header {
@@ -41,48 +130,23 @@
     .hud-title {
       font-size: 16px;
       font-weight: 800;
-      background: linear-gradient(135deg, #0284c7, #6366f1, #e11d48);
+      background: linear-gradient(135deg, #38bdf8, #a855f7, #f43f5e);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .live-badge {
-      background: #dcfce7;
-      color: #15803d;
-      border: 1px solid #86efac;
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .live-dot {
-      width: 7px;
-      height: 7px;
-      background: #22c55e;
-      border-radius: 50%;
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(1.3); }
-    }
-
     .card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 9px;
-      padding: 7px 11px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 9px 12px;
       display: flex;
       flex-direction: column;
       gap: 4px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
     }
     .card-title {
       font-size: 11px;
       font-weight: 700;
-      color: #0284c7;
+      color: #38bdf8;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       display: flex;
@@ -90,281 +154,420 @@
       align-items: center;
     }
 
-    .social-banner {
-      background: linear-gradient(135deg, #f0fdf4, #eff6ff);
-      border: 1px solid #bbf7d0;
-      border-radius: 8px;
-      padding: 5px 9px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-      font-weight: 700;
-      color: #166534;
-    }
-
-    .dual-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 7px;
-    }
-    .agent-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 7px;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    .agent-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      font-weight: 800;
-    }
-    .agent-alpha { color: #0284c7; border-left: 3px solid #0284c7; }
-    .agent-beta { color: #e11d48; border-left: 3px solid #e11d48; }
-
-    .curiosity-box {
-      font-size: 10px;
-      font-weight: 600;
-      color: #475569;
-      background: #ffffff;
-      border-radius: 5px;
-      padding: 3px 5px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .metric-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
-    .metric-label { color: #64748b; font-weight: 500; }
-    .metric-val { font-weight: 700; font-family: monospace; color: #0f172a; }
-
-    /* Top Floating Camera Controls */
-    #cam-bar {
-      position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.95);
-      border: 1px solid #cbd5e1;
-      border-radius: 30px;
-      padding: 5px 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-      z-index: 5;
-    }
-    .cam-btn {
-      background: #f1f5f9;
-      color: #334155;
-      border: 1px solid #e2e8f0;
-      border-radius: 20px;
-      padding: 4px 9px;
+    .btn-action {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 12px;
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.2s;
     }
-    .cam-btn:hover { background: #e2e8f0; }
-    .cam-btn.active { background: #0284c7; color: white; border-color: #0284c7; }
-    .cam-btn.btn-reset { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
-
-    /* Telepathy Box */
-    .telepathy-box { display: flex; gap: 6px; align-items: center; }
-    .telepathy-input {
-      flex: 1;
-      border: 1px solid #cbd5e1;
+    .input-text {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: white;
       border-radius: 6px;
       padding: 6px 10px;
       font-size: 11px;
       outline: none;
     }
-    .telepathy-input:focus { border-color: #6366f1; }
-    .telepathy-btn {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-    }
+    .input-text:focus { border-color: #38bdf8; }
 
-    #chronicle-container {
-      max-height: 85px;
-      overflow-y: auto;
+    .dual-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .agent-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px;
       display: flex;
       flex-direction: column;
       gap: 3px;
-      font-size: 10px;
     }
-    .chronicle-entry {
-      background: #f8fafc;
-      border-left: 3px solid #6366f1;
-      padding: 3px 6px;
-      border-radius: 4px;
+    .metric-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+    .metric-label { color: #94a3b8; font-weight: 500; }
+    .metric-val { font-weight: 700; font-family: monospace; color: #f8fafc; }
+
+    /* Census Pills */
+    .census-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .census-pill {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 6px;
       display: flex;
       flex-direction: column;
-      gap: 1px;
+      align-items: center;
+      gap: 2px;
     }
-    .chronicle-header { display: flex; justify-content: space-between; font-weight: 700; color: #6366f1; font-size: 10px; }
+    .census-num { font-size: 13px; font-weight: 800; color: #38bdf8; font-family: monospace; }
+    .census-desc { font-size: 9px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
+
+    /* Power Badges */
+    .power-badge-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+    }
+    .power-badge {
+      background: #0f172a;
+      border: 1px solid #22c55e;
+      color: #86efac;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    #jarvis-chat-history {
+      max-height: 110px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: #0f172a;
+      border-radius: 6px;
+      padding: 6px;
+      border: 1px solid #334155;
+      font-size: 11px;
+    }
+    .chat-bubble { padding: 4px 7px; border-radius: 5px; line-height: 1.3; }
+    .chat-user { background: #0284c7; color: white; align-self: flex-end; }
+    .chat-ai { background: #334155; color: #f8fafc; align-self: flex-start; border-left: 3px solid #a855f7; }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
   <div id="viewport-container">
     <canvas id="three-canvas"></canvas>
 
-    <div id="cam-bar">
-      <button id="cam-reset" class="cam-btn btn-reset">🔄 Reset Orbit View</button>
+    <!-- Top Mode Switcher -->
+    <div id="top-nav-bar">
+      <button id="nav-world-mode" class="nav-btn active">🌐 3D Living Universe</button>
+      <button id="nav-network-mode" class="nav-btn">🧠 4D Neural Network Mode</button>
+      <button id="nav-genesis-btn" class="nav-btn" style="background:#451a03; border-color:#d97706; color:#fde68a;">⏪ Genesis View (t=0 Initial State)</button>
+    </div>
+
+    <!-- World View Camera Controls -->
+    <div id="world-cam-bar">
+      <button id="cam-reset" class="cam-btn" style="background:#fee2e2; color:#991b1b;">🔄 Reset View</button>
       <button id="cam-alpha" class="cam-btn">🔵 Follow Alpha</button>
       <button id="cam-beta" class="cam-btn">🔴 Follow Beta</button>
       <button id="cam-alpha-eye" class="cam-btn">👁️ Alpha Eye</button>
       <button id="cam-beta-eye" class="cam-btn">👁️ Beta Eye</button>
       <button id="cam-orbit" class="cam-btn active">🌐 Panoramic Valley</button>
+      <select id="cam-agent-select" class="cam-btn" style="background:#1e293b; color:#38bdf8; border-color:#0284c7; padding:4px 8px; cursor:pointer;">
+        <option value="Alpha">🎯 Track: Alpha</option>
+        <option value="Beta">🎯 Track: Beta</option>
+      </select>
+      <button id="btn-spawn-one" class="cam-btn" style="background:#064e3b; border-color:#059669; color:#6ee7b7;">➕ Spawn 1 Humanoid</button>
+      <button id="btn-spawn-swarm" class="cam-btn" style="background:#1e1b4b; border-color:#6366f1; color:#c7d2fe;">👥 Spawn Swarm (+20)</button>
       <button id="btn-spawn" class="cam-btn" style="background:#fef08a; color:#854d0e;">☄️ Drop Meteor</button>
     </div>
+
+    <!-- Floating Tooltip for Network Mode -->
+    <div id="neuron-tooltip"></div>
   </div>
 
   <div id="hud-sidebar">
+    <!-- Header -->
     <div class="hud-header">
       <div>
-        <div class="hud-title">🌌 GRAND LIVING UNIVERSE</div>
-        <div style="font-size: 10px; color: #64748b; font-weight: 600;">Ecosystem, Wildlife, Language & Telepathy</div>
+        <div class="hud-title" id="sidebar-main-title">🌌 GRAND LIVING UNIVERSE</div>
+        <div style="font-size: 10px; color: #94a3b8;" id="sidebar-sub-title">Continuous Embodied Physics & Multi-Agent Telemetry</div>
       </div>
-      <div class="live-badge"><div class="live-dot"></div><span id="val-weather">☀️ CLEAR</span></div>
+      <div id="badge-status" style="background:#14532d; color:#86efac; border:1px solid #22c55e; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:700;">
+        ☀️ CLEAR SKY
+      </div>
     </div>
 
-    <!-- Inter-Agent Social Dynamics Banner -->
-    <div class="social-banner">
-      <span id="val-social-mode">🤝 Distance: 1.8m</span>
-      <span id="val-social-status" style="color:#0284c7; font-weight:800;">TANDEM EXPEDITION</span>
-    </div>
-
-    <!-- 🔮 Divine Human Telepathy Console -->
-    <div class="card" style="border-left: 3px solid #8b5cf6;">
+    <!-- GLOBAL CIVILIZATION METRICS CARD -->
+    <div class="card">
       <div class="card-title">
-        <span>🔮 Divine Human Telepathy</span>
-        <select id="telepathy-target" style="font-size:10px; font-weight:700; border-radius:4px; border:1px solid #cbd5e1; padding:2px 4px;">
-          <option value="Alpha">To: Alpha (Blue)</option>
-          <option value="Beta">To: Beta (Crimson)</option>
-        </select>
+        <span>🌍 Civilization & World Telemetry</span>
+        <span id="val-sim-hz" style="color:#22c55e;">100.0 Hz (High-Frequency Sim)</span>
       </div>
-      <div class="telepathy-box">
-        <input type="text" id="telepathy-input" class="telepathy-input" placeholder="Type a divine thought to inject into 4D brain...">
-        <button id="telepathy-send" class="telepathy-btn">Transmit</button>
+      <div class="metric-row">
+        <span class="metric-label">Civilization Lifespan:</span>
+        <span class="metric-val" id="val-lifespan">5.90h (21,240s)</span>
       </div>
-    </div>
-
-    <!-- Dual Selves Side-by-Side HUD -->
-    <div class="dual-grid">
-      <!-- Humanoid Alpha -->
-      <div class="agent-card agent-alpha">
-        <div class="agent-header">
-          <span>🔵 Alpha (Builder)</span>
-          <span id="alpha-outcome" style="font-size:10px;">WALKING</span>
+      <div class="metric-row">
+        <span class="metric-label">Simulation Step:</span>
+        <span class="metric-val" id="val-sim-step">16,842</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Sunlight Intensity:</span>
+        <span class="metric-val" id="val-sun">52% (Solar Daylight)</span>
+      </div>
+      
+      <!-- Architectural Census Grid -->
+      <div style="font-size:10px; font-weight:700; color:#38bdf8; margin-top:3px;">🏛️ Architectural Infrastructure (460 Cells):</div>
+      <div class="census-grid">
+        <div class="census-pill">
+          <span class="census-num" id="census-bridges" style="color:#6366f1;">78</span>
+          <span class="census-desc">Arched Bridges</span>
         </div>
-        <div class="curiosity-box" id="alpha-curiosity">Exploring terrain</div>
-        <div class="metric-row"><span class="metric-label">3D Position</span><span id="alpha-pos" class="metric-val" style="color:#0284c7;">[12.2, 21.9]</span></div>
-        <div class="metric-row"><span class="metric-label">Ground Speed</span><span id="alpha-speed" class="metric-val" style="color:#0284c7;">2.2 m/s</span></div>
-        <div class="metric-row"><span class="metric-label">Stored Energy</span><span id="alpha-energy" class="metric-val" style="color:#0284c7;">14716</span></div>
-        <div class="metric-row"><span class="metric-label">Built / Harvested</span><span id="alpha-stats" class="metric-val">293 / 440</span></div>
-        <div class="metric-row"><span class="metric-label">4D Brain Neurons</span><span id="alpha-neurons" class="metric-val" style="color:#6366f1;">47</span></div>
-      </div>
-
-      <!-- Humanoid Beta -->
-      <div class="agent-card agent-beta">
-        <div class="agent-header">
-          <span>🔴 Beta (Explorer)</span>
-          <span id="beta-outcome" style="font-size:10px;">WALKING</span>
+        <div class="census-pill">
+          <span class="census-num" id="census-walls" style="color:#94a3b8;">353</span>
+          <span class="census-desc">Walls & Cottages</span>
         </div>
-        <div class="curiosity-box" id="beta-curiosity">Awakening in meadow</div>
-        <div class="metric-row"><span class="metric-label">3D Position</span><span id="beta-pos" class="metric-val" style="color:#e11d48;">[23.5, 21.4]</span></div>
-        <div class="metric-row"><span class="metric-label">Ground Speed</span><span id="beta-speed" class="metric-val" style="color:#e11d48;">2.2 m/s</span></div>
-        <div class="metric-row"><span class="metric-label">Stored Energy</span><span id="beta-energy" class="metric-val" style="color:#e11d48;">332.0</span></div>
-        <div class="metric-row"><span class="metric-label">Built / Harvested</span><span id="beta-stats" class="metric-val">2 / 3</span></div>
-        <div class="metric-row"><span class="metric-label">4D Brain Neurons</span><span id="beta-neurons" class="metric-val" style="color:#6366f1;">37</span></div>
+        <div class="census-pill">
+          <span class="census-num" id="census-roofs" style="color:#b45309;">25</span>
+          <span class="census-desc">Pitched Roofs</span>
+        </div>
+        <div class="census-pill">
+          <span class="census-num" id="census-shrines" style="color:#a855f7;">3</span>
+          <span class="census-desc">Crystal Shrines</span>
+        </div>
+        <div class="census-pill">
+          <span class="census-num" id="census-stones" style="color:#d97706;">3</span>
+          <span class="census-desc">Raw Stones</span>
+        </div>
+        <div class="census-pill">
+          <span class="census-num" id="census-ether" style="color:#38bdf8;">1</span>
+          <span class="census-desc">Energy Ether</span>
+        </div>
       </div>
     </div>
 
-    <!-- Global Architecture Census & Wildlife -->
-    <div class="card" style="border-left: 3px solid #10b981;">
-      <div class="card-title">
-        <span>🏛️ Civilization & Wildlife</span>
-        <span id="val-total-structures" style="color:#10b981; font-weight:800;">387 CELLS</span>
+    <!-- PANEL 1: WORLD MODE CONTROLS -->
+    <div id="panel-world-mode" style="display:flex; flex-direction:column; gap:8px;">
+      <!-- Social Banner -->
+      <div style="background:linear-gradient(135deg, rgba(34,197,94,0.15), rgba(56,189,248,0.15)); border:1px solid #22c55e; border-radius:8px; padding:5px 9px; display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#4ade80;">
+        <span id="val-social-dist">🤝 Distance: 1.8m</span>
+        <span id="val-social-status" style="color:#38bdf8;">TANDEM EXPEDITION</span>
       </div>
-      <div class="metric-row"><span class="metric-label">🏰 Walls & Foundations</span><span id="val-walls" class="metric-val">329</span></div>
-      <div class="metric-row"><span class="metric-label">🌉 Arched Stone Bridges</span><span id="val-bridges" class="metric-val" style="color:#6366f1;">29 Bridges</span></div>
-      <div class="metric-row"><span class="metric-label">💾 State Preservation</span><span class="metric-val" style="color:#10b981;">Auto-Saved (5.8h Preserved)</span></div>
+
+      <!-- Telepathy Console -->
+      <div class="card" style="border-left: 3px solid #8b5cf6;">
+        <div class="card-title">
+          <span>🔮 Divine Human Telepathy</span>
+          <select id="telepathy-target" style="background:#0f172a; color:white; font-size:10px; font-weight:700; border-radius:4px; border:1px solid #334155; padding:2px 4px;">
+            <option value="Alpha">To: Alpha (Blue)</option>
+            <option value="Beta">To: Beta (Crimson)</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="telepathy-input" class="input-text" style="flex:1;" placeholder="Inject 4D thought into brain...">
+          <button id="telepathy-send" class="btn-action">Send</button>
+        </div>
+      </div>
+
+      <!-- Comprehensive Organism Metrics Grid -->
+      <div class="dual-grid">
+        <!-- Alpha Deep Telemetry -->
+        <div class="agent-card" style="border-left: 3px solid #0284c7;">
+          <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; color:#38bdf8;">
+            <span>🔵 ALPHA (Veteran)</span>
+            <span id="alpha-action">WALKING</span>
+          </div>
+          <div class="metric-row"><span class="metric-label">3D Position:</span><span class="metric-val" id="alpha-pos">[18.7, 16.5, 1.9]</span></div>
+          <div class="metric-row"><span class="metric-label">Velocity:</span><span class="metric-val" id="alpha-vel">[2.15, -0.69] m/s</span></div>
+          <div class="metric-row"><span class="metric-label">Metabolic Energy:</span><span class="metric-val" id="alpha-energy" style="color:#38bdf8;">17,036</span></div>
+          <div class="metric-row"><span class="metric-label">Ether Harvested:</span><span class="metric-val" id="alpha-ether">492</span></div>
+          <div class="metric-row"><span class="metric-label">Structures Built:</span><span class="metric-val" id="alpha-walls">326</span></div>
+          <div class="metric-row"><span class="metric-label">4D Neurons:</span><span class="metric-val" id="alpha-neurons" style="color:#a855f7;">520 Neurons</span></div>
+          <div class="metric-row"><span class="metric-label">Active Synapses:</span><span class="metric-val" id="alpha-synapses">4,062 Bridges</span></div>
+          <div class="metric-row"><span class="metric-label">Trait Attractor:</span><span class="metric-val" id="alpha-trait" style="color:#22c55e;">SYNTHESIZE</span></div>
+          <div class="metric-row"><span class="metric-label">Flow Confidence:</span><span class="metric-val" id="alpha-conf" style="color:#22c55e;">0.998</span></div>
+          <div class="metric-row"><span class="metric-label">Epistemic Friction:</span><span class="metric-val" id="alpha-fric">0.02</span></div>
+          
+          <div style="font-size:9px; color:#94a3b8; font-weight:700; margin-top:2px;">Transcendental Powers:</div>
+          <div class="power-badge-list">
+            <span class="power-badge">🪽 Wings</span>
+            <span class="power-badge">🖐️ Tractor</span>
+            <span class="power-badge">⚡ Solar</span>
+            <span class="power-badge">👑 Crown</span>
+            <span class="power-badge">🌀 Dash</span>
+            <span class="power-badge">🔮 Alchemy</span>
+            <span class="power-badge">🛡️ Shield</span>
+            <span class="power-badge">🏛️ Sculpt</span>
+            <span class="power-badge">🌿 Bloom</span>
+          </div>
+        </div>
+
+        <!-- Beta Deep Telemetry -->
+        <div class="agent-card" style="border-left: 3px solid #e11d48;">
+          <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; color:#f43f5e;">
+            <span>🔴 BETA (Awakened)</span>
+            <span id="beta-action">WALKING</span>
+          </div>
+          <div class="metric-row"><span class="metric-label">3D Position:</span><span class="metric-val" id="beta-pos">[20.8, 18.4, 2.2]</span></div>
+          <div class="metric-row"><span class="metric-label">Velocity:</span><span class="metric-val" id="beta-vel">[2.14, -0.68] m/s</span></div>
+          <div class="metric-row"><span class="metric-label">Metabolic Energy:</span><span class="metric-val" id="beta-energy" style="color:#f43f5e;">2,412</span></div>
+          <div class="metric-row"><span class="metric-label">Ether Harvested:</span><span class="metric-val" id="beta-ether">48</span></div>
+          <div class="metric-row"><span class="metric-label">Structures Built:</span><span class="metric-val" id="beta-walls">31</span></div>
+          <div class="metric-row"><span class="metric-label">4D Neurons:</span><span class="metric-val" id="beta-neurons" style="color:#a855f7;">518 Neurons</span></div>
+          <div class="metric-row"><span class="metric-label">Active Synapses:</span><span class="metric-val" id="beta-synapses">4,067 Bridges</span></div>
+          <div class="metric-row"><span class="metric-label">Trait Attractor:</span><span class="metric-val" id="beta-trait" style="color:#38bdf8;">INQUIRE</span></div>
+          <div class="metric-row"><span class="metric-label">Flow Confidence:</span><span class="metric-val" id="beta-conf" style="color:#22c55e;">0.998</span></div>
+          <div class="metric-row"><span class="metric-label">Epistemic Friction:</span><span class="metric-val" id="beta-fric">0.01</span></div>
+          
+          <div style="font-size:9px; color:#94a3b8; font-weight:700; margin-top:2px;">Transcendental Powers:</div>
+          <div class="power-badge-list">
+            <span class="power-badge">🪽 Wings</span>
+            <span class="power-badge">🖐️ Tractor</span>
+            <span class="power-badge">⚡ Solar</span>
+            <span class="power-badge">👑 Crown</span>
+            <span class="power-badge">🌀 Dash</span>
+            <span class="power-badge">🔮 Alchemy</span>
+            <span class="power-badge">🛡️ Shield</span>
+            <span class="power-badge">🏛️ Sculpt</span>
+            <span class="power-badge">🌿 Bloom</span>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Live Minute Chronicle -->
-    <div class="card" style="flex:1;">
-      <div class="card-title"><span>📜 Multi-Agent Live Chronicle</span></div>
-      <div id="chronicle-container"></div>
+    <!-- PANEL 2: NEURAL NETWORK MODE CONTROLS -->
+    <div id="panel-network-mode" style="display:none; flex-direction:column; gap:8px;">
+      <!-- Substrate Target & View Toggle -->
+      <div class="card" style="border-left: 3px solid #38bdf8;">
+        <div class="card-title">
+          <span>🧠 Substrate Telemetry & Inspector</span>
+          <select id="net-organism-target" style="background:#0f172a; color:#38bdf8; font-size:11px; font-weight:800; border-radius:4px; border:1px solid #334155; padding:3px 6px;">
+            <option value="Alpha">🔵 Alpha (520 Neurons, 4,062 Synapses)</option>
+            <option value="Beta">🔴 Beta (518 Neurons, 4,067 Synapses)</option>
+          </select>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Total 4D Neurons:</span>
+          <span class="metric-val" id="net-neurons-count" style="color:#38bdf8;">520 Neurons</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Synaptic Bridges ($W_{ij}$):</span>
+          <span class="metric-val" id="net-synapses-count" style="color:#a855f7;">4,062 Bridges</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Synaptic Density ($K$):</span>
+          <span class="metric-val" id="net-syn-density">7.81 Bridges/Neuron</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Dynamic Threshold $\epsilon_{\text{eff}}$:</span>
+          <span class="metric-val">0.432 (Homeostatic Elastic)</span>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+          <span style="font-size:11px; color:#94a3b8;">Projection Manifold:</span>
+          <div style="display:flex; gap:4px;">
+            <button id="btn-proj-3d" class="cam-btn active">3D Space-Time</button>
+            <button id="btn-proj-2d" class="cam-btn">2D Planar (X vs Y)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network Axis & Family Legend -->
+      <div class="card">
+        <div class="card-title"><span>🎨 4D Coordinate & Family Mapping</span></div>
+        <div style="font-size:10px; color:#cbd5e1; line-height:1.4;">
+          • <strong>X-Axis</strong>: Input Receptive Field ($x_1, x_2, x_3$)<br>
+          • <strong>Y-Axis</strong>: Output Motor / Action ($y_1, y_2, y_3$)<br>
+          • <strong>Z-Axis</strong>: Event Time & Energy Potential<br>
+          • <strong>Color (4th Axis W)</strong>: 
+            <span style="color:#00f0ff;">■ Physics</span> &nbsp;
+            <span style="color:#e11d48;">■ Arch</span> &nbsp;
+            <span style="color:#f59e0b;">■ Bio</span> &nbsp;
+            <span style="color:#10b981;">■ Mind</span> &nbsp;
+            <span style="color:#8b5cf6;">■ Tech</span>
+        </div>
+      </div>
+
+      <!-- ⚡ High-Bandwidth Knowledge Imprinter -->
+      <div class="card" style="border-left: 3px solid #10b981;">
+        <div class="card-title">
+          <span>⚡ High-Bandwidth Knowledge Imprinter</span>
+          <span style="font-size:10px; color:#10b981;">Instant Injection</span>
+        </div>
+        <input type="text" id="imprint-topic" class="input-text" placeholder="Topic: e.g. Quantum Physics, Robotics, Architecture...">
+        <textarea id="imprint-text" class="input-text" rows="3" placeholder="Paste concept text, book snippet, or documentation to birth 4D constellation..."></textarea>
+        <button id="btn-imprint-execute" class="btn-action" style="background:linear-gradient(135deg, #10b981, #059669);">⚡ Imprint into 4D Brain Constellation</button>
+      </div>
+
+      <!-- 💬 JARVIS Companion Chat -->
+      <div class="card" style="border-left: 3px solid #a855f7;">
+        <div class="card-title">
+          <span>💬 JARVIS Companion Reasoning</span>
+          <span style="font-size:10px; color:#a855f7;">4D Memory Recall</span>
+        </div>
+        <div id="jarvis-chat-history">
+          <div class="chat-bubble chat-ai">I am connected to the living 4D brain substrate. Ask me anything, and I will reason over my learned memories!</div>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:4px;">
+          <input type="text" id="jarvis-input" class="input-text" style="flex:1;" placeholder="Talk with organism...">
+          <button id="jarvis-send" class="btn-action" style="background:linear-gradient(135deg, #a855f7, #7c3aed);">Ask</button>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    let cameraMode = 'orbit'; // Default to Panoramic Valley so user sees both agents moving across the world!
-    let currentData = null;
+    let currentMode = 'world';
+    let currentProjection = '3d';
+    let currentNetworkTarget = 'Alpha';
+    let rawBrainData = null;
 
-    // Three.js Scene Setup
     const canvas = document.getElementById('three-canvas');
     const container = document.getElementById('viewport-container');
+    const width = container.clientWidth || (window.innerWidth - 380) || 800;
+    const height = container.clientHeight || window.innerHeight || 600;
+
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xdbeafe);
-    scene.fog = new THREE.FogExp2(0xdbeafe, 0.015);
+    scene.background = new THREE.Color(0xb7e4c7);
 
-    const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 180);
-    camera.position.set(16, -14, 18);
+    const camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 800);
+    camera.up.set(0, 0, 1);
+    camera.position.set(32, -32, 42);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(32, 32, 3);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.target.set(16, 16, 2.0);
     controls.update();
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
     scene.add(ambientLight);
-
-    const sunLight = new THREE.DirectionalLight(0xfffaf0, 0.9);
-    sunLight.position.set(16, 16, 30);
-    sunLight.castShadow = true;
+    const sunLight = new THREE.DirectionalLight(0xffffff, 0.95);
+    sunLight.position.set(40, 20, 70);
     scene.add(sunLight);
 
-    // Terrain
-    const terrainSize = 32;
-    const terrainSubdiv = 64;
+    // 1. World Scene Group
+    const worldGroup = new THREE.Group();
+    scene.add(worldGroup);
+
+    const terrainSize = 64.0;
+    const terrainSubdiv = 128;
     const terrainGeo = new THREE.PlaneGeometry(terrainSize, terrainSize, terrainSubdiv, terrainSubdiv);
     const posAttr = terrainGeo.attributes.position;
     for (let i = 0; i < posAttr.count; i++) {
       const x = posAttr.getX(i) + terrainSize / 2;
       const y = posAttr.getY(i) + terrainSize / 2;
-      const h1 = Math.sin(x * 0.15) * Math.cos(y * 0.15) * 1.5;
-      const h2 = Math.sin(x * 0.3 + 1.2) * Math.sin(y * 0.3 + 0.8) * 0.8;
-      posAttr.setZ(i, Math.max(0.2, 1.2 + h1 + h2));
+      const h1 = Math.sin(x * 0.08) * Math.cos(y * 0.08) * 2.2;
+      const h2 = Math.sin(x * 0.16 + 1.2) * Math.sin(y * 0.16 + 0.8) * 1.2;
+      const h3 = Math.cos(Math.sqrt((x - 32.0)**2 + (y - 32.0)**2) * 0.12) * 0.8;
+      posAttr.setZ(i, Math.max(0.2, 1.6 + h1 + h2 + h3));
     }
     terrainGeo.computeVertexNormals();
-
-    const terrainMat = new THREE.MeshStandardMaterial({ color: 0x86efac, roughness: 0.8, metalness: 0.1 });
+    const terrainMat = new THREE.MeshStandardMaterial({ color: 0x86efac, roughness: 0.85 });
     const terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
     terrainMesh.position.set(terrainSize/2, terrainSize/2, 0);
-    scene.add(terrainMesh);
+    worldGroup.add(terrainMesh);
 
-    // Factory to build Humanoid Avatars with Sound Rings
     function createHumanoidAvatar(primaryColor, headColor, auraColor) {
       const group = new THREE.Group();
       group.scale.set(1.35, 1.35, 1.35);
@@ -375,14 +578,12 @@
       auraMesh.position.set(0, 0, -0.75);
       group.add(auraMesh);
 
-      const torsoGeo = new THREE.CylinderGeometry(0.28, 0.22, 0.65, 16);
-      const torsoMesh = new THREE.Mesh(torsoGeo, new THREE.MeshStandardMaterial({ color: primaryColor, roughness: 0.3 }));
+      const torsoMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.65, 16), new THREE.MeshStandardMaterial({ color: primaryColor }));
       torsoMesh.position.set(0, 0, 0.2);
       torsoMesh.rotation.x = Math.PI / 2;
       group.add(torsoMesh);
 
-      const headGeo = new THREE.SphereGeometry(0.24, 16, 16);
-      const headMesh = new THREE.Mesh(headGeo, new THREE.MeshStandardMaterial({ color: headColor, roughness: 0.2 }));
+      const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), new THREE.MeshStandardMaterial({ color: headColor }));
       headMesh.position.set(0, 0, 0.72);
       group.add(headMesh);
 
@@ -394,47 +595,50 @@
       rightEye.position.set(0.2, -0.09, 0.75);
       group.add(rightEye);
 
-      const armMat = new THREE.MeshStandardMaterial({ color: primaryColor, roughness: 0.4 });
-      const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.55, 8), armMat);
-      leftArm.position.set(0.0, 0.38, 0.15);
-      group.add(leftArm);
-      const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.55, 8), armMat);
-      rightArm.position.set(0.0, -0.38, 0.15);
-      group.add(rightArm);
-
-      const legMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
-      const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.65, 8), legMat);
-      leftLeg.position.set(0.0, 0.16, -0.45);
-      group.add(leftLeg);
-      const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.65, 8), legMat);
-      rightLeg.position.set(0.0, -0.16, -0.45);
-      group.add(rightLeg);
-
       const wingsMat = new THREE.MeshStandardMaterial({ color: auraColor, emissive: auraColor, emissiveIntensity: 0.8, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
       const wingsMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.45), wingsMat);
       wingsMesh.position.set(-0.25, 0, 0.35);
       wingsMesh.rotation.y = Math.PI / 2;
       group.add(wingsMesh);
 
-      // Sound Wave Resonance Sphere
-      const soundGeo = new THREE.SphereGeometry(0.8, 16, 16);
-      const soundMat = new THREE.MeshBasicMaterial({ color: auraColor, wireframe: true, transparent: true, opacity: 0.0 });
-      const soundMesh = new THREE.Mesh(soundGeo, soundMat);
-      soundMesh.position.set(0, 0, 0.7);
-      group.add(soundMesh);
-
-      scene.add(group);
-      return { group, leftLeg, rightLeg, leftArm, rightArm, auraMesh, wingsMesh, soundMesh };
+      worldGroup.add(group);
+      return { group, auraMesh, wingsMesh };
     }
 
-    const avatarAlpha = createHumanoidAvatar(0x0284c7, 0x4f46e5, 0x06b6d4);
-    const avatarBeta = createHumanoidAvatar(0xe11d48, 0x9f1239, 0xf59e0b);
+    const HUE_PALETTE = [
+      { primary: 0x0284c7, head: 0x4f46e5, aura: 0x06b6d4 }, // Alpha: Sky Blue
+      { primary: 0xe11d48, head: 0x9f1239, aura: 0xf59e0b }, // Beta: Crimson
+      { primary: 0x10b981, head: 0x047857, aura: 0x34d399 }, // Gamma: Emerald
+      { primary: 0x8b5cf6, head: 0x6d28d9, aura: 0xc084fc }, // Delta: Purple
+      { primary: 0xf59e0b, head: 0xb45309, aura: 0xfde047 }, // Epsilon: Amber
+      { primary: 0xec4899, head: 0xbe185d, aura: 0xf472b6 }, // Zeta: Pink
+      { primary: 0x06b6d4, head: 0x0e7490, aura: 0x67e8f9 }, // Eta: Cyan
+      { primary: 0x84cc16, head: 0x4d7c0f, aura: 0xa3e635 }, // Theta: Lime
+      { primary: 0x6366f1, head: 0x4338ca, aura: 0x818cf8 }, // Iota: Indigo
+      { primary: 0xf97316, head: 0xc2410c, aura: 0xfba94c }, // Kappa: Orange
+      { primary: 0x14b8a6, head: 0x0f766e, aura: 0x2dd4bf }, // Lambda: Teal
+      { primary: 0xd946ef, head: 0xa21caf, aura: 0xf0abfc }, // Mu: Fuchsia
+      { primary: 0x3b82f6, head: 0x1d4ed8, aura: 0x93c5fd }, // Nu: Blue
+      { primary: 0xef4444, head: 0xb91c1c, aura: 0xfca5a5 }, // Xi: Red
+      { primary: 0x22c55e, head: 0x15803d, aura: 0x86efac }, // Omicron: Green
+      { primary: 0xa855f7, head: 0x7e22ce, aura: 0xd8b4fe }, // Pi: Violet
+      { primary: 0xeab308, head: 0xa16207, aura: 0xfef08a }, // Rho: Yellow
+      { primary: 0x64748b, head: 0x334155, aura: 0x94a3b8 }, // Sigma: Slate
+      { primary: 0x0ea5e9, head: 0x0369a1, aura: 0x7dd3fc }, // Tau: Light Blue
+      { primary: 0xf43f5e, head: 0xbe123c, aura: 0xfb7185 }, // Upsilon: Rose
+      { primary: 0x10b981, head: 0x065f46, aura: 0x6ee7b7 }, // Phi: Mint
+      { primary: 0x9333ea, head: 0x581c87, aura: 0xe9d5ff }  // Chi: Deep Purple
+    ];
 
-    // Architectural Materials
+    const humanoidAvatars = {};
+    let cachedOrganisms = {};
+    let currentTrackedAgent = "Alpha";
+
+    const cellMeshes = {};
     const archMaterials = {
       matter_wall: new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.7 }),
       matter_roof: new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 }),
-      matter_bridge: new THREE.MeshStandardMaterial({ color: 0x6366f1, emissive: 0x4338ca, emissiveIntensity: 0.4, roughness: 0.6 }),
+      matter_bridge: new THREE.MeshStandardMaterial({ color: 0x6366f1, emissive: 0x4338ca, emissiveIntensity: 0.4 }),
       matter_tower: new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 }),
       energy_shrine: new THREE.MeshStandardMaterial({ color: 0xa855f7, emissive: 0xa855f7, emissiveIntensity: 0.9 }),
       matter_path: new THREE.MeshStandardMaterial({ color: 0xcfd8dc, roughness: 0.9 }),
@@ -444,274 +648,575 @@
       matter_stone: new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.8 })
     };
 
-    const cellMeshes = {};
-    const faunaMeshes = {};
+    // 2. 4D Network Scene Group
+    const networkGroup = new THREE.Group();
+    networkGroup.visible = false;
+    scene.add(networkGroup);
 
-    // Camera Controls
-    document.getElementById('cam-reset').onclick = () => {
-      cameraMode = 'orbit';
-      controls.enabled = true;
-      camera.position.set(16, -14, 18);
-      controls.target.set(16, 16, 2.0);
-      controls.update();
-      setCamMode('orbit');
-    };
-    document.getElementById('cam-alpha').onclick = () => setCamMode('alpha');
-    document.getElementById('cam-beta').onclick = () => setCamMode('beta');
-    document.getElementById('cam-alpha-eye').onclick = () => setCamMode('alpha-eye');
-    document.getElementById('cam-beta-eye').onclick = () => setCamMode('beta-eye');
-    document.getElementById('cam-orbit').onclick = () => setCamMode('orbit');
+    const familyColors = [0x00f0ff, 0xe11d48, 0xf59e0b, 0x10b981, 0x8b5cf6, 0xf43f5e, 0xeab308];
+    const neuronMeshesList = [];
+    let synapseLinesMesh = null;
 
-    function setCamMode(mode) {
-      cameraMode = mode;
-      document.querySelectorAll('.cam-btn').forEach(b => {
-        if (!b.classList.contains('btn-reset') && b.id !== 'btn-spawn') b.classList.remove('active');
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const tooltip = document.getElementById('neuron-tooltip');
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = (e.clientX / container.clientWidth) * 2 - 1;
+      mouse.y = -(e.clientY / container.clientHeight) * 2 + 1;
+
+      if (currentMode === 'network' && neuronMeshesList.length > 0) {
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(neuronMeshesList);
+        if (intersects.length > 0) {
+          const hit = intersects[0].object;
+          const data = hit.userData;
+          tooltip.style.display = 'block';
+          tooltip.style.left = `${e.clientX + 15}px`;
+          tooltip.style.top = `${e.clientY + 15}px`;
+          tooltip.innerHTML = `
+            <div style="font-weight:800; color:#38bdf8; font-size:12px; margin-bottom:2px;">🏷️ ${data.text || 'Concept Neuron'}</div>
+            <div><strong>Family ID:</strong> Family ${data.w}</div>
+            <div><strong>Role:</strong> ${data.role} | <strong>Energy:</strong> ${data.energy}</div>
+            <div><strong>4D Coords:</strong> (${data.x[0]}, ${data.x[1]}, ${data.x[2]}, ${data.x[3]})</div>
+            <div><strong>Active Synapses:</strong> ${Object.keys(data.synapses || {}).length} Bridges</div>
+          `;
+        } else {
+          tooltip.style.display = 'none';
+        }
+      } else {
+        tooltip.style.display = 'none';
+      }
+    });
+
+    function updateNeuralGraph(brainData) {
+      if (!brainData || !brainData.neurons) return;
+      rawBrainData = brainData;
+
+      document.getElementById('net-neurons-count').innerText = `${brainData.neurons_count} Neurons`;
+      document.getElementById('net-synapses-count').innerText = `${brainData.synapses_count} Bridges`;
+      const density = brainData.neurons_count > 0 ? (brainData.synapses_count / brainData.neurons_count).toFixed(2) : '0';
+      document.getElementById('net-syn-density').innerText = `${density} Bridges/Neuron`;
+
+      neuronMeshesList.forEach(m => networkGroup.remove(m));
+      neuronMeshesList.length = 0;
+      if (synapseLinesMesh) {
+        networkGroup.remove(synapseLinesMesh);
+        synapseLinesMesh = null;
+      }
+
+      const neurons = brainData.neurons;
+      const sphereGeo = new THREE.SphereGeometry(0.35, 12, 12);
+
+      neurons.forEach((n) => {
+        const color = familyColors[n.w % familyColors.length];
+        const mat = new THREE.MeshStandardMaterial({
+          color: color,
+          emissive: color,
+          emissiveIntensity: 0.6,
+          roughness: 0.3
+        });
+        const mesh = new THREE.Mesh(sphereGeo, mat);
+        
+        let px, py, pz;
+        if (currentProjection === '3d') {
+          px = (n.x[0] - 0.5) * 28.0;
+          py = (n.y[0] - 0.5) * 28.0;
+          pz = (n.energy - 1.0) * 8.0;
+        } else {
+          px = (n.x[0] - 0.5) * 32.0;
+          py = (n.y[0] - 0.5) * 32.0;
+          pz = 0.0;
+        }
+
+        mesh.position.set(px, py, pz);
+        mesh.userData = n;
+        networkGroup.add(mesh);
+        neuronMeshesList.push(mesh);
       });
-      const el = document.getElementById(`cam-${mode}`);
-      if (el) el.classList.add('active');
+
+      const linePositions = [];
+      const lineColors = [];
+      const colA = new THREE.Color(0xa855f7);
+
+      neurons.forEach((n, idx) => {
+        if (n.synapses) {
+          Object.keys(n.synapses).forEach(peerStr => {
+            const pIdx = parseInt(peerStr);
+            if (pIdx < neuronMeshesList.length && pIdx > idx) {
+              const p1 = neuronMeshesList[idx].position;
+              const p2 = neuronMeshesList[pIdx].position;
+              linePositions.push(p1.x, p1.y, p1.z);
+              linePositions.push(p2.x, p2.y, p2.z);
+              lineColors.push(colA.r, colA.g, colA.b);
+              lineColors.push(colA.r, colA.g, colA.b);
+            }
+          });
+        }
+      });
+
+      if (linePositions.length > 0) {
+        const lineGeo = new THREE.BufferGeometry();
+        lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+        lineGeo.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
+        const lineMat = new THREE.LineBasicMaterial({
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.45
+        });
+        synapseLinesMesh = new THREE.LineSegments(lineGeo, lineMat);
+        networkGroup.add(synapseLinesMesh);
+      }
     }
 
-    // 🔮 Divine Telepathy Sender
-    document.getElementById('telepathy-send').onclick = async () => {
-      const input = document.getElementById('telepathy-input');
-      const target = document.getElementById('telepathy-target').value;
+    // Top Mode Toggle
+    const btnWorldMode = document.getElementById('nav-world-mode');
+    const btnNetworkMode = document.getElementById('nav-network-mode');
+    const panelWorld = document.getElementById('panel-world-mode');
+    const panelNetwork = document.getElementById('panel-network-mode');
+    const worldCamBar = document.getElementById('world-cam-bar');
+
+    btnWorldMode.onclick = () => {
+      currentMode = 'world';
+      btnWorldMode.classList.add('active');
+      btnNetworkMode.classList.remove('active');
+      panelWorld.style.display = 'flex';
+      panelNetwork.style.display = 'none';
+      worldCamBar.style.display = 'flex';
+      worldGroup.visible = true;
+      networkGroup.visible = false;
+      scene.background = new THREE.Color(0xb7e4c7);
+      document.getElementById('sidebar-main-title').innerText = "🌌 GRAND LIVING UNIVERSE";
+      document.getElementById('sidebar-sub-title').innerText = "Continuous Embodied Physics & Multi-Agent Telemetry";
+      camera.position.set(32, -32, 42);
+      controls.target.set(32, 32, 3);
+    };
+
+    btnNetworkMode.onclick = () => {
+      currentMode = 'network';
+      btnNetworkMode.classList.add('active');
+      btnWorldMode.classList.remove('active');
+      panelWorld.style.display = 'none';
+      panelNetwork.style.display = 'flex';
+      worldCamBar.style.display = 'none';
+      worldGroup.visible = false;
+      networkGroup.visible = true;
+      scene.background = new THREE.Color(0x020617);
+      document.getElementById('sidebar-main-title').innerText = "🧠 4D NEURAL SUBSTRATE";
+      document.getElementById('sidebar-sub-title').innerText = "Topological Manifold, Synaptic Conductance & Concept Constellations";
+      camera.position.set(0, -30, 25);
+      controls.target.set(0, 0, 0);
+      fetchOrganismBrain();
+    };
+
+    document.getElementById('btn-proj-3d').onclick = () => {
+      currentProjection = '3d';
+      document.getElementById('btn-proj-3d').classList.add('active');
+      document.getElementById('btn-proj-2d').classList.remove('active');
+      updateNeuralGraph(rawBrainData);
+    };
+    document.getElementById('btn-proj-2d').onclick = () => {
+      currentProjection = '2d';
+      document.getElementById('btn-proj-2d').classList.add('active');
+      document.getElementById('btn-proj-3d').classList.remove('active');
+      updateNeuralGraph(rawBrainData);
+    };
+
+    document.getElementById('net-organism-target').onchange = (e) => {
+      currentNetworkTarget = e.target.value.includes("Beta") ? "Beta" : "Alpha";
+      fetchOrganismBrain();
+    };
+
+    async function fetchOrganismBrain() {
+      try {
+        const res = await fetch(`/api/organism_brain?id=${currentNetworkTarget}`);
+        if (res.ok) {
+          const data = await res.json();
+          updateNeuralGraph(data);
+        }
+      } catch (e) {}
+    }
+
+    document.getElementById('btn-imprint-execute').onclick = async () => {
+      const topic = document.getElementById('imprint-topic').value.trim() || "Concept";
+      const text = document.getElementById('imprint-text').value.trim();
+      if (!text) return;
+
+      const btn = document.getElementById('btn-imprint-execute');
+      btn.innerText = "⚡ Imprinting Constellation...";
+
+      try {
+        const res = await fetch('/api/imprint_knowledge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: currentNetworkTarget, text: text, topic: topic })
+        });
+        if (res.ok) {
+          document.getElementById('imprint-text').value = '';
+          btn.innerText = "✅ Knowledge Imprinted!";
+          setTimeout(() => btn.innerText = "⚡ Imprint into 4D Brain Constellation", 2000);
+          fetchOrganismBrain();
+        }
+      } catch (e) {}
+    };
+
+    document.getElementById('jarvis-send').onclick = async () => {
+      const input = document.getElementById('jarvis-input');
       const text = input.value.trim();
       if (!text) return;
       
+      const hist = document.getElementById('jarvis-chat-history');
+      const userBubble = document.createElement('div');
+      userBubble.className = 'chat-bubble chat-user';
+      userBubble.innerText = `You: ${text}`;
+      hist.appendChild(userBubble);
+      input.value = '';
+
       try {
-        await fetch('/api/telepathy', {
+        const res = await fetch('/api/jarvis_chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target: target, message: text })
+          body: JSON.stringify({ target: currentNetworkTarget, prompt: text })
         });
-        input.value = '';
-        input.placeholder = `Transmitted to ${target}!`;
-        setTimeout(() => input.placeholder = "Type a divine thought to inject into 4D brain...", 2500);
-      } catch (err) {}
+        if (res.ok) {
+          const data = await res.json();
+          const aiBubble = document.createElement('div');
+          aiBubble.className = 'chat-bubble chat-ai';
+          aiBubble.innerText = `${currentNetworkTarget}: ${data.response}`;
+          hist.appendChild(aiBubble);
+          hist.scrollTop = hist.scrollHeight;
+        }
+      } catch (e) {}
+    };
+    document.getElementById('jarvis-input').onkeydown = (e) => {
+      if (e.key === 'Enter') document.getElementById('jarvis-send').click();
     };
 
-    // ☄️ God Hand Matter Spawner
+    // Camera Tracking Mode State
+    let currentCamMode = 'orbit';
+    let cachedAlpha = { pos: [32, 32, 2], yaw: 0, pitch: 0 };
+    let cachedBeta = { pos: [32, 32, 2], yaw: 0, pitch: 0 };
+
+    function setActiveCamBtn(btnId) {
+      const camBtns = document.querySelectorAll('.cam-btn');
+      camBtns.forEach(b => {
+        if (b.id !== 'cam-reset' && b.id !== 'btn-spawn' && b.id !== 'btn-spawn-one' && b.id !== 'btn-spawn-swarm' && b.id !== 'btn-proj-3d' && b.id !== 'btn-proj-2d' && b.id !== 'cam-agent-select') {
+          b.classList.remove('active');
+        }
+      });
+      const activeBtn = document.getElementById(btnId);
+      if (activeBtn) activeBtn.classList.add('active');
+    }
+
+    document.getElementById('cam-reset').onclick = () => {
+      currentCamMode = 'orbit';
+      camera.position.set(32, -32, 42);
+      controls.target.set(32, 32, 3);
+      controls.update();
+      setActiveCamBtn('cam-orbit');
+    };
+
+    document.getElementById('cam-orbit').onclick = () => {
+      currentCamMode = 'orbit';
+      setActiveCamBtn('cam-orbit');
+    };
+
+    document.getElementById('cam-alpha').onclick = () => {
+      currentTrackedAgent = 'Alpha';
+      currentCamMode = 'follow';
+      setActiveCamBtn('cam-alpha');
+      document.getElementById('cam-agent-select').value = 'Alpha';
+    };
+
+    document.getElementById('cam-beta').onclick = () => {
+      currentTrackedAgent = 'Beta';
+      currentCamMode = 'follow';
+      setActiveCamBtn('cam-beta');
+      document.getElementById('cam-agent-select').value = 'Beta';
+    };
+
+    document.getElementById('cam-alpha-eye').onclick = () => {
+      currentTrackedAgent = 'Alpha';
+      currentCamMode = 'eye';
+      setActiveCamBtn('cam-alpha-eye');
+      document.getElementById('cam-agent-select').value = 'Alpha';
+    };
+
+    document.getElementById('cam-beta-eye').onclick = () => {
+      currentTrackedAgent = 'Beta';
+      currentCamMode = 'eye';
+      setActiveCamBtn('cam-beta-eye');
+      document.getElementById('cam-agent-select').value = 'Beta';
+    };
+
+    document.getElementById('cam-agent-select').onchange = (e) => {
+      currentTrackedAgent = e.target.value;
+      currentCamMode = 'follow';
+      if (currentTrackedAgent === 'Alpha') setActiveCamBtn('cam-alpha');
+      else if (currentTrackedAgent === 'Beta') setActiveCamBtn('cam-beta');
+    };
+
+    document.getElementById('btn-spawn-one').onclick = async () => {
+      const btn = document.getElementById('btn-spawn-one');
+      btn.innerText = "⏳ Spawning...";
+      try {
+        await fetch('/api/spawn_humanoids', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count: 1 })
+        });
+        btn.innerText = "✅ Spawned 1!";
+        setTimeout(() => btn.innerText = "➕ Spawn 1 Humanoid", 1500);
+      } catch (e) {
+        btn.innerText = "➕ Spawn 1 Humanoid";
+      }
+    };
+
+    document.getElementById('btn-spawn-swarm').onclick = async () => {
+      const btn = document.getElementById('btn-spawn-swarm');
+      btn.innerText = "⏳ Spawning 20...";
+      try {
+        await fetch('/api/spawn_humanoids', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count: 20 })
+        });
+        btn.innerText = "✅ Swarm Spawned (+20)!";
+        setTimeout(() => btn.innerText = "👥 Spawn Swarm (+20)", 2000);
+      } catch (e) {
+        btn.innerText = "👥 Spawn Swarm (+20)";
+      }
+    };
+
     document.getElementById('btn-spawn').onclick = async () => {
-      const rx = 6.0 + Math.random() * 20.0;
-      const ry = 6.0 + Math.random() * 20.0;
+      const sx = (cachedAlpha.pos ? (cachedAlpha.pos[0] + 3.0) % 60.0 : 32.0);
+      const sy = (cachedAlpha.pos ? (cachedAlpha.pos[1] + 3.0) % 60.0 : 32.0);
       try {
         await fetch('/api/spawn_matter', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ x: rx, y: ry })
+          body: JSON.stringify({ x: sx, y: sy })
         });
-      } catch (err) {}
+      } catch (e) {}
     };
 
-    async function fetchLiveTelemetry() {
-      try {
-        const res = await fetch('/api/live_state');
-        if (res.ok) {
-          const data = await res.json();
-          currentData = data;
-          updateWorldRender(data);
-          updateHUD(data);
+    // Genesis / Evolved State Mode Toggle
+    let isGenesisMode = false;
+    const genesisBtn = document.getElementById('nav-genesis-btn');
+    if (genesisBtn) {
+      genesisBtn.onclick = () => {
+        isGenesisMode = !isGenesisMode;
+        if (isGenesisMode) {
+          genesisBtn.innerText = '⏩ Return to Live Evolved World';
+          genesisBtn.style.background = '#14532d';
+          genesisBtn.style.borderColor = '#22c55e';
+          genesisBtn.style.color = '#86efac';
+          document.getElementById('sidebar-main-title').innerText = '🏛️ GENESIS WORLD (STEP 0)';
+          document.getElementById('sidebar-sub-title').innerText = 'Primordial Barren Valley Snapshot before 124 Bridges & 9 Powers';
+        } else {
+          genesisBtn.innerText = '⏪ Genesis View (t=0 Initial State)';
+          genesisBtn.style.background = '#451a03';
+          genesisBtn.style.borderColor = '#d97706';
+          genesisBtn.style.color = '#fde68a';
+          document.getElementById('sidebar-main-title').innerText = '🌌 GRAND LIVING UNIVERSE';
+          document.getElementById('sidebar-sub-title').innerText = 'Continuous Embodied Physics & Multi-Agent Telemetry';
         }
-      } catch (err) {}
-      setTimeout(fetchLiveTelemetry, 100);
+      };
     }
 
-    async function fetchChronicle() {
+    // Live World Fetch Loop
+    async function fetchWorldLoop() {
       try {
-        const res = await fetch('/api/chronicle');
+        const url = isGenesisMode ? '/api/genesis_state' : '/api/live_state';
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
-          updateChronicleUI(data.chronicle);
+          updateWorldHUD(data);
         }
-      } catch (err) {}
-      setTimeout(fetchChronicle, 1500);
+      } catch (e) {}
+      setTimeout(fetchWorldLoop, isGenesisMode ? 300 : 30);
     }
+    fetchWorldLoop();
 
-    function animateAvatar(avatar, org) {
-      avatar.group.position.set(org.pos[0], org.pos[1], org.pos[2]);
-      avatar.group.rotation.z = org.yaw;
-      const gait = org.gait_phase || 0;
-      avatar.leftLeg.rotation.y = Math.sin(gait) * 0.55;
-      avatar.rightLeg.rotation.y = -Math.sin(gait) * 0.55;
-      avatar.leftArm.rotation.y = -Math.sin(gait) * 0.45;
-      avatar.rightArm.rotation.y = Math.sin(gait) * 0.45;
-      avatar.auraMesh.rotation.z += 0.05;
+    let lastKnownOrganismCount = 0;
 
-      if (org.vocal_chord) {
-        avatar.soundMesh.material.opacity = 0.7;
-        avatar.soundMesh.scale.set(1.5, 1.5, 1.5);
-      } else {
-        avatar.soundMesh.material.opacity = Math.max(0, avatar.soundMesh.material.opacity - 0.05);
+    function updateWorldHUD(data) {
+      if (data.weather) document.getElementById('badge-status').innerText = data.is_genesis ? '🏛️ PRIMORDIAL GENESIS' : `☀️ ${data.weather.toUpperCase()}`;
+      if (data.sim_time !== undefined) {
+        const hours = (data.sim_time / 3600).toFixed(2);
+        document.getElementById('val-lifespan').innerText = `${hours}h (${Math.round(data.sim_time)}s)`;
       }
-    }
+      if (data.step !== undefined) document.getElementById('val-sim-step').innerText = data.step.toLocaleString();
+      if (data.sun_intensity !== undefined) {
+        document.getElementById('val-sun').innerText = `${Math.round(data.sun_intensity * 100)}% (Solar Daylight)`;
+      }
 
-    function updateWorldRender(data) {
-      if (!data) return;
-      
-      const orgs = data.organisms || [data.organism];
-      if (orgs[0]) animateAvatar(avatarAlpha, orgs[0]);
-      if (orgs[1]) animateAvatar(avatarBeta, orgs[1]);
-
-      // Render Architecture Cells
-      data.cells.forEach(c => {
-        let mesh = cellMeshes[c.id];
-        if (!mesh) {
-          let geo;
-          if (c.type === 'matter_wall') geo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-          else if (c.type === 'matter_roof') geo = new THREE.ConeGeometry(0.7, 0.6, 4);
-          else if (c.type === 'matter_bridge') geo = new THREE.BoxGeometry(1.2, 0.8, 0.4);
-          else if (c.type === 'matter_tower') geo = new THREE.CylinderGeometry(0.4, 0.45, 1.0, 8);
-          else if (c.type === 'energy_shrine') geo = new THREE.OctahedronGeometry(0.6);
-          else if (c.type === 'matter_path') geo = new THREE.BoxGeometry(0.8, 0.8, 0.15);
-          else if (c.type === 'energy_ether') geo = new THREE.SphereGeometry(c.radius, 16, 16);
-          else geo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-
-          const mat = archMaterials[c.type] || archMaterials.matter_wall;
-          mesh = new THREE.Mesh(geo, mat);
-          scene.add(mesh);
-          cellMeshes[c.id] = mesh;
-        }
-        mesh.position.set(c.pos[0], c.pos[1], c.pos[2]);
-      });
-
-      // Render Wildlife Fauna
-      if (data.fauna) {
-        data.fauna.forEach(f => {
-          let fMesh = faunaMeshes[f.id];
-          if (!fMesh) {
-            let fGeo, fMat;
-            if (f.type === 'fauna_deer') {
-              fGeo = new THREE.BoxGeometry(0.5, 0.9, 0.6);
-              fMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.8 });
-            } else {
-              fGeo = new THREE.ConeGeometry(0.3, 0.6, 3);
-              fMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.6 });
-            }
-            fMesh = new THREE.Mesh(fGeo, fMat);
-            scene.add(fMesh);
-            faunaMeshes[f.id] = fMesh;
+      // Dynamic Multi-Agent Swarm Update
+      if (data.organisms && data.organisms.length > 0) {
+        cachedOrganisms = {};
+        
+        // Update Agent Select Dropdown if new organisms appeared
+        if (data.organisms.length !== lastKnownOrganismCount) {
+          lastKnownOrganismCount = data.organisms.length;
+          const select = document.getElementById('cam-agent-select');
+          const netSelect = document.getElementById('net-organism-target');
+          if (select) {
+            select.innerHTML = '';
+            data.organisms.forEach(o => {
+              const opt = document.createElement('option');
+              opt.value = o.id;
+              opt.innerText = `🎯 Track: ${o.id}`;
+              if (o.id === currentTrackedAgent) opt.selected = true;
+              select.appendChild(opt);
+            });
           }
-          fMesh.position.set(f.pos[0], f.pos[1], f.pos[2]);
-          fMesh.rotation.z = f.yaw;
+          if (netSelect) {
+            netSelect.innerHTML = '';
+            data.organisms.forEach(o => {
+              const opt = document.createElement('option');
+              opt.value = o.id;
+              opt.innerText = `🧠 ${o.id}`;
+              netSelect.appendChild(opt);
+            });
+          }
+        }
+
+        data.organisms.forEach((org, idx) => {
+          cachedOrganisms[org.id] = org;
+          if (org.id === 'Alpha') cachedAlpha = org;
+          if (org.id === 'Beta') cachedBeta = org;
+
+          // Instantiate 3D Avatar Mesh on the fly
+          if (!humanoidAvatars[org.id]) {
+            const theme = HUE_PALETTE[idx % HUE_PALETTE.length];
+            humanoidAvatars[org.id] = createHumanoidAvatar(theme.primary, theme.head, theme.aura);
+          }
+
+          const av = humanoidAvatars[org.id];
+          av.group.position.set(org.pos[0], org.pos[1], org.pos[2]);
+          av.group.rotation.z = org.yaw !== undefined ? org.yaw : 0;
         });
-      }
 
-      sunLight.intensity = 0.4 + data.sun_intensity * 0.85;
-      scene.background.setRGB(0.7 + 0.15 * data.sun_intensity, 0.85 + 0.1 * data.sun_intensity, 0.95);
-    }
+        // Alpha & Beta HUD Cards
+        const a = cachedOrganisms['Alpha'] || data.organisms[0];
+        const b = cachedOrganisms['Beta'] || (data.organisms.length > 1 ? data.organisms[1] : data.organisms[0]);
+        
+        if (a) {
+          document.getElementById('alpha-action').innerText = (a.outcome || 'WALKING').toUpperCase();
+          document.getElementById('alpha-pos').innerText = `[${a.pos[0]}, ${a.pos[1]}, ${a.pos[2]}]`;
+          document.getElementById('alpha-vel').innerText = `[${a.velocity ? a.velocity[0] : 0}, ${a.velocity ? a.velocity[1] : 0}] m/s`;
+          document.getElementById('alpha-energy').innerText = Math.round(a.energy || 0).toLocaleString();
+          document.getElementById('alpha-ether').innerText = a.ether_harvested || 0;
+          document.getElementById('alpha-walls').innerText = a.structures_built || 0;
+          if (a.enn_metrics) {
+            document.getElementById('alpha-neurons').innerText = `${a.enn_metrics.neurons_born_total} Neurons`;
+            document.getElementById('alpha-synapses').innerText = `${a.enn_metrics.synapses_active} Bridges`;
+            document.getElementById('alpha-trait').innerText = (a.enn_metrics.active_basin || 'HOMESTEAD').toUpperCase();
+          }
+        }
 
-    function updateHUD(data) {
-      document.getElementById('val-weather').innerText = `⛅ ${data.weather.toUpperCase()}`;
+        if (b) {
+          document.getElementById('beta-action').innerText = (b.outcome || 'WALKING').toUpperCase();
+          document.getElementById('beta-pos').innerText = `[${b.pos[0]}, ${b.pos[1]}, ${b.pos[2]}]`;
+          document.getElementById('beta-vel').innerText = `[${b.velocity ? b.velocity[0] : 0}, ${b.velocity ? b.velocity[1] : 0}] m/s`;
+          document.getElementById('beta-energy').innerText = Math.round(b.energy || 0).toLocaleString();
+          document.getElementById('beta-ether').innerText = b.ether_harvested || 0;
+          document.getElementById('beta-walls').innerText = b.structures_built || 0;
+          if (b.enn_metrics) {
+            document.getElementById('beta-neurons').innerText = `${b.enn_metrics.neurons_born_total} Neurons`;
+            document.getElementById('beta-synapses').innerText = `${b.enn_metrics.synapses_active} Bridges`;
+            document.getElementById('beta-trait').innerText = (b.enn_metrics.active_basin || 'CONNECT').toUpperCase();
+          }
+        }
 
-      const orgs = data.organisms || [data.organism];
-      if (orgs[0]) {
-        const a = orgs[0];
-        document.getElementById('alpha-outcome').innerText = a.outcome.toUpperCase();
-        document.getElementById('alpha-curiosity').innerText = a.curiosity_focus;
-        document.getElementById('alpha-pos').innerText = `[${a.pos[0].toFixed(1)}, ${a.pos[1].toFixed(1)}]`;
-        const spd = Math.sqrt(a.velocity[0]*a.velocity[0] + a.velocity[1]*a.velocity[1]);
-        document.getElementById('alpha-speed').innerText = `${spd.toFixed(1)} m/s`;
-        document.getElementById('alpha-energy').innerText = `${a.energy.toFixed(0)}`;
-        document.getElementById('alpha-stats').innerText = `${a.structures_built} / ${a.ether_harvested}`;
-        if (a.enn_metrics) {
-          document.getElementById('alpha-neurons').innerText = `${a.enn_metrics.neurons_born_total}`;
+        if (a && b && a.pos && b.pos) {
+          const dx = a.pos[0] - b.pos[0];
+          const dy = a.pos[1] - b.pos[1];
+          const dist = Math.sqrt(dx*dx + dy*dy).toFixed(1);
+          document.getElementById('val-social-dist').innerText = `👥 Population: ${data.organisms.length} Humanoids | 🤝 Dist: ${dist}m`;
         }
       }
-      if (orgs[1]) {
-        const b = orgs[1];
-        document.getElementById('beta-outcome').innerText = b.outcome.toUpperCase();
-        document.getElementById('beta-curiosity').innerText = b.curiosity_focus;
-        document.getElementById('beta-pos').innerText = `[${b.pos[0].toFixed(1)}, ${b.pos[1].toFixed(1)}]`;
-        const spd = Math.sqrt(b.velocity[0]*b.velocity[0] + b.velocity[1]*b.velocity[1]);
-        document.getElementById('beta-speed').innerText = `${spd.toFixed(1)} m/s`;
-        document.getElementById('beta-energy').innerText = `${b.energy.toFixed(0)}`;
-        document.getElementById('beta-stats').innerText = `${b.structures_built} / ${b.ether_harvested}`;
-        if (b.enn_metrics) {
-          document.getElementById('beta-neurons').innerText = `${b.enn_metrics.neurons_born_total}`;
+
+      // Render Hyper-Cells & Update Census
+      if (data.cells) {
+        let bridges = 0, walls = 0, roofs = 0, shrines = 0, stones = 0, ether = 0;
+        const currentIds = new Set(data.cells.map(c => c.id));
+        
+        // Remove old meshes when toggling between Genesis and Live
+        for (const cid in cellMeshes) {
+          if (!currentIds.has(Number(cid))) {
+            worldGroup.remove(cellMeshes[cid]);
+            if (cellMeshes[cid].geometry) cellMeshes[cid].geometry.dispose();
+            delete cellMeshes[cid];
+          }
+        }
+
+        data.cells.forEach(c => {
+          if (c.type === 'matter_bridge') bridges++;
+          else if (c.type === 'matter_wall') walls++;
+          else if (c.type === 'matter_roof' || c.type === 'matter_wood') roofs++;
+          else if (c.type === 'energy_shrine' || c.type === 'energy_crystal') shrines++;
+          else if (c.type === 'matter_stone') stones++;
+          else if (c.type === 'energy_ether') ether++;
+
+          if (!cellMeshes[c.id]) {
+            const mat = archMaterials[c.type] || archMaterials.matter_wall;
+            const geo = new THREE.BoxGeometry(c.radius*2, c.radius*2, c.radius*2);
+            const m = new THREE.Mesh(geo, mat);
+            worldGroup.add(m);
+            cellMeshes[c.id] = m;
+          }
+          cellMeshes[c.id].position.set(c.pos[0], c.pos[1], c.pos[2]);
+        });
+
+        document.getElementById('census-bridges').innerText = bridges;
+        document.getElementById('census-walls').innerText = walls;
+        document.getElementById('census-roofs').innerText = roofs;
+        document.getElementById('census-shrines').innerText = shrines;
+        document.getElementById('census-stones').innerText = stones;
+        document.getElementById('census-ether').innerText = ether;
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (currentMode === 'world') {
+        const targetOrg = cachedOrganisms[currentTrackedAgent] || cachedOrganisms['Alpha'] || cachedAlpha;
+
+        if (currentCamMode === 'follow' && targetOrg && targetOrg.pos) {
+          const fwdX = Math.cos(targetOrg.yaw || 0);
+          const fwdY = Math.sin(targetOrg.yaw || 0);
+          const targetCamX = targetOrg.pos[0] - fwdX * 6.5;
+          const targetCamY = targetOrg.pos[1] - fwdY * 6.5;
+          const targetCamZ = targetOrg.pos[2] + 3.2;
+          camera.position.lerp(new THREE.Vector3(targetCamX, targetCamY, targetCamZ), 0.08);
+          controls.target.lerp(new THREE.Vector3(targetOrg.pos[0], targetOrg.pos[1], targetOrg.pos[2] + 0.9), 0.12);
+        } else if (currentCamMode === 'eye' && targetOrg && targetOrg.pos) {
+          const eyeX = targetOrg.pos[0] + Math.cos(targetOrg.yaw || 0) * 0.25;
+          const eyeY = targetOrg.pos[1] + Math.sin(targetOrg.yaw || 0) * 0.25;
+          const eyeZ = targetOrg.pos[2] + 0.72;
+          camera.position.set(eyeX, eyeY, eyeZ);
+          const lookX = eyeX + Math.cos(targetOrg.yaw || 0) * 12.0;
+          const lookY = eyeY + Math.sin(targetOrg.yaw || 0) * 12.0;
+          const lookZ = eyeZ + Math.tan(targetOrg.pitch || 0) * 12.0;
+          controls.target.set(lookX, lookY, lookZ);
         }
       }
 
-      if (orgs[0] && orgs[1]) {
-        const dx = orgs[0].pos[0] - orgs[1].pos[0];
-        const dy = orgs[0].pos[1] - orgs[1].pos[1];
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        document.getElementById('val-social-mode').innerText = `🤝 Distance: ${dist.toFixed(1)}m`;
+      controls.update();
+      if (currentMode === 'network' && networkGroup.visible) {
+        networkGroup.rotation.y += 0.003;
       }
-
-      let walls = 0, bridges = 0;
-      data.cells.forEach(c => {
-        if (c.type === 'matter_wall') walls++;
-        else if (c.type === 'matter_bridge') bridges++;
-      });
-      document.getElementById('val-walls').innerText = walls;
-      document.getElementById('val-bridges').innerText = `${bridges} Bridges`;
+      renderer.render(scene, camera);
     }
-
-    function updateChronicleUI(chronicle) {
-      const container = document.getElementById('chronicle-container');
-      container.innerHTML = '';
-      chronicle.slice(-8).reverse().forEach(entry => {
-        const div = document.createElement('div');
-        div.className = 'chronicle-entry';
-        div.innerHTML = `
-          <div class="chronicle-header"><span>[Min ${entry.minute}] ${entry.time_str}</span><span>Step ${entry.step}</span></div>
-          <div>Alpha: <strong>${entry.alpha.action}</strong> | Beta: <strong>${entry.beta.action}</strong></div>
-        `;
-        container.appendChild(div);
-      });
-    }
+    animate();
 
     window.addEventListener('resize', () => {
       camera.aspect = container.clientWidth / container.clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(container.clientWidth, container.clientHeight);
     });
-
-    function animate() {
-      requestAnimationFrame(animate);
-
-      if (currentData && currentData.organisms) {
-        const orgAlpha = currentData.organisms[0];
-        const orgBeta = currentData.organisms[1];
-
-        if (cameraMode === 'alpha' && orgAlpha) {
-          controls.enabled = false;
-          const targetCam = new THREE.Vector3(
-            orgAlpha.pos[0] - Math.cos(orgAlpha.yaw) * 4.5,
-            orgAlpha.pos[1] - Math.sin(orgAlpha.yaw) * 4.5,
-            orgAlpha.pos[2] + 2.8
-          );
-          camera.position.lerp(targetCam, 0.08);
-          camera.lookAt(orgAlpha.pos[0], orgAlpha.pos[1], orgAlpha.pos[2] + 0.8);
-        } else if (cameraMode === 'beta' && orgBeta) {
-          controls.enabled = false;
-          const targetCam = new THREE.Vector3(
-            orgBeta.pos[0] - Math.cos(orgBeta.yaw) * 4.5,
-            orgBeta.pos[1] - Math.sin(orgBeta.yaw) * 4.5,
-            orgBeta.pos[2] + 2.8
-          );
-          camera.position.lerp(targetCam, 0.08);
-          camera.lookAt(orgBeta.pos[0], orgBeta.pos[1], orgBeta.pos[2] + 0.8);
-        } else if (cameraMode === 'alpha-eye' && orgAlpha) {
-          controls.enabled = false;
-          camera.position.set(orgAlpha.pos[0] + Math.cos(orgAlpha.yaw) * 0.25, orgAlpha.pos[1] + Math.sin(orgAlpha.yaw) * 0.25, orgAlpha.pos[2] + 0.9);
-          camera.lookAt(new THREE.Vector3(orgAlpha.pos[0] + Math.cos(orgAlpha.yaw) * 10, orgAlpha.pos[1] + Math.sin(orgAlpha.yaw) * 10, orgAlpha.pos[2] + 0.9));
-        } else if (cameraMode === 'beta-eye' && orgBeta) {
-          controls.enabled = false;
-          camera.position.set(orgBeta.pos[0] + Math.cos(orgBeta.yaw) * 0.25, orgBeta.pos[1] + Math.sin(orgBeta.yaw) * 0.25, orgBeta.pos[2] + 0.9);
-          camera.lookAt(new THREE.Vector3(orgBeta.pos[0] + Math.cos(orgBeta.yaw) * 10, orgBeta.pos[1] + Math.sin(orgBeta.yaw) * 10, orgBeta.pos[2] + 0.9));
-        } else {
-          controls.enabled = true;
-          controls.update();
-        }
-      }
-
-      renderer.render(scene, camera);
-    }
-
-    animate();
-    fetchLiveTelemetry();
-    fetchChronicle();
   </script>
 </body>
 </html>
