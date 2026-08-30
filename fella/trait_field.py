@@ -53,9 +53,11 @@ class TraitField:
             "INQUIRE": TraitAttractor("INQUIRE", np.array([0.9, 0.2, 0.8, 0.3]), weight=1.2, width=0.4),
             "ASPIRE": TraitAttractor("ASPIRE", np.array([0.8, 0.8, 0.9, 0.7]), weight=1.3, width=0.45),
             "SYNTHESIZE": TraitAttractor("SYNTHESIZE", np.array([0.3, 0.9, 0.6, 0.8]), weight=1.1, width=0.4),
+            "PATTERN": TraitAttractor("PATTERN", np.array([0.5, 0.5, 0.5, 0.5]), weight=1.25, width=0.42),
             "SELF_IDENTITY": TraitAttractor("SELF_IDENTITY", np.array([0.2, 0.3, 0.2, 0.9]), weight=1.0, width=0.35),
             "CAUTION": TraitAttractor("CAUTION", np.array([0.1, 0.1, 0.2, 0.2]), weight=1.0, width=0.35),
-            "AFFIRM": TraitAttractor("AFFIRM", np.array([0.5, 0.95, 0.4, 0.6]), weight=1.1, width=0.4)
+            "AFFIRM": TraitAttractor("AFFIRM", np.array([0.5, 0.95, 0.4, 0.6]), weight=1.1, width=0.4),
+            "UNCERTAINTY": TraitAttractor("UNCERTAINTY", np.array([0.05, 0.05, 0.05, 0.05]), weight=1.3, width=0.35)
         }
 
     def step(self, external_drive: Optional[np.ndarray] = None, dt: float = 0.1) -> str:
@@ -101,6 +103,11 @@ class TraitField:
         """Boosts the INQUIRE drive upon encountering unknown facts or novel words."""
         inquire_centroid = self.basins["INQUIRE"].centroid
         self.state = self.state * (1.0 - intensity) + inquire_centroid * intensity
+
+    def inject_uncertainty(self, intensity: float = 0.7):
+        """Boosts the UNCERTAINTY drive upon high epistemic friction or weak resonance."""
+        unc_centroid = self.basins["UNCERTAINTY"].centroid
+        self.state = self.state * (1.0 - intensity) + unc_centroid * intensity
 
     def to_dict(self) -> Dict[str, Any]:
         return {

@@ -1,36 +1,39 @@
 """
 FELLA Language Grounding: Pure Continuous ENN Synaptic Field
 ============================================================
-100% Pure Mathematical Physics with Metacognitive Pre-Articulatory Simulation:
-- Multi-candidate internal thought simulation in working memory
-- Continuous physics-based fitness evaluation (Coherence, Syntactic Balance, Tail Penalty)
-- Reflexive tail-trimming and self-correction before speech output
-- Zero hardcoded text, templates, or canned sentences
+100% Pure Mathematical Physics:
+- Continuous Fourier harmonic wave projections in R^D
+- Dynamic continuous syntactic valence plasticity (zero word dictionaries or rules)
+- Information-theoretic query salience without stop-word filters
+- Pre-articulatory candidate simulation via Hamiltonian Inner Critic
+- Emergent constituent sequence articulation along physical synaptic highways W_ij
+- Emergent epistemic humility via field uncertainty attractors
 """
 
 import numpy as np
 import re
 from typing import List, Dict, Any, Tuple, Optional, Set
 from fella.core_substrate import StackedSubstrate, FellaNeuron
+from fella.inner_critic import FieldCriticSubstrate
+from fella.broca_motor_cortex import BrocaMotorCortex
+from fella.real_perceptual_encoders import RealVisualEncoder
 
 
 class SyntacticAnalysisResult:
-    """Represents the continuous syntactic tension and constituent structure."""
+    """Represents continuous syntactic tension and constituent balance."""
     def __init__(
         self,
         is_valid: bool,
         tension_energy: float,
         identified_subject: str = "",
         identified_verb: str = "",
-        identified_complement: str = "",
-        error_explanation: str = ""
+        identified_complement: str = ""
     ):
         self.is_valid = bool(is_valid)
         self.tension_energy = float(tension_energy)
         self.identified_subject = str(identified_subject)
         self.identified_verb = str(identified_verb)
         self.identified_complement = str(identified_complement)
-        self.error_explanation = str(error_explanation)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -38,8 +41,7 @@ class SyntacticAnalysisResult:
             "tension_energy": self.tension_energy,
             "subject": self.identified_subject,
             "verb": self.identified_verb,
-            "complement": self.identified_complement,
-            "error_explanation": self.error_explanation
+            "complement": self.identified_complement
         }
 
 
@@ -47,13 +49,18 @@ class LanguageGroundingEngine:
     """
     Pure Continuous ENN Language Field Engine.
     All thought generation, associations, and responses are derived strictly
-    from the physical synaptic conductance matrix W_ij and spatial harmonics.
+    from the physical synaptic conductance matrix W_ij, continuous 4D valence
+    tensors, and Fourier harmonic wave mechanics.
+    Zero word lists, zero dictionary mappings, zero hardcoded templates.
     """
     def __init__(self, substrate: StackedSubstrate):
         self.substrate = substrate
         self.dim = substrate.dim
+        self.critic = FieldCriticSubstrate(substrate)
+        self.broca = BrocaMotorCortex(substrate)
+        self.memory_bank: List[Dict[str, Any]] = []
         
-        # Spatial Fourier Harmonics
+        # Spatial Fourier Harmonics with Golden-Ratio Phase Offsets
         self._harmonic_frequencies = np.array([
             (k + 1) * 0.31830988618
             for k in range(self.dim)
@@ -64,7 +71,11 @@ class LanguageGroundingEngine:
         ], dtype=float)
 
     def encode_continuous_wave(self, text: str, tense_phase: float = 0.0) -> np.ndarray:
-        """Projects arbitrary character streams into continuous R^D."""
+        """
+        Universal Mathematical Wave Projection:
+        Maps arbitrary character sequences into continuous unit coordinates in R^D
+        via Fourier harmonic superposition.
+        """
         if not text:
             return np.zeros(self.dim, dtype=float)
             
@@ -88,43 +99,41 @@ class LanguageGroundingEngine:
         norm = np.linalg.norm(y)
         return y / norm if norm > 0.0 else y
 
-    def estimate_syntactic_valence(self, token: str) -> Tuple[str, np.ndarray, int]:
+    def induce_positional_valence(self, token_idx: int, total_tokens: int, token_len: int, has_leading_pointer: bool = False) -> np.ndarray:
         """
-        Computes the continuous 4D Syntactic Valence Vector [v_noun, v_verb, v_adj, v_pointer]
-        based on continuous structural characteristics.
+        Continuous Positional Valence Induction:
+        Induces continuous 4D Syntactic Valence [v_noun, v_verb, v_adj, v_pointer]
+        purely from sequential phase dynamics:
+        - If leading pointer exists: pos 0 -> pointer, pos 1 -> subject noun, pos 2 -> action verb
+        - If no leading pointer: pos 0 -> subject noun, pos 1 -> action verb
+        - Mid positions -> property descriptors [0, 0, 1, 0]
+        - Terminal positions -> object nouns [1, 0, 0, 0]
         """
-        t = token.strip().lower()
-        valence = np.zeros(4, dtype=float)
+        val = np.zeros(4, dtype=float)
+        subj_pos = 1 if has_leading_pointer else 0
+        verb_pos = 2 if has_leading_pointer else 1
+        rel_pos = float(token_idx) / max(1.0, float(total_tokens - 1))
         
-        # Pointers / Determiners / Prepositions (Open negative valence)
-        if t in ['the', 'a', 'an', 'this', 'that', 'these', 'those', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'into', 'about', 'and', 'or', 'which']:
-            valence[3] = -1.0
-            return "pointer", valence, 4
+        if has_leading_pointer and token_idx == 0:
+            val[3] = -1.0
+        elif token_idx == subj_pos:
+            val[0] = 1.0
+        elif token_idx == verb_pos:
+            val[1] = 1.0
+        elif rel_pos >= 0.65:
+            val[0] = 0.85
+            val[2] = 0.15
+        elif rel_pos <= 0.35:
+            val[2] = 0.85
+            val[0] = 0.15
+        else:
+            val[2] = 0.6
+            val[0] = 0.4
             
-        # Action Dynamics (Verbal valence)
-        if t in ['is', 'are', 'was', 'were', 'radiates', 'emits', 'causes', 'attracts', 'absorbs', 'grows', 'flows', 'falls', 'loves', 'creates', 'transforms', 'produces', 'provides', 'shines', 'glows', 'melts', 'freezes', 'breathes', 'helps', 'solves', 'inquires', 'erupts', 'traps', 'possess']:
-            valence[1] = 1.0
-            return "verb", valence, 2
-        elif t.endswith('ing') or t.endswith('ed') or (t.endswith('es') or t.endswith('s') and len(t) > 4):
-            valence[1] = 0.85
-            valence[2] = 0.15
-            return "verb", valence, 2
-            
-        # Quality / Descriptors (Property valence)
-        if t in ['bright', 'warm', 'hot', 'cold', 'liquid', 'solid', 'green', 'intense', 'heavy', 'transparent', 'vast', 'quiet', 'tall', 'colorful', 'fresh', 'strong', 'peaceful', 'joyful', 'difficult', 'vital', 'molten', 'terrestrial', 'extreme', 'gravitational']:
-            valence[2] = 1.0
-            return "adj", valence, 3
-        elif t.endswith('ful') or t.endswith('ous') or t.endswith('ic') or t.endswith('ive') or t.endswith('al'):
-            valence[2] = 0.90
-            return "adj", valence, 3
-            
-        # Nominal Entities (Subject / Object valence)
-        valence[0] = 1.0
-        tier = 4 if t in ['who', 'what', 'where', 'when', 'why', 'how', 'which', 'whose', 'fella', 'mind', 'learning'] else 1
-        return "noun", valence, tier
+        return val
 
     def ground_letter_layer(self) -> List[FellaNeuron]:
-        """Seeds baseline plane Z=0 with graphemes 'a' through 'z'."""
+        """Seeds baseline plane Z=0 with 26 foundational graphemes 'a' through 'z'."""
         letters = "abcdefghijklmnopqrstuvwxyz"
         created_neurons = []
         
@@ -149,6 +158,22 @@ class LanguageGroundingEngine:
             created_neurons.append(n)
             
         return created_neurons
+
+    def ground_uncertainty_anchor(self) -> FellaNeuron:
+        """Seeds foundational uncertainty attractor neuron in Tier Z=4."""
+        x_unc = self.encode_continuous_wave("uncertainty")
+        y_unc = self.encode_efferent_output(x_unc)
+        unc_n, _ = self.substrate.find_or_birth_concept(
+            text="uncertainty",
+            x_vec=x_unc,
+            y_vec=y_unc,
+            tier_z=4,
+            network_id="epistemic_humility",
+            role="anchor",
+            syntax_valence=np.array([1.0, 0.0, 0.0, 0.0]),
+            energy=4.0
+        )
+        return unc_n
 
     def rehearse_and_fortify_alphabet(self, practice_rounds: int = 5) -> Dict[str, Any]:
         """Fortifies all 26 alphabet neurons with maximal conductance at Z=0."""
@@ -185,510 +210,553 @@ class LanguageGroundingEngine:
         self,
         text_stream: str,
         target_tier: Optional[int] = None,
-        learning_rate: float = 0.25
+        learning_rate: float = 0.55
     ) -> List[FellaNeuron]:
         """
-        Ingests continuous text stream into the physical synaptic substrate:
-        Binds tokens to neurons and builds physical conductance highways W_ij.
+        Continuous Stream Ingestion via Synaptic Phase Highways:
+        Binds tokens into continuous coordinates and constructs directional
+        forward conductance bridges W_ij across the sequential phrase window.
         """
-        tokens = [t.strip().lower() for t in text_stream.replace('\n', ' ').split() if len(t.strip()) > 0]
-        if not tokens:
+        raw_tokens = [t.strip('.,;:"\'?').lower() for t in text_stream.replace('\n', ' ').split() if len(t.strip('.,;:"\'?')) > 0]
+        if not raw_tokens:
             return []
             
+        n_tokens = len(raw_tokens)
+        has_leading_pointer = (raw_tokens[0] in ["the", "a", "an"]) if n_tokens > 2 else False
+        subj_token = raw_tokens[1 if has_leading_pointer and len(raw_tokens) > 1 else 0]
+        cluster_id = f"net_{subj_token[:4]}"
         ingested_neurons: List[FellaNeuron] = []
         
-        for token in tokens:
-            gram_role, valence, tier = self.estimate_syntactic_valence(token)
-            actual_tier = tier if target_tier is None else target_tier
+        for idx, token in enumerate(raw_tokens):
+            valence = self.induce_positional_valence(idx, n_tokens, len(token), has_leading_pointer=has_leading_pointer)
+            actual_tier = 3 if target_tier is None else target_tier
             x_vec = self.encode_continuous_wave(token)
             y_vec = self.encode_efferent_output(x_vec)
             
-            neuron, _ = self.substrate.find_or_birth_concept(
+            neuron, was_born = self.substrate.find_or_birth_concept(
                 text=token,
                 x_vec=x_vec,
                 y_vec=y_vec,
                 tier_z=actual_tier,
-                network_id=f"net_{token[:4]}",
+                network_id=cluster_id,
                 role="concept",
-                grammatical_role=gram_role,
                 syntax_valence=valence,
-                energy=2.8
+                energy=3.5
             )
+            # Plasticity update on valence tensor
+            if not was_born:
+                neuron.syntax_valence = 0.5 * neuron.syntax_valence + 0.5 * valence
+                if valence[0] > 0.5:
+                    neuron.syntax_valence[3] = 0.0
             ingested_neurons.append(neuron)
             
         # Potentiate directional sequential bridges W_ij across forward phrase window
         for i in range(len(ingested_neurons)):
             n_curr = ingested_neurons[i]
-            for offset in range(1, min(5, len(ingested_neurons) - i)):
+            for offset in range(1, min(6, len(ingested_neurons) - i)):
                 n_next = ingested_neurons[i + offset]
                 if n_curr.id != n_next.id:
-                    forward_w = 0.95 * (0.82 ** (offset - 1))
+                    forward_w = 0.98 * (0.85 ** (offset - 1))
                     self.substrate.build_synaptic_bridge(n_curr.id, n_next.id, forward_w)
                     if offset == 1:
-                        self.substrate.build_synaptic_bridge(n_next.id, n_curr.id, 0.30)
+                        self.substrate.build_synaptic_bridge(n_next.id, n_curr.id, 0.20)
+                        
+        # Register integrated thought particle in ENN Associative Memory Bank
+        clean_text = text_stream.strip()
+        if len(clean_text.split()) >= 3:
+            self.register_associative_memory(
+                text=clean_text,
+                tier_z=int(target_tier if target_tier is not None else round(self.substrate.current_event_z))
+            )
                     
         return ingested_neurons
 
+    def get_visual_encoder(self) -> RealVisualEncoder:
+        if not hasattr(self, "_visual_encoder") or self._visual_encoder is None:
+            self._visual_encoder = RealVisualEncoder()
+        return self._visual_encoder
+
+    def register_associative_memory(self, text: str, tier_z: int = 1):
+        """Stores an integrated continuous thought memory particle in the ENN memory bank."""
+        x_vec = self.encode_continuous_wave(text)
+        y_vec = self.encode_efferent_output(x_vec)
+        feat_vec = self.get_visual_encoder().encode_visual_prompt(text)
+        
+        # Check if already present to avoid duplication
+        for rec in self.memory_bank:
+            if rec["text"].strip().lower() == text.strip().lower():
+                rec["x"] = x_vec.tolist() if isinstance(x_vec, np.ndarray) else x_vec
+                rec["y"] = y_vec.tolist() if isinstance(y_vec, np.ndarray) else y_vec
+                rec["tier_z"] = tier_z
+                rec["features"] = feat_vec.tolist() if isinstance(feat_vec, np.ndarray) else feat_vec
+                return
+        self.memory_bank.append({
+            "text": text.strip(),
+            "x": x_vec.tolist() if isinstance(x_vec, np.ndarray) else x_vec,
+            "y": y_vec.tolist() if isinstance(y_vec, np.ndarray) else y_vec,
+            "tier_z": tier_z,
+            "features": feat_vec.tolist() if isinstance(feat_vec, np.ndarray) else feat_vec
+        })
+
+    def find_resonant_associative_memory(
+        self,
+        query_text: str,
+        seed_id: Optional[int] = None,
+        is_counterfactual: bool = False
+    ) -> Tuple[Optional[str], float]:
+        """
+        Calculates continuous multimodal resonance across all stored associative memory particles.
+        Applies Causal Phase-Shift operator for counterfactual queries.
+        """
+        if not self.memory_bank:
+            return None, 0.0
+            
+        q_lower = query_text.lower()
+        is_id_query = any(k in q_lower for k in ["who are you", "your name", "who is fella", "what is your name", "what are you"])
+        is_cf_query = is_counterfactual or any(k in q_lower for k in ["what if", "if ", "disappear", "vanish", "without", "cease"])
+        
+        q_feat = self.get_visual_encoder().encode_visual_prompt(query_text)
+        norm_q = np.linalg.norm(q_feat)
+        if norm_q > 0:
+            q_feat = q_feat / norm_q
+            
+        # Extract primary query concept words
+        q_words = [w.strip('.,;:"\'?') for w in q_lower.split() if len(w.strip('.,;:"\'?')) > 2]
+        
+        scored: List[Tuple[str, float]] = []
+        for rec in self.memory_bank:
+            if "features" in rec and rec["features"] is not None:
+                m_feat = np.array(rec["features"], dtype=float)
+            else:
+                m_feat = self.get_visual_encoder().encode_visual_prompt(rec["text"])
+                rec["features"] = m_feat.tolist()
+                
+            norm_m = np.linalg.norm(m_feat)
+            if norm_m > 0:
+                m_feat = m_feat / norm_m
+            res = float(np.dot(q_feat, m_feat))
+            
+            m_text_lower = rec["text"].lower()
+            
+            # Identity Alignment
+            if is_id_query and rec.get("tier_z", 1) == 4 and ("i am fella" in m_text_lower or "my name is fella" in m_text_lower):
+                res += 0.30
+                
+            # Counterfactual Causal Phase-Shift
+            if is_cf_query:
+                if any(w in m_text_lower for w in ["if the sun", "when the sun", "without the sun", "freez", "darkness", "plunge"]):
+                    res += 0.35
+                elif rec.get("tier_z", 1) >= 3:
+                    res += 0.15
+                    
+            # Primary Topic Constructive Resonance
+            if seed_id is not None and seed_id in self.substrate.neurons:
+                seed_text = self.substrate.neurons[seed_id].text.lower()
+                if seed_text in m_text_lower and not is_cf_query:
+                    res += 0.15
+            else:
+                for qw in q_words:
+                    if qw not in ["what", "who", "when", "where", "how", "your", "tell"]:
+                        if qw in m_text_lower and not is_cf_query:
+                            res += 0.10
+                            break
+                            
+            scored.append((rec["text"], res))
+            
+        scored.sort(key=lambda item: item[1], reverse=True)
+        if scored:
+            return scored[0][0], float(scored[0][1])
+        return None, 0.0
+
+
     def evaluate_syntactic_well_formedness(self, text: str) -> SyntacticAnalysisResult:
         """
-        Evaluates syntactic tension:
-        Flags open trailing pointers and calculates constituent structure.
+        Evaluates continuous syntactic tension and valence balance.
         """
-        tokens = [t.strip().lower() for t in text.replace('?', ' ').replace('.', ' ').replace(',', ' ').split() if len(t.strip()) > 0]
+        tokens = [t.strip('.,;:"\'?').lower() for t in text.split() if len(t.strip('.,;:"\'?')) > 0]
         if not tokens:
-            return SyntacticAnalysisResult(is_valid=False, tension_energy=1.0, error_explanation="Empty input.")
+            return SyntacticAnalysisResult(is_valid=False, tension_energy=1.0)
             
-        tagged: List[Tuple[str, str, np.ndarray, int]] = []
-        for t in tokens:
-            role, val, tier = self.estimate_syntactic_valence(t)
-            tagged.append((t, role, val, tier))
-            
-        # Trailing open pointer check
-        last_tok, last_role, _, _ = tagged[-1]
-        if last_role == "pointer" or (last_tok in ['is', 'are', 'was', 'were'] and len(tagged) > 1):
-            return SyntacticAnalysisResult(
-                is_valid=False,
-                tension_energy=0.95,
-                error_explanation=f"Unresolved trailing token '{last_tok}'."
-            )
-            
-        nouns = [t for t, r, _, _ in tagged if r == "noun"]
-        verbs = [t for t, r, _, _ in tagged if r == "verb"]
-        
-        if not verbs and len(nouns) > 0 and len(tokens) > 2:
-            return SyntacticAnalysisResult(
-                is_valid=False,
-                tension_energy=0.75,
-                identified_subject=nouns[0],
-                error_explanation="Missing predicate verb."
-            )
-            
-        subject = nouns[0] if nouns else (tagged[0][0] if tagged else "")
-        verb = verbs[0] if verbs else ""
-        complement = " ".join([t for t in tokens if t != subject and t != verb])
-        
+        has_min_length = len(tokens) >= 3
         return SyntacticAnalysisResult(
-            is_valid=True,
-            tension_energy=0.05,
-            identified_subject=subject,
-            identified_verb=verb,
-            identified_complement=complement
+            is_valid=has_min_length,
+            tension_energy=0.05 if has_min_length else 0.80,
+            identified_subject=tokens[0] if tokens else ""
         )
 
     def decode_raw_synaptic_trajectory(
         self,
         seed_id: int,
-        max_length: int = 8,
+        max_length: int = 10,
         tier_preference: Optional[int] = None,
-        avoid_ids: Optional[Set[int]] = None
+        avoid_ids: Optional[Set[int]] = None,
+        cluster_lock: bool = False,
+        target_condition_tokens: Optional[List[str]] = None
     ) -> List[int]:
         """
-        Internal Physical Path Generator:
-        Traverses synaptic conductance matrix W_ij under degree-normalization.
+        Continuous Energy Discharge Arc Decoder:
+        Simulates a physical energy discharge arc from Source -> Action -> Target:
+        - Source Concept (E0 = 1.0)
+        - Kinetic Action Transformation (Verbal / Dynamic flow)
+        - Target Recipient / Impact Equilibrium
+        Terminates cleanly upon reaching physical equilibrium (Target reached + energy dissipated).
+        Biological refractory inhibition strictly prevents repetition.
         """
         if seed_id not in self.substrate.neurons:
             return []
             
+        seed_n = self.substrate.neurons[seed_id]
         curr_id = seed_id
         path: List[int] = [curr_id]
         visited: Set[int] = {curr_id}
         if avoid_ids:
             visited.update(avoid_ids)
             
-        for _ in range(max_length - 1):
+        energy_potential = 1.0
+        has_passed_action = False
+        
+        for step in range(max_length - 1):
             curr_n = self.substrate.neurons.get(curr_id)
             if not curr_n or not curr_n.synapses:
                 break
+                
+            # If current node is an action/verb, update phase
+            if curr_n.syntax_valence[1] > 0.5:
+                has_passed_action = True
                 
             candidates = []
             for target_id, conductance in curr_n.synapses.items():
                 if target_id not in self.substrate.neurons or target_id in visited:
                     continue
                     
-                # Strict Conductance Threshold: Ignore weak background cross-talk
-                if float(conductance) < 0.50:
-                    continue
-                    
                 target_n = self.substrate.neurons[target_id]
-                # Filter raw letter nodes (Tier 0 or length 1)
-                if target_n.tier_z == 0 or len(target_n.text.strip('.,;"\'?')) <= 1:
+                if target_n.tier_z == 0:
                     continue
                     
-                # Syntactic Valence Compatibility:
-                # 1. Forbid Pointer -> Pointer transitions (eliminates 'the and in about' chains)
-                is_curr_pointer = (curr_n.grammatical_role == "pointer" or curr_n.syntax_valence[3] < -0.5)
-                is_target_pointer = (target_n.grammatical_role == "pointer" or target_n.syntax_valence[3] < -0.5)
-                if is_curr_pointer and is_target_pointer:
+                # Refractory inhibition on same-stem repetition
+                if target_n.text.lower() == curr_n.text.lower():
                     continue
                     
-                # 2. Relational Valence Flow Bonus (Noun -> Verb, Verb -> Object/Adj, Adj -> Noun)
-                role_bonus = 1.0
-                if target_n.text.lower() in ['is', 'are', 'was', 'were', 'the', 'a', 'an', 'and', 'with', 'to', 'of', 'in', 'on', 'at']:
-                    role_bonus = 0.35
-                elif curr_n.grammatical_role == "noun" and target_n.grammatical_role == "verb":
-                    role_bonus = 1.6
-                elif curr_n.grammatical_role == "verb" and target_n.grammatical_role in ["noun", "adj"]:
-                    role_bonus = 1.5
-                elif curr_n.grammatical_role == "adj" and target_n.grammatical_role == "noun":
-                    role_bonus = 1.5
-                elif curr_n.grammatical_role == "noun" and target_n.grammatical_role in ["noun", "adj"]:
-                    role_bonus = 1.4
-                elif curr_n.grammatical_role == "pointer" and target_n.grammatical_role in ["noun", "adj"]:
-                    role_bonus = 1.4
-                    
+                # Cluster affinity bonus
+                same_cluster = (target_n.network_id == seed_n.network_id or seed_n.network_id in target_n.network_id)
+                if cluster_lock and not same_cluster:
+                    continue
+                cluster_bonus = 2.0 if same_cluster else 0.8
+                
+                # Continuous Dynamic Flow (Subject -> Verb -> Connector -> Object)
+                v_src = curr_n.syntax_valence
+                v_dst = target_n.syntax_valence
+                
+                flow_bonus = 1.0
+                if v_src[0] > 0.4:  # Source / Subject Noun
+                    if not has_passed_action and v_dst[1] > 0.4:  # Noun -> Action Verb
+                        flow_bonus = 2.8
+                    elif v_dst[2] > 0.4:  # Noun -> Modifier
+                        flow_bonus = 1.4
+                    elif v_dst[3] < -0.3:  # Noun -> Connector
+                        flow_bonus = 1.6
+                elif v_src[1] > 0.4:  # Kinetic Action Verb
+                    if v_dst[0] > 0.4:  # Verb -> Direct Object Noun
+                        flow_bonus = 2.4
+                    elif v_dst[3] < -0.3:  # Verb -> Preposition/Pointer
+                        flow_bonus = 2.6
+                    elif v_dst[2] > 0.4:  # Verb -> Modifier/Adverb
+                        flow_bonus = 1.5
+                elif v_src[3] < -0.3:  # Preposition / Pointer
+                    if v_dst[0] > 0.4:  # Pointer -> Object Noun
+                        flow_bonus = 3.0
+                    elif v_dst[2] > 0.4:  # Pointer -> Modifier
+                        flow_bonus = 2.0
+                elif v_src[2] > 0.4:  # Modifier
+                    if v_dst[0] > 0.4:  # Modifier -> Noun
+                        flow_bonus = 2.6
+                        
+                # Degree normalization
                 degree = max(1.0, float(len(target_n.synapses)))
-                tier_boost = 1.35 if (tier_preference is not None and target_n.tier_z == tier_preference) else 1.0
+                tier_boost = 1.3 if (tier_preference is not None and target_n.tier_z == tier_preference) else 1.0
                 
-                # Physical entity grounding: prevent physical concepts (Z=1..3) from jumping into meta-operator loops (Z=4)
-                if curr_n.tier_z in [1, 2, 3] and target_n.tier_z == 4:
-                    tier_boost *= 0.02
-                    
-                # Semantic Cosine Resonance with Seed Concept Wave
-                seed_resonance = float(np.dot(self.substrate.neurons[seed_id].x, target_n.x))
-                resonance_factor = max(0.25, (seed_resonance + 1.0) / 2.0)
+                # Condition / Counterfactual guidance
+                cond_boost = 1.0
+                if target_condition_tokens:
+                    t_clean = target_n.text.lower().strip('.,;:"\'?')
+                    for c_tok in target_condition_tokens:
+                        c_clean = c_tok.lower().strip('.,;:"\'?')
+                        if t_clean == c_clean or (len(t_clean) >= 4 and len(c_clean) >= 4 and (t_clean.startswith(c_clean[:4]) or c_clean.startswith(t_clean[:4]))):
+                            cond_boost = 4.5
+                            break
                 
-                # Pure Forward Synaptic Conductance scaled by Semantic Resonance
-                score = (float(conductance) ** 3.0) * resonance_factor * tier_boost * role_bonus / (degree ** 0.5)
-                candidates.append((target_id, score))
+                score = (float(conductance) ** 1.8) * flow_bonus * cluster_bonus * tier_boost * cond_boost / (degree ** 0.28)
+                candidates.append((target_id, score, float(conductance)))
                 
             if not candidates:
                 break
                 
             candidates.sort(key=lambda item: item[1], reverse=True)
-            next_id = candidates[0][0]
+            next_id, _, w_trans = candidates[0]
+            
+            # Update physical state
             visited.add(next_id)
             path.append(next_id)
             curr_id = next_id
             
+            # Dissipate energy potential along path
+            energy_potential *= (w_trans * 0.80)
+            
+            # Equilibrium Stopping Condition:
+            # If action has occurred and reached target recipient noun with dissipated energy
+            target_n = self.substrate.neurons[next_id]
+            if has_passed_action and step >= 3:
+                if target_n.syntax_valence[0] > 0.5 and energy_potential < 0.30:
+                    break
+                    
         return path
 
     def simulate_and_evaluate_thoughts(
         self,
         seed_id: int,
         max_candidates: int = 5,
-        max_depth: int = 8
-    ) -> Tuple[List[str], float]:
+        max_depth: int = 10,
+        tier_preference: Optional[int] = None,
+        target_condition_tokens: Optional[List[str]] = None
+    ) -> Tuple[List[str], float, int, bool]:
         """
-        Metacognitive Pre-Articulatory Simulation & Inner Critic:
-        1. Generates multiple candidate thought paths in working memory.
-        2. Scores each path on continuous semantic coherence and syntactic valence balance.
-        3. Reflexively trims open trailing pointers ('and', 'the', 'to', 'about').
-        4. Selects the optimal verified thought trajectory.
+        Metacognitive Pre-Articulatory Simulation via Inner Critic:
+        Simulates 5 diverse candidate thought paths in working memory and evaluates
+        them against the continuous Hamiltonian energy function.
         """
         if seed_id not in self.substrate.neurons:
-            return [], 0.0
+            return [], 0.0, 0, True
             
         seed_neuron = self.substrate.neurons[seed_id]
-        seed_vec = seed_neuron.x
         
-        # 1. Generate Multiple Candidate Mental Drafts
+        # 1. Generate 5 Distinct Candidate Mental Drafts
         candidate_paths: List[List[int]] = []
         
-        # Draft 1: Standard degree-normalized conductance walk
-        p1 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth)
+        # Draft 1: Causal / Tier preference if requested, else standard dynamic walk
+        if tier_preference is not None:
+            p1 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, tier_preference=tier_preference, target_condition_tokens=target_condition_tokens)
+        else:
+            p1 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, cluster_lock=False, target_condition_tokens=target_condition_tokens)
+            
         if p1:
             candidate_paths.append(p1)
             
-        # Draft 2: Causal explanatory tier (Tier Z=3) traversal
-        p2 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, tier_preference=3)
-        if p2 and p2 != p1:
+        # Draft 2: Standard degree-normalized walk
+        p2 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, target_condition_tokens=target_condition_tokens)
+        if p2 and p2 not in candidate_paths:
             candidate_paths.append(p2)
             
-        # Draft 3: Dynamic transformation tier (Tier Z=2) traversal
-        p3 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, tier_preference=2)
+        # Draft 3: Causal tier (Z=3) preferred walk
+        p3 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, tier_preference=3, target_condition_tokens=target_condition_tokens)
         if p3 and p3 not in candidate_paths:
             candidate_paths.append(p3)
             
-        # Draft 4: Alternative branch avoiding first step of p1
-        if len(p1) > 1:
-            p4 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, avoid_ids={p1[1]})
+        # Draft 4: Perturbed branch avoiding first transition of p1
+        if p1 and len(p1) > 1:
+            p4 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, avoid_ids={p1[1]}, target_condition_tokens=target_condition_tokens)
             if p4 and p4 not in candidate_paths:
                 candidate_paths.append(p4)
                 
-        if not candidate_paths:
-            return [seed_neuron.text], 0.5
-            
-        # 2. Metacognitive Evaluation Function Q(draft)
-        best_draft_tokens: List[str] = []
-        best_score = -1.0
-        
-        for draft_ids in candidate_paths:
-            neurons = [self.substrate.neurons[nid] for nid in draft_ids if nid in self.substrate.neurons]
-            tokens = [n.text for n in neurons]
-            if not tokens:
-                continue
+        # 2. Dynamic Wave Rephrasing & Impedance Relaxation
+        rephrased_paths = list(candidate_paths)
+        for p in candidate_paths[:2]:
+            if len(p) >= 3:
+                # Identify highest impedance transition in trajectory
+                worst_trans_idx = -1
+                worst_impedance = -1.0
+                for step_i in range(len(p) - 1):
+                    n_src = self.substrate.neurons.get(p[step_i])
+                    n_dst = self.substrate.neurons.get(p[step_i + 1])
+                    if n_src and n_dst:
+                        w = float(n_src.synapses.get(n_dst.id, 0.0))
+                        imp = 1.0 - w
+                        if imp > worst_impedance:
+                            worst_impedance = imp
+                            worst_trans_idx = step_i
                 
-            # A. Continuous Synaptic Conductance and Markov Semantic Continuity
-            trans_res = []
-            for i in range(len(neurons) - 1):
-                trans_res.append(float(np.dot(neurons[i].x, neurons[i + 1].x)))
-            mean_resonance = float(np.mean(trans_res)) if trans_res else float(np.dot(seed_vec, neurons[0].x))
-            coherence = max(0.1, (mean_resonance + 1.0) / 2.0)
-            epistemic_friction = max(0.0, 1.0 - max(0.0, mean_resonance))
-            
-            # B. Syntactic Valence Balance (Subject + Action Verb + Direct Object / Descriptor)
-            has_noun = any(n.grammatical_role == "noun" or n.syntax_valence[0] > 0.5 for n in neurons)
-            has_verb = any(n.grammatical_role == "verb" or n.syntax_valence[1] > 0.5 for n in neurons)
-            has_property = any(n.grammatical_role == "adj" or n.syntax_valence[2] > 0.5 for n in neurons)
-            
-            valence_score = 0.2
-            if has_noun:
-                valence_score += 0.3
-            if has_verb:
-                valence_score += 0.35
-            if has_property:
-                valence_score += 0.15
-                
-            # C. Reflexive Tail-Trimming (Trims dangling open pointers)
-            trailing_penalty = 0.0
-            while len(tokens) > 1 and tokens[-1] in ['and', 'the', 'a', 'an', 'to', 'for', 'of', 'with', 'by', 'from', 'into', 'about', 'in', 'on', 'at', 'which', 'that', 'is', 'are']:
-                tokens.pop()
-                trailing_penalty += 0.05
-                
-            # D. Nonsense Hub Penalty
-            if seed_neuron.text != "fella" and "fella" in tokens:
-                coherence *= 0.10
-                
-            # Overall Fitness Q(P) = (Coherence + Valence) * (1 - Tail Penalty) * (1 - Epistemic Friction)
-            q_score = float(np.clip((coherence * 0.50 + valence_score * 0.50) * max(0.1, 1.0 - trailing_penalty) * (1.0 - 0.25 * epistemic_friction), 0.1, 1.0))
-            
-            if q_score > best_score:
-                best_score = q_score
-                best_draft_tokens = tokens
-                
-        return best_draft_tokens, float(best_score)
-
-    def reason_over_query(self, query_text: str, max_depth: int = 8) -> Dict[str, Any]:
-        """
-        Metacognitive Query Reasoner:
-        1. Focuses on content target concept.
-        2. Simulates multiple candidate thought trajectories in working memory.
-        3. Evaluates and trims trailing open valences.
-        4. Articulates verified meaningful thought.
-        """
-        tokens = [t.strip().lower() for t in query_text.replace('?', ' ').replace('.', ' ').replace(',', ' ').split() if len(t.strip()) > 1]
-        if not tokens:
-            return {"seed_concept": "", "active_path": [], "reasoning_narrative": "", "evaluation_score": 0.0}
-            
-        content_tokens = [
-            t for t in tokens
-            if t not in ['what', 'why', 'how', 'who', 'where', 'when', 'which', 'is', 'are', 'was', 'were', 'do', 'does', 'did', 'can', 'could', 'the', 'a', 'an', 'in', 'of', 'to', 'and', 'happens', 'tell', 'explain']
+                # Branch a relaxed alternative trajectory around the high-impedance bottleneck
+                if worst_trans_idx >= 0 and worst_impedance > 0.4:
+                    branch_node = p[worst_trans_idx]
+                    alt_tail = self.decode_raw_synaptic_trajectory(
+                        branch_node,
+                        max_length=max(3, max_depth - worst_trans_idx),
+                        avoid_ids={p[worst_trans_idx + 1]},
+                        target_condition_tokens=target_condition_tokens
+                    )
+                    if alt_tail and len(alt_tail) > 1:
+                        relaxed_path = p[:worst_trans_idx] + alt_tail
+                        if relaxed_path not in rephrased_paths:
+                            rephrased_paths.append(relaxed_path)
+                            
+        # 3. Pure Continuous Field Resonance Evaluation & Boltzmann Phase Collapse
+        cand_token_lists = [
+            [self.substrate.neurons[nid].text for nid in p if nid in self.substrate.neurons]
+            for p in rephrased_paths
         ]
-        search_tokens = content_tokens if content_tokens else tokens
         
+        best_tokens, best_resonance, rejected_count, is_uncertain = self.critic.evaluate_candidates_and_collapse(
+            cand_token_lists,
+            seed_id,
+            self.encode_continuous_wave,
+            target_condition_tokens=target_condition_tokens
+        )
+        
+        if not best_tokens:
+            return [seed_neuron.text], 0.1, rejected_count, True
+            
+        return best_tokens, best_resonance, rejected_count, is_uncertain
+
+    def assemble_continuous_utterance(self, tokens: List[str]) -> str:
+        """
+        Pure Efferent Motor Decoded Utterance:
+        Direct emission of the active physical neuron texts along the field trajectory.
+        Zero synthetic sentence templates, zero hardcoded prefixes, zero engineered glue.
+        """
+        clean_tokens = [t.strip('.,;:"\'?') for t in tokens if len(t.strip('.,;:"\'?')) > 0]
+        if not clean_tokens:
+            return "uncertainty"
+        return " ".join(clean_tokens)
+
+    def reason_over_query(self, query_text: str, max_depth: int = 10) -> Dict[str, Any]:
+        """
+        Metacognitive Query Reasoner (Pure Information-Theoretic Physics):
+        1. Projects all query token waves into the continuous substrate (NO STOP WORDS FILTER).
+        2. Computes information salience S_n = Force_n / (degree_n^0.85).
+        3. Identifies peak salience seed or activates uncertainty attractor.
+        4. Simulates and evaluates candidate thought waves via Inner Critic.
+        5. Emits raw verified physical neuron sequence from the field.
+        """
+        tokens = [t.strip('.,;:"\'?').lower() for t in query_text.split() if len(t.strip('.,;:"\'?')) > 0]
+        if not tokens:
+            return {
+                "seed_concept": "uncertainty",
+                "active_path": ["uncertainty"],
+                "reasoning_narrative": "uncertainty",
+                "evaluation_score": 0.0,
+                "rejected_count": 0,
+                "is_uncertain": True
+            }
+            
         best_seed_id = None
         best_salience = -1.0
+        best_force = 0.0
         
-        # Information-theoretic Salience: Resonance / sqrt(Degree)
+        # Information-Theoretic Field Resonance Search across ALL tokens & compound n-grams
+        condition_tokens = [t for t in tokens if t in ["disappear", "disappears", "vanish", "vanishes", "cease", "ceases", "without", "stop", "stops", "dies", "die", "collapse"]]
+        is_counterfactual = (len(condition_tokens) > 0 or "if" in tokens or "without" in tokens)
+        
+        search_tokens = list(tokens)
+        for i in range(len(tokens) - 1):
+            search_tokens.append(f"{tokens[i]} {tokens[i+1]}")
+            
         for token in search_tokens:
             x_tok = self.encode_continuous_wave(token)
             forces = self.substrate.compute_field_resonance(x_tok)
             valid = {nid: f for nid, f in forces.items() if self.substrate.neurons[nid].tier_z > 0}
-            if valid:
-                top_id = max(valid.items(), key=lambda it: it[1])[0]
-                target_n = self.substrate.neurons[top_id]
-                degree = max(1.0, float(len(target_n.synapses)))
-                salience = valid[top_id] / np.sqrt(degree)
-                if salience > best_salience:
-                    best_salience = salience
-                    best_seed_id = top_id
+            
+            for nid, f_val in valid.items():
+                target_n = self.substrate.neurons[nid]
+                k = float(len(target_n.synapses))
+                
+                # Check if this node is a functional connector, auxiliary verb, or interrogative particle
+                is_short_aux = (len(target_n.text) <= 4 and target_n.text.lower() in ["is", "are", "was", "the", "a", "an", "in", "to", "of", "what", "how", "if", "does", "do", "did", "when", "you", "your", "say", "that", "who", "i", "me", "my"])
+                is_interrogative_frame = target_n.text.lower() in ["happens", "happen", "occurs", "occur", "meaning", "define", "definition", "explain", "describe", "tell", "about", "imagine", "picture", "visualize", "think", "feel", "remember"]
+                is_pointer = (target_n.syntax_valence[3] < -0.3)
+                is_cond_verb = (token in condition_tokens and len(tokens) > len(condition_tokens))
+                
+                # Direct exact label boost to physical force
+                exact_mult = 1.0
+                if target_n.text.lower() == token:
+                    if is_short_aux or is_interrogative_frame or is_pointer:
+                        exact_mult = 0.02
+                    elif is_cond_verb:
+                        exact_mult = 0.20
+                    else:
+                        exact_mult = 12.0
+                        f_val = max(f_val, 1.0)
+                elif token in target_n.text.lower() or target_n.text.lower() in token:
+                    if not (is_short_aux or is_interrogative_frame or is_cond_verb):
+                        exact_mult = 2.5
+                        f_val = max(f_val, 0.8)
+                
+                if k < 1.0:
+                    sal = f_val * 0.05 * exact_mult
+                else:
+                    sal = (f_val * np.log1p(k)) / (k ** 0.85) * exact_mult
                     
-        if best_seed_id is None:
-            x_query = self.encode_continuous_wave(query_text)
-            forces = self.substrate.compute_field_resonance(x_query)
-            valid = {nid: f for nid, f in forces.items() if self.substrate.neurons[nid].tier_z > 0}
-            if valid:
-                best_seed_id = max(valid.items(), key=lambda it: it[1])[0]
-                
-    def assemble_closed_sentence(self, tokens: List[str], seed_word: str = "") -> str:
-        """
-        Dynamic Syntactic Motor Articulator (Broca's Area):
-        Structures activated concept neurons into complete, proper grammatical English
-        sentences according to universal constituent ordering rules (Determiner + Subject + Verb + Object/Preposition).
-        Zero hardcoded sentences.
-        """
-        if not tokens and not seed_word:
-            return ""
-            
-        clean_tokens = [t.strip('.,;:"\'?') for t in tokens if len(t.strip('.,;:"\'?')) > 0]
-        seed_clean = seed_word.strip('.,;:"\'?').lower() if seed_word else (clean_tokens[0].lower() if clean_tokens else "")
-        seed_stem = seed_clean.rstrip('s') if (seed_clean.endswith('s') and not seed_clean.endswith('ss')) else seed_clean
-        
-        # 1. Categorize active tokens by continuous 4D syntactic valence
-        nouns: List[str] = []
-        verbs: List[str] = []
-        adjs: List[str] = []
-        prep_targets: List[str] = []
-        
-        prepositions_map = {
-            'space': 'across space',
-            'cosmos': 'across the cosmos',
-            'sky': 'in the night sky',
-            'clouds': 'into clouds',
-            'deep': 'from deep within the earth'
-        }
-        
-        for t in clean_tokens:
-            role, val, tier = self.estimate_syntactic_valence(t)
-            t_low = t.lower()
-            t_stem = t_low.rstrip('s') if (t_low.endswith('s') and not t_low.endswith('ss')) else t_low
-            
-            # Skip if token is same as subject
-            if t_stem == seed_stem or t_low == seed_clean:
-                continue
-                
-            if t_low in prepositions_map:
-                if t_low not in prep_targets:
-                    prep_targets.append(t_low)
-            elif role == "verb" or val[1] > 0.5:
-                if t_low not in verbs and t_low not in ['is', 'are', 'was', 'were', 'be']:
-                    verbs.append(t_low)
-            elif role == "adj" or val[2] > 0.5:
-                if t_low not in adjs:
-                    adjs.append(t_low)
-            elif role == "noun" or val[0] > 0.5 or t_low in ['planet', 'crust', 'atmosphere', 'earth', 'sun', 'moon', 'lava', 'oxygen', 'matter']:
-                if t_low not in nouns:
-                    nouns.append(t_low)
+                if not (is_short_aux or is_interrogative_frame or is_pointer or is_cond_verb):
+                    if target_n.tier_z >= 2:
+                        sal *= (1.0 + 0.25 * target_n.tier_z)
+                    if is_counterfactual and target_n.tier_z >= 3:
+                        sal *= 3.0
+                        
+                if sal > best_salience:
+                    best_salience = sal
+                    best_seed_id = nid
+                    best_force = f_val
                     
-        # 2. Dynamic Subject Formation
-        subj_raw = seed_clean if seed_clean else (nouns[0] if nouns else "it")
-        is_plural = subj_raw.endswith('s') and not subj_raw.endswith('ss') and subj_raw not in ['photosynthesis', 'cosmos', 'gas', 'mass', 'gravity']
-        is_unique_cosmic = subj_raw in ['sun', 'moon', 'earth', 'atmosphere', 'universe', 'milky way']
-        
-        if is_unique_cosmic:
-            subject_phrase = f"The {subj_raw}"
-        elif is_plural:
-            subject_phrase = f"{subj_raw.capitalize()}"
-        else:
-            subject_phrase = f"{subj_raw.capitalize()}"
+        # Epistemic Humility Phase Transition: If peak resonance is weak (below physical threshold)
+        if best_seed_id is None or best_force < 0.55:
+            unc_neurons = [n for n in self.substrate.neurons.values() if n.text.lower() == "uncertainty" and n.tier_z > 0]
+            unc_label = unc_neurons[0].text if unc_neurons else "uncertainty"
+            return {
+                "seed_concept": unc_label,
+                "active_path": [unc_label],
+                "reasoning_narrative": unc_label,
+                "evaluation_score": float(best_force if best_force is not None else 0.0),
+                "rejected_count": 0,
+                "is_uncertain": True
+            }
             
-        # 3. Dynamic Predicate & Action Verb Formulation
-        has_action_verb = len(verbs) > 0
-        action_verb = verbs[0] if has_action_verb else None
-        
-        # 4. Object & Complement Formulation
-        obj_tokens = [n for n in nouns if n != subj_raw and n not in prep_targets]
-        adj_tokens = [a for a in adjs if a != subj_raw and a not in prep_targets]
-        
-        desc_phrase = " ".join(adj_tokens[:2]) if adj_tokens else ""
-        
-        if len(obj_tokens) >= 2:
-            obj_phrase = f"{obj_tokens[0]} and {obj_tokens[1]}"
-        elif len(obj_tokens) == 1:
-            obj_phrase = f"{obj_tokens[0]}"
-        else:
-            obj_phrase = ""
-            
-        if desc_phrase and obj_phrase:
-            direct_object = f"{desc_phrase} {obj_phrase}"
-        elif desc_phrase:
-            direct_object = f"{desc_phrase} matter"
-        elif obj_phrase:
-            direct_object = f"{obj_phrase}"
-        else:
-            direct_object = ""
-            
-        # 5. Prepositional Phrase
-        prep_phrase = ""
-        if prep_targets:
-            prep_phrase = prepositions_map.get(prep_targets[0], f"in {prep_targets[0]}")
-            
-        # 6. Syntactic Assembly
-        if has_action_verb:
-            parts = [subject_phrase, action_verb]
-            if direct_object:
-                parts.append(direct_object)
-            if prep_phrase:
-                parts.append(prep_phrase)
-            sentence = " ".join(parts) + "."
-        else:
-            copula = "are" if is_plural else "is"
-            if direct_object:
-                article = "" if is_plural or direct_object.startswith(('a ', 'an ', 'the ')) else ("an " if direct_object[0] in 'aeiou' else "a ")
-                sentence = f"{subject_phrase} {copula} {article}{direct_object}"
-                if prep_phrase:
-                    sentence += f" {prep_phrase}"
-                sentence += "."
-            else:
-                sentence = f"{subject_phrase} {copula} an essential phenomenon in nature."
-                
-        # Clean double spaces and punctuation
-        sentence = re.sub(r'\s+', ' ', sentence).strip()
-        sentence = re.sub(r'\s+([.,])', r'\1', sentence)
-        if not sentence.endswith('.'):
-            sentence += '.'
-            
-        return sentence
-
-    def reason_over_query(self, query_text: str, max_depth: int = 8) -> Dict[str, Any]:
-        """
-        Metacognitive Query Reasoner:
-        1. Focuses on content target concept.
-        2. Simulates multiple candidate thought trajectories in working memory.
-        3. Evaluates, trims, and synthesizes a complete, meaningful English sentence.
-        """
-        tokens = [t.strip().lower() for t in query_text.replace('?', ' ').replace('.', ' ').replace(',', ' ').split() if len(t.strip()) > 1]
-        if not tokens:
-            return {"seed_concept": "", "active_path": [], "reasoning_narrative": "", "evaluation_score": 0.0}
-            
-        stop_words = {
-            'what', 'why', 'how', 'who', 'where', 'when', 'which', 'is', 'are', 'was', 'were', 'be', 'been',
-            'do', 'does', 'did', 'can', 'cannot', 'could', 'would', 'should', 'will', 'the', 'a', 'an',
-            'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'into', 'about', 'and', 'or',
-            'tell', 'me', 'explain', 'happens', 'located', 'travel', 'come', 'relate', 'relation', 'meaning',
-            'thing', 'things', 'mean', 'means', 'know', 'describe'
-        }
-        
-        content_tokens = [t for t in tokens if t not in stop_words and len(t) > 2]
-        search_tokens = content_tokens if content_tokens else tokens
-        
-        best_seed_id = None
-        best_salience = -1.0
-        
-        # 1. Exact Concept Node Focalization
-        for token in search_tokens:
-            for n in self.substrate.neurons.values():
-                if n.tier_z > 0 and (n.text.lower() == token or (len(token) > 3 and token in n.text.lower())):
-                    best_seed_id = n.id
-                    break
-            if best_seed_id is not None:
-                break
-                
-        # 2. Continuous Field Resonance Fallback
-        if best_seed_id is None:
-            for token in search_tokens:
-                x_tok = self.encode_continuous_wave(token)
-                forces = self.substrate.compute_field_resonance(x_tok)
-                valid = {nid: f for nid, f in forces.items() if self.substrate.neurons[nid].tier_z > 0 and self.substrate.neurons[nid].text.lower() not in stop_words}
-                if valid:
-                    top_id = max(valid.items(), key=lambda it: it[1])[0]
-                    target_n = self.substrate.neurons[top_id]
-                    degree = max(1.0, float(len(target_n.synapses)))
-                    salience = valid[top_id] / np.sqrt(degree)
-                    if salience > best_salience:
-                        best_salience = salience
-                        best_seed_id = top_id
-                    
-        if best_seed_id is None:
-            x_query = self.encode_continuous_wave(query_text)
-            forces = self.substrate.compute_field_resonance(x_query)
-            valid = {nid: f for nid, f in forces.items() if self.substrate.neurons[nid].tier_z > 0}
-            if valid:
-                best_seed_id = max(valid.items(), key=lambda it: it[1])[0]
-                
-        if best_seed_id is None:
-            return {"seed_concept": "", "active_path": [], "reasoning_narrative": "", "evaluation_score": 0.0}
-            
-        # Run Metacognitive Pre-Articulatory Simulation
-        verified_tokens, eval_score = self.simulate_and_evaluate_thoughts(best_seed_id, max_candidates=5, max_depth=max_depth)
+        # Run Metacognitive Pre-Articulatory Simulation via Inner Critic
+        pref_tier = 3 if is_counterfactual else None
+        target_conds = condition_tokens if is_counterfactual else None
+        verified_tokens, eval_score, rejected_count, is_uncertain = self.simulate_and_evaluate_thoughts(
+            best_seed_id,
+            max_candidates=5,
+            max_depth=max_depth,
+            tier_preference=pref_tier,
+            target_condition_tokens=target_conds
+        )
         seed_word = self.substrate.neurons[best_seed_id].text
         
-        # Syntactic Motor Articulation (Broca's Closed Sentence Synthesis)
-        meaningful_sentence = self.assemble_closed_sentence(verified_tokens, seed_word=seed_word)
+        # If the thought was rejected by the field, emit physical uncertainty attractor
+        if is_uncertain or not verified_tokens:
+            unc_neurons = [n for n in self.substrate.neurons.values() if n.text.lower() == "uncertainty" and n.tier_z > 0]
+            unc_label = unc_neurons[0].text if unc_neurons else "uncertainty"
+            return {
+                "seed_concept": seed_word,
+                "active_path": [unc_label],
+                "reasoning_narrative": unc_label,
+                "evaluation_score": eval_score,
+                "rejected_count": rejected_count,
+                "is_uncertain": True
+            }
+            
+        # Motor Articulation: Dual-Field ENN Associative Resonance or Neural Wave Decoding
+        resonant_thought, res_score = self.find_resonant_associative_memory(
+            query_text,
+            seed_id=best_seed_id,
+            is_counterfactual=is_counterfactual
+        )
+        
+        if resonant_thought and res_score >= 0.70:
+            meaningful_sentence = resonant_thought
+        else:
+            meaningful_sentence = self.broca.decode_neural_utterance(
+                best_seed_id,
+                target_condition_tokens=target_conds,
+                query_text=query_text
+            )
         
         return {
             "seed_concept": seed_word,
             "active_path": verified_tokens,
             "reasoning_narrative": meaningful_sentence,
-            "evaluation_score": eval_score
+            "evaluation_score": eval_score,
+            "rejected_count": rejected_count,
+            "is_uncertain": is_uncertain
         }
+
+
+

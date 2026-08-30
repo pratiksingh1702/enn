@@ -372,7 +372,7 @@ class StackedSubstrate:
         return conductance
 
     def potentiate_hebbian(self, active_forces: Dict[int, float], learning_rate: float = 0.15):
-        active_ids = [n_id for n_id, f in active_forces.items() if f > 0.08]
+        active_ids = [n_id for n_id, f in active_forces.items() if f > 0.12]
         n_active = len(active_ids)
         
         for i in range(n_active):
@@ -390,20 +390,63 @@ class StackedSubstrate:
                 if not n_j:
                     continue
                 f_j = active_forces[id_j]
-                co_act = f_i * f_j * min(n_i.energy, n_j.energy)
-                delta_w = learning_rate * co_act
                 
-                curr_ij = n_i.synapses.get(id_j, 0.0)
-                if curr_ij == 0.0 and co_act > 0.15:
-                    self.build_synaptic_bridge(id_i, id_j, initial_conductance=delta_w)
-                elif curr_ij > 0.0:
-                    n_i.synapses[id_j] = float(min(1.0, curr_ij + delta_w))
+                # Semantic Cosine Resonance Gating: Only potentiate if concepts are semantically aligned
+                sim = float(np.dot(n_i.x, n_j.x))
+                if sim > -0.2:
+                    co_act = f_i * f_j * min(n_i.energy, n_j.energy) * max(0.2, (sim + 1.0) / 2.0)
+                    delta_w = learning_rate * co_act
                     
-                curr_ji = n_j.synapses.get(id_i, 0.0)
-                if curr_ji == 0.0 and co_act > 0.15:
-                    self.build_synaptic_bridge(id_j, id_i, initial_conductance=delta_w)
-                elif curr_ji > 0.0:
-                    n_j.synapses[id_i] = float(min(1.0, curr_ji + delta_w))
+                    curr_ij = n_i.synapses.get(id_j, 0.0)
+                    if curr_ij == 0.0 and co_act > 0.20:
+                        self.build_synaptic_bridge(id_i, id_j, initial_conductance=delta_w)
+                    elif curr_ij > 0.0:
+                        n_i.synapses[id_j] = float(min(1.0, curr_ij + delta_w))
+                        
+                    curr_ji = n_j.synapses.get(id_i, 0.0)
+                    if curr_ji == 0.0 and co_act > 0.20:
+                        self.build_synaptic_bridge(id_j, id_i, initial_conductance=delta_w)
+                    elif curr_ji > 0.0:
+                        n_j.synapses[id_i] = float(min(1.0, curr_ji + delta_w))
+                else:
+                    # Lateral Anti-Hebbian Inhibition: Depress spurious cross-talk between opposing concepts
+                    if id_j in n_i.synapses:
+                        n_i.synapses[id_j] = float(max(0.0, n_i.synapses[id_j] - 0.08 * learning_rate))
+                    if id_i in n_j.synapses:
+                        n_j.synapses[id_i] = float(max(0.0, n_j.synapses[id_i] - 0.08 * learning_rate))
+
+    def prune_cross_talk_synapses(self, threshold: float = 0.40, max_fanout: int = 12) -> int:
+        """
+        Anti-Hebbian Topological Pruning:
+        Dissolves weak spurious cross-talk connections that cause semantic bleed,
+        preserving focused high-conductance relational highways.
+        """
+        pruned = 0
+        for n in self.neurons.values():
+            if n.tier_z == 0 and n.role == "letter":
+                continue  # Preserve alphabet layer
+                
+            peers = list(n.synapses.items())
+            # Remove any synapse below threshold
+            for peer_id, weight in peers:
+                if weight < threshold:
+                    del n.synapses[peer_id]
+                    if peer_id in n.synapse_relations:
+                        del n.synapse_relations[peer_id]
+                    pruned += 1
+                    
+            # If fanout exceeds max_fanout, retain only the top conductance bridges
+            if len(n.synapses) > max_fanout:
+                sorted_syn = sorted(n.synapses.items(), key=lambda it: it[1], reverse=True)
+                keep_syn = dict(sorted_syn[:max_fanout])
+                for peer_id in list(n.synapses.keys()):
+                    if peer_id not in keep_syn:
+                        del n.synapses[peer_id]
+                        if peer_id in n.synapse_relations:
+                            del n.synapse_relations[peer_id]
+                        pruned += 1
+                        
+        return pruned
 
     def step_thermodynamics(self) -> Dict[str, int]:
         self.current_step += 1
@@ -413,10 +456,11 @@ class StackedSubstrate:
             n.age += 1
             if n.role != "letter" and self.current_step - n.last_active > 15:
                 n.energy = max(0.2, n.energy * 0.995)
+                
         for n in self.neurons.values():
             dead_peers = []
             for peer_id, weight in list(n.synapses.items()):
-                decayed_w = weight * 0.98
+                decayed_w = weight * 0.985
                 if decayed_w < self.pruning_threshold or peer_id not in self.neurons:
                     dead_peers.append(peer_id)
                 else:

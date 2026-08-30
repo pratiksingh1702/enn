@@ -15,6 +15,7 @@ import time
 import json
 import re
 from typing import Dict, Any, List, Optional, Tuple
+from collections import defaultdict
 
 from fella.core_substrate import StackedSubstrate, FellaNeuron
 from fella.trait_field import TraitField
@@ -76,6 +77,9 @@ class FellaBrain:
             role="anchor",
             energy=5.0
         )
+        
+        # 3. Foundational Uncertainty Attractor Anchor at Tier Z=4
+        self.lang.ground_uncertainty_anchor()
 
     def rehearse_letters(self, practice_rounds: int = 5) -> Dict[str, Any]:
         """Fortifies the Z=0 alphabet foundation."""
@@ -155,11 +159,20 @@ class FellaBrain:
                 )
                 self.trait_field.inject_curiosity(float(novelty))
                 
-        # 6. Semantic Wave Reasoning over Query (Raw Synaptic Trajectory Traversal)
+        # 6. Semantic Wave Reasoning over Query (Continuous Hamiltonian Pre-Articulatory Simulation)
         reasoning_res = self.lang.reason_over_query(text_clean, max_depth=6)
         raw_narrative = reasoning_res.get("reasoning_narrative", "")
         seed_concept = reasoning_res.get("seed_concept", "")
+        is_uncertain = reasoning_res.get("is_uncertain", False)
+        rejected_count = reasoning_res.get("rejected_count", 0)
         
+        # Trait Field Modulation based on Inner Critic evaluation
+        if is_uncertain:
+            self.trait_field.inject_uncertainty(0.80)
+            self.observer.epistemic_friction = float(np.clip(self.observer.epistemic_friction + 0.25, 0.05, 1.0))
+        elif active_trait in ["INQUIRE", "ASPIRE"]:
+            self.observer.self_confidence = float(np.clip(self.observer.self_confidence + 0.02, 0.1, 0.999))
+            
         # 7. Formulate Raw Physical Response
         if is_question and raw_narrative:
             response_text = f"{raw_narrative}"
@@ -174,7 +187,7 @@ class FellaBrain:
         else:
             response_text = f"[{text_clean.lower()}]"
             
-        self.last_thought = f"Excited '{seed_concept}' along W_ij (Trait: {active_trait}, Tension: {syntax_analysis.tension_energy:.2f})"
+        self.last_thought = f"Excited '{seed_concept}' (Critic rejected: {rejected_count}, Trait: {self.trait_field.active_trait}, Tension: {syntax_analysis.tension_energy:.2f})"
         self.last_response = response_text
         self.dialogue_history.append({"speaker": "FELLA", "text": response_text})
         
@@ -211,7 +224,7 @@ class FellaBrain:
         explanation = mentor_bundle["explanation"]
         
         if not explanation:
-            explanation = f"{vacuum.concept_query} is an important phenomenon in nature that affects energy and physical matter."
+            explanation = f"{vacuum.concept_query} transforms energy and physical matter."
             
         # Ingest mentor explanation through continuous stream engine
         ingested = self.lang.ingest_continuous_stream(explanation, target_tier=3)
@@ -247,26 +260,39 @@ class FellaBrain:
         }
 
     def dream_consolidation(self) -> Dict[str, Any]:
-        """Homeostatic Dream Consolidation: strengthens high-utility concept pathways & prunes noise."""
-        seed_neurons = [n.id for n in self.substrate.neurons.values() if n.energy > 2.0 or n.role in ["anchor", "causal"]]
-        if not seed_neurons and self.substrate.neurons:
-            seed_neurons = list(self.substrate.neurons.keys())[:8]
-            
-        wave_map = self.substrate.propagate_wave(seed_neurons, max_hops=4, damping=0.7)
-        self.substrate.potentiate_hebbian(wave_map, learning_rate=0.10)
+        """
+        Homeostatic Dream Consolidation:
+        Modular wave reverberation within distinct concept clusters and topological anti-Hebbian noise pruning.
+        """
+        total_reverberated = 0
         
-        stats = self.substrate.step_thermodynamics()
+        # Group concept seeds by network cluster to prevent global clique cross-talk
+        network_groups: Dict[str, List[int]] = defaultdict(list)
+        for n in self.substrate.neurons.values():
+            if n.tier_z > 0 and (n.energy > 2.0 or n.role in ["anchor", "causal"]):
+                network_groups[n.network_id].append(n.id)
+                
+        for net_id, seed_ids in network_groups.items():
+            if not seed_ids:
+                continue
+            wave_map = self.substrate.propagate_wave(seed_ids, max_hops=3, damping=0.60)
+            self.substrate.potentiate_hebbian(wave_map, learning_rate=0.08)
+            total_reverberated += len(wave_map)
+            
+        # Anti-Hebbian topological pruning of spurious cross-talk
+        pruned_spurious = self.substrate.prune_cross_talk_synapses(threshold=0.40, max_fanout=12)
+        thermo_stats = self.substrate.step_thermodynamics()
         syn_stats = self.substrate.get_synapse_stats()
         
         self.observer.epistemic_friction = 0.02
         self.observer.self_confidence = 0.97
         self.trait_field.active_trait = "AFFIRM"
-        self.last_thought = "Waking peacefully from deep consolidation dream"
+        self.last_thought = "Waking peacefully from deep modular consolidation dream"
         
         return {
-            "reverberated_neurons": len(wave_map),
-            "pruned_synapses": stats["pruned_synapses"],
-            "total_neurons": stats["total_neurons"],
+            "reverberated_neurons": total_reverberated,
+            "pruned_synapses": pruned_spurious + thermo_stats["pruned_synapses"],
+            "total_neurons": thermo_stats["total_neurons"],
             "restored_confidence": float(self.observer.self_confidence),
             "active_trait": self.trait_field.active_trait,
             "synapse_stats": syn_stats
@@ -388,7 +414,8 @@ class FellaBrain:
             "age_steps": self.age_steps,
             "substrate": self.substrate.to_dict(),
             "trait_field": self.trait_field.to_dict(),
-            "observer": self.observer.to_dict()
+            "observer": self.observer.to_dict(),
+            "memory_bank": getattr(self.lang, "memory_bank", [])
         }
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
@@ -405,4 +432,7 @@ class FellaBrain:
         brain.dialogue_history = list(data.get("dialogue_history", []))
         brain.trait_field = TraitField.from_dict(data["trait_field"])
         brain.observer = InwardObserver.from_dict(data["observer"])
+        if "memory_bank" in data:
+            brain.lang.memory_bank = list(data["memory_bank"])
         return brain
+

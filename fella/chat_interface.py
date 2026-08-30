@@ -178,7 +178,8 @@ def run_chat_session(checkpoint_path: str = "fella_checkpoint.json"):
         # Display response with cognitive indicators
         trait_icon = {
             "INQUIRE": "🔍", "ASPIRE": "🚀", "SYNTHESIZE": "🌐",
-            "SELF_IDENTITY": "👤", "CAUTION": "🛡️", "AFFIRM": "💚"
+            "SELF_IDENTITY": "👤", "CAUTION": "🛡️", "AFFIRM": "💚",
+            "UNCERTAINTY": "⚖️"
         }.get(tel["active_trait"], "💡")
         
         print(f"\nFELLA [{trait_icon} {tel['active_trait']} | Z={tel['current_event_z']:.1f} | Conf={tel['self_confidence']:.2f}] >")
