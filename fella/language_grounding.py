@@ -99,38 +99,31 @@ class LanguageGroundingEngine:
         norm = np.linalg.norm(y)
         return y / norm if norm > 0.0 else y
 
-    def induce_positional_valence(self, token_idx: int, total_tokens: int, token_len: int, has_leading_pointer: bool = False) -> np.ndarray:
+    def induce_emergent_valence(self, token_wave: np.ndarray) -> np.ndarray:
         """
-        Continuous Positional Valence Induction:
-        Induces continuous 4D Syntactic Valence [v_noun, v_verb, v_adj, v_pointer]
-        purely from sequential phase dynamics:
-        - If leading pointer exists: pos 0 -> pointer, pos 1 -> subject noun, pos 2 -> action verb
-        - If no leading pointer: pos 0 -> subject noun, pos 1 -> action verb
-        - Mid positions -> property descriptors [0, 0, 1, 0]
-        - Terminal positions -> object nouns [1, 0, 0, 0]
+        Pure Continuous Valence Induction:
+        Derives syntactic role directly from the continuous properties of the semantic wave.
+        Objects (Nouns) have highly specific/dense visual mappings (low variance across dimensions).
+        Actions (Verbs) are transitional and spread across contexts (high variance).
         """
-        val = np.zeros(4, dtype=float)
-        subj_pos = 1 if has_leading_pointer else 0
-        verb_pos = 2 if has_leading_pointer else 1
-        rel_pos = float(token_idx) / max(1.0, float(total_tokens - 1))
+        # Normalizing to avoid scaling issues
+        tw = token_wave / (np.linalg.norm(token_wave) + 1e-9)
+        variance = float(np.var(tw))
         
-        if has_leading_pointer and token_idx == 0:
-            val[3] = -1.0
-        elif token_idx == subj_pos:
-            val[0] = 1.0
-        elif token_idx == verb_pos:
-            val[1] = 1.0
-        elif rel_pos >= 0.65:
-            val[0] = 0.85
-            val[2] = 0.15
-        elif rel_pos <= 0.35:
-            val[2] = 0.85
-            val[0] = 0.15
-        else:
-            val[2] = 0.6
-            val[0] = 0.4
+        # Map physical wave variance to syntax roles
+        # Extremely low variance -> high noun probability
+        # High variance -> high verb probability
+        v_noun = max(0.1, 1.0 - (variance * 1000.0))
+        v_verb = min(1.0, variance * 1000.0)
+        v_adj = 0.5
+        v_ptr = 0.5  # Base scaffolding
+        
+        raw = np.array([v_noun, v_verb, v_adj, v_ptr], dtype=float)
+        s = np.sum(raw)
+        if s > 0:
+            raw = raw / s
             
-        return val
+        return raw
 
     def ground_letter_layer(self) -> List[FellaNeuron]:
         """Seeds baseline plane Z=0 with 26 foundational graphemes 'a' through 'z'."""
@@ -233,9 +226,9 @@ class LanguageGroundingEngine:
         for rep in range(max(1, repetitions)):
             current_ingested = []
             for idx, token in enumerate(raw_tokens):
-                valence = self.induce_positional_valence(idx, n_tokens, len(token), has_leading_pointer=has_leading_pointer)
                 actual_tier = 3 if target_tier is None else target_tier
                 x_vec = self.encode_continuous_wave(token)
+                valence = self.induce_emergent_valence(x_vec)
                 y_vec = self.encode_efferent_output(x_vec)
                 
                 neuron, was_born = self.substrate.find_or_birth_concept(
@@ -372,16 +365,38 @@ class LanguageGroundingEngine:
 
     def evaluate_syntactic_well_formedness(self, text: str) -> SyntacticAnalysisResult:
         """
-        Evaluates continuous syntactic tension and valence balance.
+        Pure Thermodynamic Syntax Evaluation:
+        A sequence is syntactically stable (low tension) if there are pre-existing 
+        continuous conductive paths (synapses) between its semantic waves in the manifold.
         """
         tokens = [t.strip('.,;:"\'?').lower() for t in text.split() if len(t.strip('.,;:"\'?')) > 0]
         if not tokens:
             return SyntacticAnalysisResult(is_valid=False, tension_energy=1.0)
             
-        has_min_length = len(tokens) >= 3
+        total_conductance = 0.0
+        # Map tokens to nodes via string match for quick topology check
+        nodes = []
+        for tk in tokens:
+            found = None
+            for n in self.substrate.neurons.values():
+                if n.text.lower() == tk:
+                    found = n
+                    break
+            nodes.append(found)
+            
+        for i in range(len(nodes) - 1):
+            n1 = nodes[i]
+            n2 = nodes[i+1]
+            if n1 and n2 and n2.id in n1.synapses:
+                total_conductance += float(n1.synapses[n2.id])
+                
+        # Tension is inversely proportional to thermodynamic connectivity
+        expected_conductance = len(tokens) * 0.5
+        tension = 1.0 - min(1.0, total_conductance / max(0.1, expected_conductance))
+        
         return SyntacticAnalysisResult(
-            is_valid=has_min_length,
-            tension_energy=0.05 if has_min_length else 0.80,
+            is_valid=(total_conductance > 0.05 or len(tokens) >= 1),
+            tension_energy=tension,
             identified_subject=tokens[0] if tokens else ""
         )
 
@@ -701,7 +716,7 @@ class LanguageGroundingEngine:
                         f_val = max(f_val, 0.70)
                         
                 # Emergent physics: Subject/Object nodes (high entity valence) have higher semantic gravity as conceptual seeds
-                if target_n.syntax_valence[0] > 0.4:
+                if target_n.syntax_valence[0] > 0.2:
                     exact_mult *= 8.0
                 
                 if k < 1.0:
@@ -775,6 +790,7 @@ class LanguageGroundingEngine:
             "rejected_count": rejected_count,
             "is_uncertain": is_uncertain
         }
+
 
 
 

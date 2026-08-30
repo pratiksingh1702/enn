@@ -131,8 +131,12 @@ class FellaBrain:
             
         self.observer.observe(expected_x, x_sensory)
         
-        # 3. Trait Attractor Basin Dynamics
-        is_question = bool("?" in text_clean or re.match(r'^(what|why|how|who|where|when|which|can|could|would|does|do|is|explain|tell)\b', text_clean.lower()))
+        # 3. Trait Attractor Basin Dynamics (Pure Topological Interrogative Detection)
+        # A question physically manifests as an initial wave that concentrates resonance 
+        # on structural scaffolding nodes (k > 15) or generates extreme immediate epistemic tension.
+        is_question = False
+        if best_neuron and (len(best_neuron.synapses) > 15 or (1.0 - max_resonance) > 0.65):
+            is_question = True
         drive_vec = np.array([
             0.85 if is_question else (1.0 - max_resonance),  # Curiosity / Inquiry
             float(np.mean(x_sensory[:4])) + 0.3,             # Complexity / Aspiration
