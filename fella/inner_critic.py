@@ -38,13 +38,14 @@ class FieldCriticSubstrate:
         candidate_tokens: List[str],
         seed_id: int,
         encode_fn,
-        target_condition_tokens: Optional[List[str]] = None
+        target_condition_tokens: Optional[List[str]] = None,
+        query_wave: Optional[np.ndarray] = None
     ) -> Tuple[float, float]:
         """
         Computes the continuous Hamiltonian Action H(τ) and field resonance R(τ).
         H(τ) combines:
         1. Synaptic conductance impedance along path: (1 - W_ij)
-        2. Manifold cosine resonance with concept Z-stack: (1 - cos(ψ, z_manifold))
+        2. Manifold cosine resonance with concept Z-stack AND Goal Attractor (Query Wave)
         3. Contextual condition coverage for counterfactual / conditional queries.
         """
         if not candidate_tokens or seed_id not in self.substrate.neurons:
@@ -67,6 +68,14 @@ class FieldCriticSubstrate:
         if norm_z > 0:
             z_manifold /= norm_z
             
+        # 2b. The Pre-Frontal Goal Attractor (Understanding the Demand)
+        # We warp the evaluation manifold towards the literal query wave.
+        if query_wave is not None:
+            z_manifold = 0.5 * z_manifold + 0.5 * query_wave
+            norm_z = np.linalg.norm(z_manifold)
+            if norm_z > 0:
+                z_manifold /= norm_z
+
         # Cosine resonance in [0, 1]
         raw_dot = float(np.dot(psi_wave, z_manifold))
         resonance = float(np.clip((raw_dot + 1.0) / 2.0, 0.0, 1.0))
@@ -105,7 +114,13 @@ class FieldCriticSubstrate:
             cond_coverage = float(matches) / float(max(1, len(target_condition_tokens)))
         
         # Continuous Total Hamiltonian Action H(τ) in [0, 1]
-        hamiltonian = float(0.50 * (1.0 - resonance) + 0.50 * mean_impedance - 0.40 * cond_coverage)
+        if query_wave is not None:
+            # Pre-Frontal Demand dominates: 85% Resonance / 15% Impedance
+            hamiltonian = float(0.85 * (1.0 - resonance) + 0.15 * mean_impedance - 0.40 * cond_coverage)
+        else:
+            # Baseline: Balanced Action
+            hamiltonian = float(0.50 * (1.0 - resonance) + 0.50 * mean_impedance - 0.40 * cond_coverage)
+            
         return float(np.clip(hamiltonian, 0.0, 1.0)), resonance
 
     def evaluate_candidates_and_collapse(
@@ -113,7 +128,8 @@ class FieldCriticSubstrate:
         candidate_token_lists: List[List[str]],
         seed_id: int,
         encode_fn,
-        target_condition_tokens: Optional[List[str]] = None
+        target_condition_tokens: Optional[List[str]] = None,
+        query_wave: Optional[np.ndarray] = None
     ) -> Tuple[List[str], float, int, bool]:
         """
         Evaluates candidate thought waves via Boltzmann-Gibbs Phase Collapse.
@@ -133,7 +149,11 @@ class FieldCriticSubstrate:
         resonances: List[float] = []
         
         for tokens in candidate_token_lists:
-            h_val, r_val = self.compute_trajectory_hamiltonian(tokens, seed_id, encode_fn, target_condition_tokens=target_condition_tokens)
+            h_val, r_val = self.compute_trajectory_hamiltonian(
+                tokens, seed_id, encode_fn, 
+                target_condition_tokens=target_condition_tokens,
+                query_wave=query_wave
+            )
             energies.append(h_val)
             resonances.append(r_val)
             

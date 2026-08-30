@@ -392,7 +392,8 @@ class LanguageGroundingEngine:
         tier_preference: Optional[int] = None,
         avoid_ids: Optional[Set[int]] = None,
         cluster_lock: bool = False,
-        target_condition_tokens: Optional[List[str]] = None
+        target_condition_tokens: Optional[List[str]] = None,
+        query_wave: Optional[np.ndarray] = None
     ) -> List[int]:
         """
         Continuous Energy Discharge Arc Decoder:
@@ -485,8 +486,18 @@ class LanguageGroundingEngine:
                         if t_clean == c_clean or (len(t_clean) >= 4 and len(c_clean) >= 4 and (t_clean.startswith(c_clean[:4]) or c_clean.startswith(t_clean[:4]))):
                             cond_boost = 4.5
                             break
+                            
+                # Query Wave Attraction (Goal Attractor Pulling the Generation)
+                wave_boost = 1.0
+                if query_wave is not None:
+                    n1 = np.linalg.norm(query_wave)
+                    n2 = np.linalg.norm(target_n.x)
+                    if n1 > 0 and n2 > 0:
+                        cosine = float(np.dot(query_wave, target_n.x) / (n1 * n2))
+                        # Use exponential pull to break deep superhighways
+                        wave_boost = np.exp(cosine * 15.0)
                 
-                score = (float(conductance) ** 1.8) * flow_bonus * cluster_bonus * tier_boost * cond_boost / (degree ** 0.28)
+                score = (float(conductance) ** 1.8) * flow_bonus * cluster_bonus * tier_boost * cond_boost * wave_boost / (degree ** 0.28)
                 candidates.append((target_id, score, float(conductance)))
                 
             if not candidates:
@@ -518,7 +529,8 @@ class LanguageGroundingEngine:
         max_candidates: int = 5,
         max_depth: int = 10,
         tier_preference: Optional[int] = None,
-        target_condition_tokens: Optional[List[str]] = None
+        target_condition_tokens: Optional[List[str]] = None,
+        query_wave: Optional[np.ndarray] = None
     ) -> Tuple[List[str], float, int, bool]:
         """
         Metacognitive Pre-Articulatory Simulation via Inner Critic:
@@ -535,26 +547,26 @@ class LanguageGroundingEngine:
         
         # Draft 1: Causal / Tier preference if requested, else standard dynamic walk
         if tier_preference is not None:
-            p1 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, tier_preference=tier_preference, target_condition_tokens=target_condition_tokens)
+            p1 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, tier_preference=tier_preference, target_condition_tokens=target_condition_tokens, query_wave=query_wave)
         else:
-            p1 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, cluster_lock=False, target_condition_tokens=target_condition_tokens)
+            p1 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, cluster_lock=False, target_condition_tokens=target_condition_tokens, query_wave=query_wave)
             
         if p1:
             candidate_paths.append(p1)
             
         # Draft 2: Standard degree-normalized walk
-        p2 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, target_condition_tokens=target_condition_tokens)
+        p2 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, target_condition_tokens=target_condition_tokens, query_wave=query_wave)
         if p2 and p2 not in candidate_paths:
             candidate_paths.append(p2)
             
         # Draft 3: Causal tier (Z=3) preferred walk
-        p3 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, tier_preference=3, target_condition_tokens=target_condition_tokens)
+        p3 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, tier_preference=3, target_condition_tokens=target_condition_tokens, query_wave=query_wave)
         if p3 and p3 not in candidate_paths:
             candidate_paths.append(p3)
             
         # Draft 4: Perturbed branch avoiding first transition of p1
         if p1 and len(p1) > 1:
-            p4 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, avoid_ids={p1[1]}, target_condition_tokens=target_condition_tokens)
+            p4 = self.decode_raw_synaptic_trajectory(seed_id, max_length=max_depth, avoid_ids={p1[1]}, target_condition_tokens=target_condition_tokens, query_wave=query_wave)
             if p4 and p4 not in candidate_paths:
                 candidate_paths.append(p4)
                 
@@ -582,7 +594,8 @@ class LanguageGroundingEngine:
                         branch_node,
                         max_length=max(3, max_depth - worst_trans_idx),
                         avoid_ids={p[worst_trans_idx + 1]},
-                        target_condition_tokens=target_condition_tokens
+                        target_condition_tokens=target_condition_tokens,
+                        query_wave=query_wave
                     )
                     if alt_tail and len(alt_tail) > 1:
                         relaxed_path = p[:worst_trans_idx] + alt_tail
@@ -599,7 +612,8 @@ class LanguageGroundingEngine:
             cand_token_lists,
             seed_id,
             self.encode_continuous_wave,
-            target_condition_tokens=target_condition_tokens
+            target_condition_tokens=target_condition_tokens,
+            query_wave=query_wave
         )
         
         if not best_tokens:
@@ -665,7 +679,13 @@ class LanguageGroundingEngine:
                 k = float(len(target_n.synapses))
                 
                 # Continuous Valence Tensor & Role Filtering (Zero Hardcoded Word Lists)
-                is_functional_token = (target_n.role == "letter" or target_n.grammatical_role == "pointer" or target_n.syntax_valence[3] < -0.3)
+                # Topological Emergence: Highly connected hubs (k > 30) are structural scaffolding, not semantic seeds.
+                is_functional_token = (
+                    target_n.role == "letter" 
+                    or target_n.grammatical_role == "pointer" 
+                    or target_n.syntax_valence[3] < -0.3
+                    or k > 30.0
+                )
                 
                 # Direct exact label boost to physical force
                 exact_mult = 1.0
@@ -679,6 +699,10 @@ class LanguageGroundingEngine:
                     if not is_functional_token:
                         exact_mult = 2.5
                         f_val = max(f_val, 0.70)
+                        
+                # Emergent physics: Subject/Object nodes (high entity valence) have higher semantic gravity as conceptual seeds
+                if target_n.syntax_valence[0] > 0.4:
+                    exact_mult *= 8.0
                 
                 if k < 1.0:
                     sal = f_val * 0.05 * exact_mult
@@ -717,7 +741,8 @@ class LanguageGroundingEngine:
             max_candidates=5,
             max_depth=max_depth,
             tier_preference=pref_tier,
-            target_condition_tokens=target_conds
+            target_condition_tokens=target_conds,
+            query_wave=q_wave
         )
         seed_word = self.substrate.neurons[best_seed_id].text
         
