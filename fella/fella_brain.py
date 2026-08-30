@@ -128,7 +128,7 @@ class FellaBrain:
         self.observer.observe(expected_x, x_sensory)
         
         # 3. Trait Attractor Basin Dynamics
-        is_question = bool("?" in text_clean or re.match(r'^(what|why|how|who|where|when|which|can|could|would|does|do|is\s+it|explain|tell)\b', text_clean.lower()))
+        is_question = bool("?" in text_clean or re.match(r'^(what|why|how|who|where|when|which|can|could|would|does|do|is|explain|tell)\b', text_clean.lower()))
         drive_vec = np.array([
             0.85 if is_question else (1.0 - max_resonance),  # Curiosity / Inquiry
             float(np.mean(x_sensory[:4])) + 0.3,             # Complexity / Aspiration
@@ -143,7 +143,7 @@ class FellaBrain:
         # Ingest Declarative Knowledge (Only when user is teaching valid complete sentences)
         ingested_nodes = []
         if not is_question and syntax_analysis.is_valid:
-            ingested_nodes = self.lang.ingest_continuous_stream(text_clean, target_tier=int(round(self.substrate.current_event_z)))
+            ingested_nodes = self.lang.ingest_continuous_stream(text_clean, target_tier=1)
         
         # 5. Novelty & Epistemic Vacuum Detection
         novelty = 1.0 - max_resonance
@@ -166,26 +166,40 @@ class FellaBrain:
         is_uncertain = reasoning_res.get("is_uncertain", False)
         rejected_count = reasoning_res.get("rejected_count", 0)
         
-        # Trait Field Modulation based on Inner Critic evaluation
-        if is_uncertain:
+        # Trait Field Modulation & Incentive Dynamics based on Response Quality
+        if is_question and raw_narrative:
+            # Check for verbatim copying vs emergent variation
+            last_taught = getattr(self, '_last_taught_text', '')
+            is_verbatim = bool(last_taught and last_taught.lower() in raw_narrative.lower())
+            
+            if is_verbatim:
+                # PENALIZE MEMORIZATION: Verbatim repeating triggers CAUTION trait and reduces Coherence/Confidence
+                self.penalize_cognition(penalty_value=0.8, corrective_explanation="Verbatim repeating detected.")
+            else:
+                # REWARD UNDERSTANDING: Emergent variation boosts ASPIRE drive and Metacognitive Confidence
+                self.reward_cognition(reward_value=1.0)
+                self.trait_field.inject_aspiration(0.50)
+                
+        elif is_uncertain:
             self.trait_field.inject_uncertainty(0.80)
             self.observer.epistemic_friction = float(np.clip(self.observer.epistemic_friction + 0.25, 0.05, 1.0))
         elif active_trait in ["INQUIRE", "ASPIRE"]:
             self.observer.self_confidence = float(np.clip(self.observer.self_confidence + 0.02, 0.1, 0.999))
             
+        # Store last taught statement for verbatim check
+        if not is_question and syntax_analysis.is_valid:
+            self._last_taught_text = text_clean
+            
         # 7. Formulate Raw Physical Response
         if is_question and raw_narrative:
             response_text = f"{raw_narrative}"
         elif len(ingested_nodes) > 0:
-            integrated_path = " -> ".join([n.text for n in ingested_nodes])
-            if raw_narrative and raw_narrative != text_clean.lower():
-                response_text = f"[{integrated_path}] ==> {raw_narrative}"
-            else:
-                response_text = f"[{integrated_path}]"
+            integrated_nodes_count = len(ingested_nodes)
+            response_text = f"✨ Grounded concept into 4D wave substrate ({integrated_nodes_count} concept nodes, Tier Z=1)."
         elif raw_narrative:
             response_text = f"{raw_narrative}"
         else:
-            response_text = f"[{text_clean.lower()}]"
+            response_text = "uncertainty"
             
         self.last_thought = f"Excited '{seed_concept}' (Critic rejected: {rejected_count}, Trait: {self.trait_field.active_trait}, Tension: {syntax_analysis.tension_energy:.2f})"
         self.last_response = response_text

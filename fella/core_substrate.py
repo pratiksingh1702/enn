@@ -415,6 +415,17 @@ class StackedSubstrate:
                     if id_i in n_j.synapses:
                         n_j.synapses[id_i] = float(max(0.0, n_j.synapses[id_i] - 0.08 * learning_rate))
 
+    def dampen(self, decay_rate: float = 0.015):
+        """Thermodynamic damping & metabolic relaxation step across all substrate neurons."""
+        self.current_step += 1
+        for n in self.neurons.values():
+            if n.role == "anchor":
+                n.energy = 5.0
+                continue
+            inactivity = max(0, self.current_step - n.last_active)
+            decay = decay_rate * (1.0 + inactivity * 0.01)
+            n.energy = max(0.1, n.energy - decay)
+
     def prune_cross_talk_synapses(self, threshold: float = 0.40, max_fanout: int = 12) -> int:
         """
         Anti-Hebbian Topological Pruning:

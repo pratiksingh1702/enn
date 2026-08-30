@@ -210,58 +210,67 @@ class LanguageGroundingEngine:
         self,
         text_stream: str,
         target_tier: Optional[int] = None,
-        learning_rate: float = 0.55
+        learning_rate: float = 0.55,
+        repetitions: int = 7
     ) -> List[FellaNeuron]:
         """
-        Continuous Stream Ingestion via Synaptic Phase Highways:
-        Binds tokens into continuous coordinates and constructs directional
-        forward conductance bridges W_ij across the sequential phrase window.
+        Continuous Stream Ingestion via Synaptic Phase Highways & Attractor Sedimentation:
+        Performs multiple continuous wave injection repetitions (default: 7) to deepen
+        the 4D spatial attractor potential well and sediment concept neurons into the substrate.
         """
         raw_tokens = [t.strip('.,;:"\'?').lower() for t in text_stream.replace('\n', ' ').split() if len(t.strip('.,;:"\'?')) > 0]
         if not raw_tokens:
             return []
             
         n_tokens = len(raw_tokens)
-        has_leading_pointer = (raw_tokens[0] in ["the", "a", "an"]) if n_tokens > 2 else False
+        pointer_words = {"the", "a", "an", "this", "that", "it"}
+        has_leading_pointer = (raw_tokens[0] in pointer_words and n_tokens > 2)
         subj_token = raw_tokens[1 if has_leading_pointer and len(raw_tokens) > 1 else 0]
         cluster_id = f"net_{subj_token[:4]}"
         ingested_neurons: List[FellaNeuron] = []
         
-        for idx, token in enumerate(raw_tokens):
-            valence = self.induce_positional_valence(idx, n_tokens, len(token), has_leading_pointer=has_leading_pointer)
-            actual_tier = 3 if target_tier is None else target_tier
-            x_vec = self.encode_continuous_wave(token)
-            y_vec = self.encode_efferent_output(x_vec)
+        # Perform multi-pass wave sedimentation to deepen attractor potential basin
+        for rep in range(max(1, repetitions)):
+            current_ingested = []
+            for idx, token in enumerate(raw_tokens):
+                valence = self.induce_positional_valence(idx, n_tokens, len(token), has_leading_pointer=has_leading_pointer)
+                actual_tier = 3 if target_tier is None else target_tier
+                x_vec = self.encode_continuous_wave(token)
+                y_vec = self.encode_efferent_output(x_vec)
+                
+                neuron, was_born = self.substrate.find_or_birth_concept(
+                    text=token,
+                    x_vec=x_vec,
+                    y_vec=y_vec,
+                    tier_z=actual_tier,
+                    network_id=cluster_id,
+                    role="concept",
+                    syntax_valence=valence,
+                    energy=4.0
+                )
+                neuron.energy = min(5.0, neuron.energy + 0.40)
+                neuron.last_active = self.substrate.current_step
+                
+                if not was_born:
+                    neuron.syntax_valence = 0.5 * neuron.syntax_valence + 0.5 * valence
+                    if valence[0] > 0.5:
+                        neuron.syntax_valence[3] = 0.0
+                current_ingested.append(neuron)
+                
+            ingested_neurons = current_ingested
             
-            neuron, was_born = self.substrate.find_or_birth_concept(
-                text=token,
-                x_vec=x_vec,
-                y_vec=y_vec,
-                tier_z=actual_tier,
-                network_id=cluster_id,
-                role="concept",
-                syntax_valence=valence,
-                energy=3.5
-            )
-            # Plasticity update on valence tensor
-            if not was_born:
-                neuron.syntax_valence = 0.5 * neuron.syntax_valence + 0.5 * valence
-                if valence[0] > 0.5:
-                    neuron.syntax_valence[3] = 0.0
-            ingested_neurons.append(neuron)
-            
-        # Potentiate directional sequential bridges W_ij across forward phrase window
-        for i in range(len(ingested_neurons)):
-            n_curr = ingested_neurons[i]
-            for offset in range(1, min(6, len(ingested_neurons) - i)):
-                n_next = ingested_neurons[i + offset]
-                if n_curr.id != n_next.id:
-                    forward_w = 0.98 * (0.85 ** (offset - 1))
-                    self.substrate.build_synaptic_bridge(n_curr.id, n_next.id, forward_w)
-                    if offset == 1:
-                        self.substrate.build_synaptic_bridge(n_next.id, n_curr.id, 0.20)
-                        
-        # Register integrated thought particle in ENN Associative Memory Bank
+            # Potentiate directional sequential bridges W_ij across forward phrase window
+            for i in range(len(ingested_neurons)):
+                n_curr = ingested_neurons[i]
+                for offset in range(1, min(6, len(ingested_neurons) - i)):
+                    n_next = ingested_neurons[i + offset]
+                    if n_curr.id != n_next.id:
+                        forward_w = 0.98 * (0.85 ** (offset - 1))
+                        self.substrate.build_synaptic_bridge(n_curr.id, n_next.id, forward_w)
+                        if offset == 1:
+                            self.substrate.build_synaptic_bridge(n_next.id, n_curr.id, 0.40)
+                            
+        # Register Episodic Experience Wave Vector in ENN Memory Bank (Pure 16D Wave Vector, NO Verbatim Sentence)
         clean_text = text_stream.strip()
         if len(clean_text.split()) >= 3:
             self.register_associative_memory(
@@ -306,23 +315,23 @@ class LanguageGroundingEngine:
     ) -> Tuple[Optional[str], float]:
         """
         Calculates continuous multimodal resonance across all stored associative memory particles.
-        Applies Causal Phase-Shift operator for counterfactual queries.
+        Modulates resonance by physical substrate seed tier (Z=1..4).
+        Zero hardcoded keyword lists or string rules.
         """
         if not self.memory_bank:
             return None, 0.0
             
-        q_lower = query_text.lower()
-        is_id_query = any(k in q_lower for k in ["who are you", "your name", "who is fella", "what is your name", "what are you"])
-        is_cf_query = is_counterfactual or any(k in q_lower for k in ["what if", "if ", "disappear", "vanish", "without", "cease"])
+        seed_n = self.substrate.neurons.get(seed_id) if seed_id is not None else None
+        seed_tz = seed_n.tier_z if seed_n else 1
+        
+        is_causal_active = is_counterfactual or (seed_tz == 3)
+        is_self_active = (seed_tz == 4)
         
         q_feat = self.get_visual_encoder().encode_visual_prompt(query_text)
         norm_q = np.linalg.norm(q_feat)
         if norm_q > 0:
             q_feat = q_feat / norm_q
             
-        # Extract primary query concept words
-        q_words = [w.strip('.,;:"\'?') for w in q_lower.split() if len(w.strip('.,;:"\'?')) > 2]
-        
         scored: List[Tuple[str, float]] = []
         for rec in self.memory_bank:
             if "features" in rec and rec["features"] is not None:
@@ -334,33 +343,25 @@ class LanguageGroundingEngine:
             norm_m = np.linalg.norm(m_feat)
             if norm_m > 0:
                 m_feat = m_feat / norm_m
-            res = float(np.dot(q_feat, m_feat))
-            
-            m_text_lower = rec["text"].lower()
-            
-            # Identity Alignment
-            if is_id_query and rec.get("tier_z", 1) == 4 and ("i am fella" in m_text_lower or "my name is fella" in m_text_lower):
-                res += 0.30
                 
-            # Counterfactual Causal Phase-Shift
-            if is_cf_query:
-                if any(w in m_text_lower for w in ["if the sun", "when the sun", "without the sun", "freez", "darkness", "plunge"]):
-                    res += 0.35
-                elif rec.get("tier_z", 1) >= 3:
-                    res += 0.15
-                    
-            # Primary Topic Constructive Resonance
-            if seed_id is not None and seed_id in self.substrate.neurons:
-                seed_text = self.substrate.neurons[seed_id].text.lower()
-                if seed_text in m_text_lower and not is_cf_query:
-                    res += 0.15
+            # Pure Continuous 512D Vector Dot Product Resonance
+            res = float(np.dot(q_feat, m_feat))
+            rec_tz = int(rec.get("tier_z", 1))
+            
+            # Physical Substrate Tier Field Resonance Modulation
+            if is_self_active:
+                if rec_tz == 4:
+                    res *= 1.35
+                else:
+                    res *= 0.85
+            elif is_causal_active:
+                if rec_tz == 3:
+                    res *= 1.35
+                else:
+                    res *= 0.85
             else:
-                for qw in q_words:
-                    if qw not in ["what", "who", "when", "where", "how", "your", "tell"]:
-                        if qw in m_text_lower and not is_cf_query:
-                            res += 0.10
-                            break
-                            
+                res *= (1.0 + 0.04 * float(rec_tz))
+                
             scored.append((rec["text"], res))
             
         scored.sort(key=lambda item: item[1], reverse=True)
@@ -641,9 +642,14 @@ class LanguageGroundingEngine:
         best_salience = -1.0
         best_force = 0.0
         
-        # Information-Theoretic Field Resonance Search across ALL tokens & compound n-grams
-        condition_tokens = [t for t in tokens if t in ["disappear", "disappears", "vanish", "vanishes", "cease", "ceases", "without", "stop", "stops", "dies", "die", "collapse"]]
-        is_counterfactual = (len(condition_tokens) > 0 or "if" in tokens or "without" in tokens)
+        # Pure Substrate Wave Physical Counterfactual Activation (Zero Hardcoded Substrings)
+        q_wave = self.encode_continuous_wave(query_text)
+        field_forces = self.substrate.compute_field_resonance(q_wave)
+        c_force = sum(f for nid, f in field_forces.items() if self.substrate.neurons[nid].tier_z >= 3)
+        t_force = sum(f for nid, f in field_forces.items() if self.substrate.neurons[nid].tier_z == 1)
+        
+        is_counterfactual = (c_force > 0.25 * max(1e-5, t_force))
+        condition_tokens = [t for t in tokens if len(t) >= 4]
         
         search_tokens = list(tokens)
         for i in range(len(tokens) - 1):
@@ -658,33 +664,28 @@ class LanguageGroundingEngine:
                 target_n = self.substrate.neurons[nid]
                 k = float(len(target_n.synapses))
                 
-                # Check if this node is a functional connector, auxiliary verb, or interrogative particle
-                is_short_aux = (len(target_n.text) <= 4 and target_n.text.lower() in ["is", "are", "was", "the", "a", "an", "in", "to", "of", "what", "how", "if", "does", "do", "did", "when", "you", "your", "say", "that", "who", "i", "me", "my"])
-                is_interrogative_frame = target_n.text.lower() in ["happens", "happen", "occurs", "occur", "meaning", "define", "definition", "explain", "describe", "tell", "about", "imagine", "picture", "visualize", "think", "feel", "remember"]
-                is_pointer = (target_n.syntax_valence[3] < -0.3)
-                is_cond_verb = (token in condition_tokens and len(tokens) > len(condition_tokens))
+                # Continuous Valence Tensor & Role Filtering (Zero Hardcoded Word Lists)
+                is_functional_token = (target_n.role == "letter" or target_n.grammatical_role == "pointer" or target_n.syntax_valence[3] < -0.3)
                 
                 # Direct exact label boost to physical force
                 exact_mult = 1.0
                 if target_n.text.lower() == token:
-                    if is_short_aux or is_interrogative_frame or is_pointer:
+                    if is_functional_token:
                         exact_mult = 0.02
-                    elif is_cond_verb:
-                        exact_mult = 0.20
                     else:
                         exact_mult = 12.0
-                        f_val = max(f_val, 1.0)
+                        f_val = max(f_val, 0.85)
                 elif token in target_n.text.lower() or target_n.text.lower() in token:
-                    if not (is_short_aux or is_interrogative_frame or is_cond_verb):
+                    if not is_functional_token:
                         exact_mult = 2.5
-                        f_val = max(f_val, 0.8)
+                        f_val = max(f_val, 0.70)
                 
                 if k < 1.0:
                     sal = f_val * 0.05 * exact_mult
                 else:
                     sal = (f_val * np.log1p(k)) / (k ** 0.85) * exact_mult
                     
-                if not (is_short_aux or is_interrogative_frame or is_pointer or is_cond_verb):
+                if not is_functional_token:
                     if target_n.tier_z >= 2:
                         sal *= (1.0 + 0.25 * target_n.tier_z)
                     if is_counterfactual and target_n.tier_z >= 3:
@@ -733,21 +734,13 @@ class LanguageGroundingEngine:
                 "is_uncertain": True
             }
             
-        # Motor Articulation: Dual-Field ENN Associative Resonance or Neural Wave Decoding
-        resonant_thought, res_score = self.find_resonant_associative_memory(
-            query_text,
-            seed_id=best_seed_id,
-            is_counterfactual=is_counterfactual
+        # Pass non-subject query tokens as condition guidance to dynamically steer efferent speech trajectory
+        query_cond_tokens = [t for t in tokens if t != seed_word.lower()]
+        meaningful_sentence = self.broca.decode_neural_utterance(
+            best_seed_id,
+            target_condition_tokens=query_cond_tokens,
+            query_text=query_text
         )
-        
-        if resonant_thought and res_score >= 0.70:
-            meaningful_sentence = resonant_thought
-        else:
-            meaningful_sentence = self.broca.decode_neural_utterance(
-                best_seed_id,
-                target_condition_tokens=target_conds,
-                query_text=query_text
-            )
         
         return {
             "seed_concept": seed_word,
