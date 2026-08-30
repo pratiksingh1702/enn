@@ -22,7 +22,7 @@ from fella.trait_field import TraitField
 from fella.metacognition import InwardObserver, EpistemicVacuum
 from fella.language_grounding import LanguageGroundingEngine
 from fella.ollama_mentor import OllamaMentor
-
+from fella.heartbeat import CognitiveHeartbeat
 
 class FellaBrain:
     """The complete living multi-network cognitive mind of FELLA."""
@@ -50,6 +50,10 @@ class FellaBrain:
         
         # 5. External Mentor Interface
         self.mentor = OllamaMentor(default_model=ollama_model)
+        
+        # 6. Autonomous Background Heartbeat (True Learner / Dreaming)
+        self.heartbeat = CognitiveHeartbeat(brain=self, pulse_interval=10.0)
+        self.heartbeat.start()
         
         # Internal Memory & Lifespan
         self.age_steps = 0
@@ -147,6 +151,9 @@ class FellaBrain:
         
         # 5. Novelty & Epistemic Vacuum Detection
         novelty = 1.0 - max_resonance
+        if len(ingested_nodes) > 0:
+            novelty = 0.95  # Physical spike: new isolated nodes introduce massive topological tension
+            
         if novelty > 0.55 and len(text_clean.split()) > 0:
             words = [w for w in text_clean.split() if len(w) > 2]
             if words:
@@ -158,9 +165,10 @@ class FellaBrain:
                     context_prompt=text_clean
                 )
                 self.trait_field.inject_curiosity(float(novelty))
+                active_trait = self.trait_field.active_trait
                 
         # 6. Semantic Wave Reasoning over Query (Continuous Hamiltonian Pre-Articulatory Simulation)
-        reasoning_res = self.lang.reason_over_query(text_clean, max_depth=6)
+        reasoning_res = self.lang.reason_over_query(text_clean, max_depth=6, active_trait=active_trait)
         raw_narrative = reasoning_res.get("reasoning_narrative", "")
         seed_concept = reasoning_res.get("seed_concept", "")
         is_uncertain = reasoning_res.get("is_uncertain", False)
@@ -191,15 +199,13 @@ class FellaBrain:
             self._last_taught_text = text_clean
             
         # 7. Formulate Raw Physical Response
-        if is_question and raw_narrative:
-            response_text = f"{raw_narrative}"
-        elif len(ingested_nodes) > 0:
-            integrated_nodes_count = len(ingested_nodes)
-            response_text = f"✨ Grounded concept into 4D wave substrate ({integrated_nodes_count} concept nodes, Tier Z=1)."
-        elif raw_narrative:
-            response_text = f"{raw_narrative}"
-        else:
-            response_text = "uncertainty"
+        response_text = "uncertainty"
+        if raw_narrative:
+            # If the thermodynamic loop remains open (Curiosity/Vacuum), it physically expresses as an interrogative wave.
+            if active_trait == "INQUIRE" or syntax_analysis.tension_energy > 0.65:
+                response_text = f"{raw_narrative} ?"
+            else:
+                response_text = f"{raw_narrative}."
             
         self.last_thought = f"Excited '{seed_concept}' (Critic rejected: {rejected_count}, Trait: {self.trait_field.active_trait}, Tension: {syntax_analysis.tension_energy:.2f})"
         self.last_response = response_text

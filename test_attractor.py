@@ -18,16 +18,25 @@ def test_attractor():
     brain = FellaBrain.load_state("fella_checkpoint.json")
     print(f"✓ Brain Loaded. Living Neurons: {len(brain.substrate.neurons)}")
     
-    print("\n[TEACHING VOCABULARY]")
-    facts = [
-        "Pratik is a human.",
-        "An apple is an object.",
-        "Water is a liquid."
-    ]
-    for f in facts:
-        print(f"Teaching: {f}")
-        brain.converse(f)
-        
+    print("[TEACHING VOCABULARY]")
+    print("Teaching: Oh nice is a reaction.")
+    brain.converse("Oh nice is a reaction.")
+    print("Teaching: What is a question.")
+    brain.converse("What is a question.")
+    print("Teaching: More is about curiosity.")
+    brain.converse("More is about curiosity.")
+
+    print("Teaching: An apple is an object.")
+    brain.converse("An apple is an object.")
+    print("Teaching: Water is a liquid.")
+    brain.converse("Water is a liquid.")
+    
+    print("\n[TESTING NOVELTY & EMERGENT CURIOSITY]")
+    print("User: 'Pratik is a human.'")
+    res = brain.converse("Pratik is a human.")
+    print(f"FELLA: '{res['last_response']}'")
+    print(f"   -> Inner Critic Logs: {res['last_thought']}")
+
     print("\n[TESTING ATTRACTOR FIELD PULL]")
     questions = [
         "Who is a human?",

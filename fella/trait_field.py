@@ -94,20 +94,28 @@ class TraitField:
         self.active_trait = max(self.trait_energy.items(), key=lambda item: item[1])[0]
         return self.active_trait
 
+    def _update_active_trait(self):
+        energies = {name: float(-basin.potential(self.state)) for name, basin in self.basins.items()}
+        self.trait_energy = energies
+        self.active_trait = max(self.trait_energy.items(), key=lambda item: item[1])[0]
+
     def inject_aspiration(self, intensity: float = 0.5):
         """Boosts the ASPIRE drive to encourage higher-order concept mastering."""
         aspire_centroid = self.basins["ASPIRE"].centroid
         self.state = self.state * (1.0 - intensity) + aspire_centroid * intensity
+        self._update_active_trait()
 
     def inject_curiosity(self, intensity: float = 0.6):
         """Boosts the INQUIRE drive upon encountering unknown facts or novel words."""
         inquire_centroid = self.basins["INQUIRE"].centroid
         self.state = self.state * (1.0 - intensity) + inquire_centroid * intensity
+        self._update_active_trait()
 
     def inject_uncertainty(self, intensity: float = 0.7):
         """Boosts the UNCERTAINTY drive upon high epistemic friction or weak resonance."""
         unc_centroid = self.basins["UNCERTAINTY"].centroid
         self.state = self.state * (1.0 - intensity) + unc_centroid * intensity
+        self._update_active_trait()
 
     def to_dict(self) -> Dict[str, Any]:
         return {

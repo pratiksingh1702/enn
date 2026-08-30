@@ -632,7 +632,7 @@ class LanguageGroundingEngine:
             return "uncertainty"
         return " ".join(clean_tokens)
 
-    def reason_over_query(self, query_text: str, max_depth: int = 10) -> Dict[str, Any]:
+    def reason_over_query(self, query_text: str, max_depth: int = 10, active_trait: str = "OBSERVE") -> Dict[str, Any]:
         """
         Metacognitive Query Reasoner (Pure Information-Theoretic Physics):
         1. Projects all query token waves into the continuous substrate (NO STOP WORDS FILTER).
@@ -775,6 +775,7 @@ class LanguageGroundingEngine:
             "rejected_count": rejected_count,
             "is_uncertain": is_uncertain
         }
+
 
 
 
