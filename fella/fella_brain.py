@@ -91,7 +91,7 @@ class FellaBrain:
         self.last_thought = f"Rehearsed alphabet across {practice_rounds} continuous cycles"
         return res
 
-    def converse(self, user_speech: str) -> Dict[str, Any]:
+    def converse(self, user_speech: str, autonomous_exploration: bool = False) -> Dict[str, Any]:
         """
         Interactive Conversational Cycle:
         1. Encodes speech wave X_sensory and evaluates resonance.
@@ -137,6 +137,8 @@ class FellaBrain:
         is_question = False
         if best_neuron and (len(best_neuron.synapses) > 15 or (1.0 - max_resonance) > 0.65):
             is_question = True
+            
+        # x_sensory is already computed above
         drive_vec = np.array([
             0.85 if is_question else (1.0 - max_resonance),  # Curiosity / Inquiry
             float(np.mean(x_sensory[:4])) + 0.3,             # Complexity / Aspiration
@@ -145,12 +147,16 @@ class FellaBrain:
         ])
         active_trait = self.trait_field.step(external_drive=drive_vec)
         
+        if is_question:
+            self.trait_field.inject_curiosity(0.8)
+            active_trait = self.trait_field.active_trait
+        
         # 4. Syntactic Analysis & Grammar Well-Formedness
         syntax_analysis = self.lang.evaluate_syntactic_well_formedness(text_clean)
         
-        # Ingest Declarative Knowledge (Only when user is teaching valid complete sentences)
+        # Ingest Knowledge (The physical act of experiencing the wave builds topology)
         ingested_nodes = []
-        if not is_question and syntax_analysis.is_valid:
+        if syntax_analysis.is_valid:
             ingested_nodes = self.lang.ingest_continuous_stream(text_clean, target_tier=1)
         
         # 5. Novelty & Epistemic Vacuum Detection
@@ -162,7 +168,7 @@ class FellaBrain:
             words = [w for w in text_clean.split() if len(w) > 2]
             if words:
                 target_word = words[0] if is_question and len(words) > 1 else words[-1]
-                self.observer.register_vacuum(
+                vacuum = self.observer.register_vacuum(
                     concept_query=target_word,
                     context_z=self.substrate.current_event_z,
                     tension=float(novelty),
@@ -170,6 +176,18 @@ class FellaBrain:
                 )
                 self.trait_field.inject_curiosity(float(novelty))
                 active_trait = self.trait_field.active_trait
+                
+                # Autonomous Epistemic Resolution (Self-Training Loop)
+                if autonomous_exploration and vacuum:
+                    print(f"\n[AUTONOMOUS LEARNING TRIGGERED] Fella encountered Epistemic Vacuum: '{target_word}'")
+                    print(f" -> Querying Internal Mentor (Ollama) to resolve the gap...")
+                    mentor_bundle = self.mentor.ask_about_vacuum(vacuum)
+                    mentor_explanation = mentor_bundle.get("explanation")
+                    if mentor_explanation:
+                        print(f" -> Mentor Explanation: {mentor_explanation}")
+                        print(f" -> Ingesting mentor knowledge directly into structural matrix (Tier 3 Causal Laws)...")
+                        self.lang.ingest_continuous_stream(mentor_explanation, target_tier=3)
+                        vacuum.is_resolved = True
                 
         # 6. Semantic Wave Reasoning over Query (Continuous Hamiltonian Pre-Articulatory Simulation)
         reasoning_res = self.lang.reason_over_query(text_clean, max_depth=6, active_trait=active_trait)

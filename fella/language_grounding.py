@@ -106,15 +106,19 @@ class LanguageGroundingEngine:
         Objects (Nouns) have highly specific/dense visual mappings (low variance across dimensions).
         Actions (Verbs) are transitional and spread across contexts (high variance).
         """
-        # Normalizing to avoid scaling issues
         tw = token_wave / (np.linalg.norm(token_wave) + 1e-9)
         variance = float(np.var(tw))
         
-        # Map physical wave variance to syntax roles
-        # Extremely low variance -> high noun probability
-        # High variance -> high verb probability
-        v_noun = max(0.1, 1.0 - (variance * 1000.0))
-        v_verb = min(1.0, variance * 1000.0)
+        # Pure Geometric Density Calculation
+        # The expected variance of a uniform vector on a unit hypersphere is 1 / dimensionality
+        expected_var = 1.0 / len(tw)
+        
+        # Relative density > 1 means highly specific, concrete geometry (Noun object)
+        # Relative density < 1 means diffuse, transitional geometry (Verb action)
+        relative_density = expected_var / (variance + 1e-9)
+        
+        v_noun = min(1.0, relative_density)
+        v_verb = min(1.0, 1.0 / (relative_density + 1e-9))
         v_adj = 0.5
         v_ptr = 0.5  # Base scaffolding
         
@@ -416,6 +420,8 @@ class LanguageGroundingEngine:
         - Source Concept (E0 = 1.0)
         - Kinetic Action Transformation (Verbal / Dynamic flow)
         - Target Recipient / Impact Equilibrium
+        - Phase 6 (Inhibitory Physics): Maintains a phase momentum vector. If the semantic topic
+          drifts violently, destructive interference cleanly terminates the arc.
         Terminates cleanly upon reaching physical equilibrium (Target reached + energy dissipated).
         Biological refractory inhibition strictly prevents repetition.
         """
@@ -431,6 +437,9 @@ class LanguageGroundingEngine:
             
         energy_potential = 1.0
         has_passed_action = False
+        
+        # Phase 6: Phase Momentum Vector (Tracks the coherent 'topic' wave of the thought)
+        momentum_wave = np.copy(seed_n.x)
         
         for step in range(max_length - 1):
             curr_n = self.substrate.neurons.get(curr_id)
@@ -465,27 +474,27 @@ class LanguageGroundingEngine:
                 v_dst = target_n.syntax_valence
                 
                 flow_bonus = 1.0
-                if v_src[0] > 0.4:  # Source / Subject Noun
-                    if not has_passed_action and v_dst[1] > 0.4:  # Noun -> Action Verb
+                if v_src[0] > 0.2:  # Source / Subject Noun
+                    if not has_passed_action and v_dst[1] > 0.2:  # Noun -> Action Verb
                         flow_bonus = 2.8
-                    elif v_dst[2] > 0.4:  # Noun -> Modifier
+                    elif v_dst[2] > 0.2:  # Noun -> Modifier
                         flow_bonus = 1.4
                     elif v_dst[3] < -0.3:  # Noun -> Connector
                         flow_bonus = 1.6
-                elif v_src[1] > 0.4:  # Kinetic Action Verb
-                    if v_dst[0] > 0.4:  # Verb -> Direct Object Noun
+                elif v_src[1] > 0.2:  # Kinetic Action Verb
+                    if v_dst[0] > 0.2:  # Verb -> Direct Object Noun
                         flow_bonus = 2.4
                     elif v_dst[3] < -0.3:  # Verb -> Preposition/Pointer
                         flow_bonus = 2.6
-                    elif v_dst[2] > 0.4:  # Verb -> Modifier/Adverb
+                    elif v_dst[2] > 0.2:  # Verb -> Modifier/Adverb
                         flow_bonus = 1.5
                 elif v_src[3] < -0.3:  # Preposition / Pointer
-                    if v_dst[0] > 0.4:  # Pointer -> Object Noun
+                    if v_dst[0] > 0.2:  # Pointer -> Object Noun
                         flow_bonus = 3.0
-                    elif v_dst[2] > 0.4:  # Pointer -> Modifier
+                    elif v_dst[2] > 0.2:  # Pointer -> Modifier
                         flow_bonus = 2.0
-                elif v_src[2] > 0.4:  # Modifier
-                    if v_dst[0] > 0.4:  # Modifier -> Noun
+                elif v_src[2] > 0.2:  # Modifier
+                    if v_dst[0] > 0.2:  # Modifier -> Noun
                         flow_bonus = 2.6
                         
                 # Degree normalization
@@ -511,8 +520,20 @@ class LanguageGroundingEngine:
                         cosine = float(np.dot(query_wave, target_n.x) / (n1 * n2))
                         # Use exponential pull to break deep superhighways
                         wave_boost = np.exp(cosine * 15.0)
+                        
+                # Phase 6: Inhibitory Physics (Destructive Interference)
+                m_norm = np.linalg.norm(momentum_wave)
+                t_norm = np.linalg.norm(target_n.x)
+                phase_coherence = 1.0
+                if m_norm > 0 and t_norm > 0:
+                    phase_coherence = float(np.dot(momentum_wave, target_n.x) / (m_norm * t_norm))
                 
-                score = (float(conductance) ** 1.8) * flow_bonus * cluster_bonus * tier_boost * cond_boost * wave_boost / (degree ** 0.28)
+                # Destructive friction penalizes violently unrelated topics
+                inhibition = 1.0
+                if phase_coherence < 0.15:
+                    inhibition = np.exp((phase_coherence - 0.15) * 12.0)
+                
+                score = (float(conductance) ** 1.8) * flow_bonus * cluster_bonus * tier_boost * cond_boost * wave_boost * inhibition / (degree ** 0.28)
                 candidates.append((target_id, score, float(conductance)))
                 
             if not candidates:
@@ -520,20 +541,31 @@ class LanguageGroundingEngine:
                 
             candidates.sort(key=lambda item: item[1], reverse=True)
             next_id, _, w_trans = candidates[0]
+            target_n = self.substrate.neurons[next_id]
+            
+            # Phase 6: Clean Thought Termination via Destructive Wave Cancellation
+            m_norm = np.linalg.norm(momentum_wave)
+            t_norm = np.linalg.norm(target_n.x)
+            final_coherence = float(np.dot(momentum_wave, target_n.x) / (m_norm * t_norm)) if (m_norm > 0 and t_norm > 0) else 1.0
+            
+            if final_coherence < 0.02: # Severe destructive interference terminates thought
+                break
             
             # Update physical state
             visited.add(next_id)
             path.append(next_id)
             curr_id = next_id
             
+            # Phase 6: Shift Momentum Wave (Topological Attention)
+            momentum_wave = (momentum_wave * 0.7) + (target_n.x * 0.3)
+            
             # Dissipate energy potential along path
             energy_potential *= (w_trans * 0.80)
             
             # Equilibrium Stopping Condition:
             # If action has occurred and reached target recipient noun with dissipated energy
-            target_n = self.substrate.neurons[next_id]
-            if has_passed_action and step >= 3:
-                if target_n.syntax_valence[0] > 0.5 and energy_potential < 0.30:
+            if has_passed_action and step >= 2:
+                if target_n.syntax_valence[0] > 0.2 and energy_potential < 0.30:
                     break
                     
         return path

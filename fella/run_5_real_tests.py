@@ -34,11 +34,21 @@ def run_5_real_tests():
     
     print("\n[TEACHING PHASE: Single-Exposure Teaching (1 pass, no repetition)]")
     
-    print("  • Concept 1: 'Sun is a bright star that gives warmth to Earth.'")
+    print("  • Concept 1: 'Sun is not a gas.'")
+    brain.converse("Sun is not a gas.")
+    
+    print("  • Concept 2: 'Sun is a bright star that gives warmth to Earth.'")
     brain.converse("Sun is a bright star that gives warmth to Earth.")
     
-    print("  • Concept 2: 'Air is a gas that surrounds Earth.'")
+    print("  • Concept 3: 'Air is a gas that surrounds Earth.'")
     brain.converse("Air is a gas that surrounds Earth.")
+
+    print("  • Concept 4: 'I want to know about the universe.'")
+    brain.converse("I want to know about the universe.")
+    
+    print("  • Concept 5: 'I am fella. You are fella.'")
+    brain.converse("I am fella.")
+    brain.converse("You are fella.")
     
     print("\n" + "-" * 80)
     print("EXECUTING 5 REAL TESTS")

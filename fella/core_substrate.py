@@ -164,6 +164,19 @@ class StackedSubstrate:
         self.current_step: int = 0
         self.current_event_z: float = 0.0
         
+        self.ego_id = -1
+        ego_node = FellaNeuron(
+            neuron_id=self.ego_id,
+            x=np.zeros(self.dim),
+            y=np.zeros(self.dim),
+            z=-1.0,
+            tier_z=-1,
+            text="<EGO>",
+            role="ego_core"
+        )
+        ego_node.mass = 50.0
+        self.neurons[self.ego_id] = ego_node
+        
         # Fast Spatial Indexing Cache
         self._dirty_tensors: bool = True
         self._cached_ids: np.ndarray = np.array([], dtype=int)
@@ -369,6 +382,11 @@ class StackedSubstrate:
         conductance = float(np.clip(initial_conductance, 0.0, 1.0))
         n_src.synapses[dst_id] = conductance
         n_src.synapse_relations[dst_id] = str(relation_type)
+        
+        # Aspire trait physics: Mass increases slightly when a node forms a new structural connection
+        if hasattr(n_src, 'mass'):
+            n_src.mass = min(10.0, getattr(n_src, 'mass', 1.0) + 0.05)
+            
         return conductance
 
     def potentiate_hebbian(self, active_forces: Dict[int, float], learning_rate: float = 0.15):
@@ -596,3 +614,11 @@ class StackedSubstrate:
             
         sub._dirty_tensors = True
         return sub
+
+    def apply_synaptic_decay(self, decay_rate: float = 0.005):
+        """Applies global synaptic forgetting across the entire topology."""
+        for n in self.neurons.values():
+            for peer_id in list(n.synapses.keys()):
+                n.synapses[peer_id] *= (1.0 - decay_rate)
+                if n.synapses[peer_id] < self.pruning_threshold:
+                    del n.synapses[peer_id]
