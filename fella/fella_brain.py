@@ -95,11 +95,11 @@ class FellaBrain:
         return res
 
 
+
+
+
+
     def converse(self, user_speech: str, autonomous_exploration: bool = False) -> Dict[str, Any]:
-        """
-        Interactive Conversational Cycle (Pure Wave Physics):
-        Passes the input directly into the continuous wave engine.
-        """
         self.age_steps += 1
         text_clean = str(user_speech).strip()
         if not text_clean:
@@ -107,38 +107,53 @@ class FellaBrain:
             
         self.dialogue_history.append({"speaker": "User", "text": text_clean})
         
-        # 1. Parse via Pure Wave Physics
         wave_state = self.wave_engine.parse_simultaneous_wave(text_clean, speaker_id="User")
         
-        # 2. Formulate Output
         response_text = ""
         is_question = (wave_state.get("state") == "DESTRUCTIVE (VOID)")
         
         if is_question:
-            # Epistemic vacuum triggered. Query Ollama Mentor for the answer.
             void_targets = [op["target"] for op in wave_state.get("operations", []) if op["action"] == "void"]
             target_id = void_targets[0] if void_targets else None
-            if target_id:
+            if target_id is not None:
                 target_word = self.substrate.neurons[target_id].text
-                print(f"[CURIOSITY] FELLA's wave engine hit a void on '{target_word}'. Seeking mentor...")
-                mentor_answer = self.mentor.ask_mentor(f"What is {target_word}?")
                 
-                response_text = mentor_answer
+                # Retrieval Attempt (Parallel Resonance)
+                found_answer = False
+                if self.wave_engine.determine_spectron_type(self.substrate.neurons[target_id]) == "hot":
+                    words = text_clean.replace("?", "").split()
+                    for w in words:
+                        n = self.wave_engine._get_or_create_neuron(w)
+                        if n.id != target_id and n.text != "is":
+                            # Use Parallel Resonance: what grounded node does this noun pull on the hardest?
+                            best_ans = None
+                            best_w = 0.0
+                            for syn_id, weight in n.synapses.items():
+                                syn_n = self.substrate.neurons[syn_id]
+                                if syn_n.id != n.id and syn_n.text != "is" and self.wave_engine.determine_spectron_type(syn_n) in ["mass", "cold"]:
+                                    if weight > best_w:
+                                        best_w = weight
+                                        best_ans = syn_n
+                            
+                            if best_ans:
+                                response_text = f"{n.text} is {best_ans.text}"
+                                found_answer = True
+                                print(f"[REASONING] Parallel Resonance retrieved: {response_text} (Gravity: {best_w:.1f})")
+                                break
+                        if found_answer: break
                 
-                # Re-inject the mentor's answer into her brain to forge it immediately!
-                self.wave_engine.parse_simultaneous_wave(mentor_answer, speaker_id="mentor")
+                if not found_answer:
+                    print(f"[CURIOSITY] FELLA's wave engine hit an unresolved void on '{target_word}'.")
+                    response_text = f"{target_word} ?"
             else:
                 response_text = "[Void]"
         else:
-            # Constructive wave. She just grounds it.
-            # (In a fully mature system, this would trigger the Broca module to re-articulate the standing wave)
             response_text = "acknowledged."
 
         self.last_thought = f"Wave State: {wave_state.get('state')} (Avg Phase: {wave_state.get('average_phase', 0.0):.2f})"
         self.last_response = response_text
         self.dialogue_history.append({"speaker": "FELLA", "text": response_text})
         
-        # 3. Step Thermodynamics
         self.substrate.step_thermodynamics()
         
         return self.get_telemetry()

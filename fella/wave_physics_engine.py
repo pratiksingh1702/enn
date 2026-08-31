@@ -38,10 +38,10 @@ class WavePhysicsEngine:
             n.amplitude = 1.0      # Amplitude (A)
             
             # Spectron Emergence Tracking
-            getattr(n, "hot_potential", 0.0) = 0.0
-            getattr(n, "cold_potential", 0.0) = 0.0
-            getattr(n, "catalyst_potential", 0.0) = 0.0
-            getattr(n, "mirror_potential", 0.0) = 0.0
+            n.hot_potential = 0.0
+            n.cold_potential = 0.0
+            n.catalyst_potential = 0.0
+            n.mirror_potential = 0.0
             
             # For tracking topological collapses
             n.collapsed_with_speakers = set()
@@ -80,13 +80,6 @@ class WavePhysicsEngine:
                 neurons[i] = speaker_neuron
                 
         # 2. Wave Superposition
-        # We calculate the effective interference intensity I
-        # For simplicity in this discrete step: 
-        # Hot spectrons (phase near PI) cause destructive interference (I -> 0)
-        # Cold spectrons (phase near 0) cause constructive interference (I -> high)
-        
-        # The sentence is "hot" (vacuum) if there is significant destructive interference
-        # i.e., average phase shift is closer to PI than 0.
         avg_phase = sum(n.phase for n in neurons) / len(neurons)
         
         # Artificial sensory injection (environmental ground truth)
@@ -101,54 +94,72 @@ class WavePhysicsEngine:
         
         operations = []
         
-        # 3. Structural Processing
-        # Identify words behaving as catalysts (Phase-Lockers)
-        catalyst_indices = [i for i, n in enumerate(neurons) if self.determine_spectron_type(n) == "catalyst"]
-        
-        if not catalyst_indices and len(neurons) >= 3:
-            # Bootstrap catalyst finding: the structural center of a small sentence
-            catalyst_indices = [1]
+        # 3. Catalyst Emergence (Spatial Topology)
+        # Any node trapped temporally between two nodes undergoing severe wave deformation 
+        # (e.g. between a Vacuum Target and a Phase-Shifter, or between two Forging nodes) 
+        # acts as the physical conduit, absorbing Catalyst Potential.
+        operator_nodes = set()
+        if len(neurons) >= 3:
+            for i in range(1, len(neurons) - 1):
+                left_n = neurons[i-1]
+                right_n = neurons[i+1]
+                operator_n = neurons[i]
+                
+                # If there's a significant phase differential or tension passing through it
+                if is_void_state:
+                    # In a vacuum, if it's adjacent to the void, it's the conduit
+                    # We estimate the void is at the end (temporally forward)
+                    operator_n.catalyst_potential += 1.0
+                    operator_nodes.add(operator_n)
+                else:
+                    operator_n.catalyst_potential += 1.0
+                    operator_nodes.add(operator_n)
+
+        # 4. Wave Field Operations (Decoupled from Catalysts)
+        if is_void_state:
+            # 1. First, check if there is a known Hot Spectron (Curiosity node). It naturally absorbs the vacuum.
+            void_target = None
+            for n in neurons:
+                if self.determine_spectron_type(n) == "hot":
+                    void_target = n
+                    break
+                    
+            # 2. If no Hot Spectron exists, the vacuum propagates forward in time.
+            if not void_target:
+                void_target = min(reversed(neurons), key=lambda n: getattr(n, "cold_potential", 0.0))
+                
+            print(f"[WAVE ENGINE] Wave Trough opened Epistemic Vacuum on: '{void_target.text}'")
+            operations.append({"action": "void", "target": void_target.id})
             
-        for idx in catalyst_indices:
-            if idx == 0 or idx == len(neurons) - 1:
-                continue
-                
-            operator_n = neurons[idx]
-            left_n = neurons[idx - 1]
-            right_n = neurons[idx + 1]
-            
-            if is_void_state:
-                # Destructive Interference -> Open a Void
-                # The node with phase closer to 0 is the mass; the one closer to PI is the void trigger
-                void_target = right_n if left_n.phase > right_n.phase else left_n
-                print(f"[WAVE ENGINE] Wave Trough opened Epistemic Vacuum on: '{void_target.text}'")
-                operations.append({"action": "void", "target": void_target.id})
-                
-                # LEARNING: Phase Drift (Gradient Descent on Tension)
-                # Environment demands a void (PI). Nodes driving this shift towards PI.
-                for n in neurons:
-                    if n != operator_n and n != void_target:
-                        # Drift phase towards PI
-                        n.phase += 0.1 * (math.pi - n.phase)
-                        getattr(n, "hot_potential", 0.0) += 1.0
-                        
-            else:
-                # Constructive Interference -> Wave-Hebbian Forge
-                print(f"[WAVE ENGINE] Forging Tier 3 Standing Wave: '{left_n.text}' -> '{right_n.text}'")
-                # Increase conductance (C_ij)
-                left_n.synapses[right_n.id] = left_n.synapses.get(right_n.id, 0.0) + 10.0
-                left_n.tier_z = max(left_n.tier_z, 3)
-                right_n.tier_z = max(right_n.tier_z, 3)
-                operations.append({"action": "forge", "source": left_n.id, "target": right_n.id})
-                
-                # LEARNING: Reinforce mass (Phase towards 0)
-                left_n.phase -= 0.1 * left_n.phase
-                right_n.phase -= 0.1 * right_n.phase
-                left_getattr(n, "cold_potential", 0.0) += 1.0
-                right_getattr(n, "cold_potential", 0.0) += 1.0
-                
-            # LEARNING: Reinforce catalyst potential for the operator
-            operator_getattr(n, "catalyst_potential", 0.0) += 1.0
+            # Phase Drift (Gradient Descent on Tension)
+            for n in neurons:
+                if n != void_target and n not in operator_nodes:
+                    n.phase += 0.1 * (math.pi - n.phase)
+                    if hasattr(n, "hot_potential"):
+                        n.hot_potential += 1.0
+        else:
+            # Constructive Interference -> Resonant Triad Forging
+            # The entire wave resonates, linking all nodes with gravity decaying by temporal distance.
+            for i in range(len(neurons)):
+                for j in range(i + 1, len(neurons)):
+                    left_n, right_n = neurons[i], neurons[j]
+                    distance = j - i
+                    weight = 10.0 / distance  # Adjacent = 10.0, Skip-1 = 5.0
+                    
+                    print(f"[WAVE ENGINE] Forging Resonant Bond (d={distance}): '{left_n.text}' -> '{right_n.text}'")
+                    left_n.synapses[right_n.id] = left_n.synapses.get(right_n.id, 0.0) + weight
+                    left_n.tier_z = max(left_n.tier_z, 3)
+                    right_n.tier_z = max(right_n.tier_z, 3)
+                    
+                    if distance == 1:
+                        operations.append({"action": "forge", "source": left_n.id, "target": right_n.id})
+                    
+                    if left_n not in operator_nodes:
+                        left_n.phase -= 0.1 * left_n.phase
+                        left_n.cold_potential += (1.0 / distance)
+                    if right_n not in operator_nodes:
+                        right_n.phase -= 0.1 * right_n.phase
+                        right_n.cold_potential += (1.0 / distance)
             
         # 4. Topological Collapse (Geometric Logic)
         self._topological_collapse_check(speaker_neuron.id)
@@ -177,19 +188,20 @@ class WavePhysicsEngine:
         for secondary in nids[1:]:
             sec_node = self.substrate.neurons[secondary]
             
-            # Check if this is an Identity/Pronoun Collapse
             if primary == current_speaker_id or secondary == current_speaker_id:
                 mirror_candidate = sec_node if primary == current_speaker_id else self.substrate.neurons[primary]
                 
+                if not hasattr(mirror_candidate, "collapsed_with_speakers"):
+                    mirror_candidate.collapsed_with_speakers = set()
+                    
                 mirror_candidate.collapsed_with_speakers.add(current_speaker_id)
                 
                 if len(mirror_candidate.collapsed_with_speakers) > 1:
-                    # Collapsed with multiple distinct speakers! Mutate into Mirror Spectron.
-                    mirror_candidate.mirror_potential += 5.0
+                    if hasattr(mirror_candidate, "mirror_potential"):
+                        mirror_candidate.mirror_potential += 5.0
                     print(f"[WAVE ENGINE] '{mirror_candidate.text}' has emerged as a Mirror Spectron!")
                     continue
             
-            # Standard Topological Merge
             primary_node = self.substrate.neurons[primary]
             for nid, n in self.substrate.neurons.items():
                 if secondary in n.synapses:
