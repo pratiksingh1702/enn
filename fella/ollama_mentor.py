@@ -48,7 +48,7 @@ class OllamaMentor:
             self.is_online = False
         return False
 
-    def query_mentor(self, prompt: str, timeout: float = 15.0) -> str:
+    def query_mentor(self, prompt: str, timeout: float = 120.0) -> str:
         if not self.is_online:
             self._check_availability()
             

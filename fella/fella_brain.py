@@ -45,8 +45,12 @@ class FellaBrain:
         # 3. Metacognitive Inward Observer
         self.observer = InwardObserver(base_plasticity=0.15)
         
-        # 4. Relational Language & Reasoning Engine
+        # 4. Relational Language & Reasoning Engine (Legacy Grounding)
         self.lang = LanguageGroundingEngine(self.substrate)
+        
+        # 4.5 True Wave Physics Engine (The core of Tabula Rasa)
+        from fella.wave_physics_engine import WavePhysicsEngine
+        self.wave_engine = WavePhysicsEngine(self.substrate, self.lang)
         
         # 5. External Mentor Interface
         self.mentor = OllamaMentor(default_model=ollama_model)
@@ -82,8 +86,7 @@ class FellaBrain:
             energy=5.0
         )
         
-        # 3. Foundational Uncertainty Attractor Anchor at Tier Z=4
-        self.lang.ground_uncertainty_anchor()
+        # The uncertainty anchor is removed. FELLA now uses emergent [Void] gaps.
 
     def rehearse_letters(self, practice_rounds: int = 5) -> Dict[str, Any]:
         """Fortifies the Z=0 alphabet foundation."""
@@ -91,16 +94,11 @@ class FellaBrain:
         self.last_thought = f"Rehearsed alphabet across {practice_rounds} continuous cycles"
         return res
 
+
     def converse(self, user_speech: str, autonomous_exploration: bool = False) -> Dict[str, Any]:
         """
-        Interactive Conversational Cycle:
-        1. Encodes speech wave X_sensory and evaluates resonance.
-        2. Measures Epistemic Friction and Self-Confidence.
-        3. Detects novel concepts -> logs Epistemic Vacuum if high tension.
-        4. Updates Trait Attractor Basin dynamics.
-        5. Ingests structured relational triads, binding directly into existing network hubs.
-        6. Performs Semantic Wave Reasoning over the active conceptual graph.
-        7. Synthesizes a grounded, conscious response reflecting internal reasoning.
+        Interactive Conversational Cycle (Pure Wave Physics):
+        Passes the input directly into the continuous wave engine.
         """
         self.age_steps += 1
         text_clean = str(user_speech).strip()
@@ -109,135 +107,41 @@ class FellaBrain:
             
         self.dialogue_history.append({"speaker": "User", "text": text_clean})
         
-        # 1. Sensory Wave Encoding & Field Resonance
-        x_sensory = self.lang.encode_continuous_wave(text_clean)
-        forces = self.substrate.compute_field_resonance(x_sensory)
+        # 1. Parse via Pure Wave Physics
+        wave_state = self.wave_engine.parse_simultaneous_wave(text_clean, speaker_id="User")
         
-        # Filter non-letter resonance to evaluate semantic novelty
-        semantic_forces = {
-            nid: f for nid, f in forces.items()
-            if self.substrate.neurons[nid].tier_z > 0
-        }
-        max_resonance = max(semantic_forces.values()) if semantic_forces else 0.0
-        
-        # 2. Metacognitive Observation
-        best_neuron = None
-        if semantic_forces:
-            best_id = max(semantic_forces.items(), key=lambda it: it[1])[0]
-            best_neuron = self.substrate.neurons[best_id]
-            expected_x = best_neuron.x
-        else:
-            expected_x = None
-            
-        self.observer.observe(expected_x, x_sensory)
-        
-        # 3. Trait Attractor Basin Dynamics (Pure Topological Interrogative Detection)
-        # A question physically manifests as an initial wave that concentrates resonance 
-        # on structural scaffolding nodes (k > 15) or generates extreme immediate epistemic tension.
-        is_question = False
-        if best_neuron and (len(best_neuron.synapses) > 15 or (1.0 - max_resonance) > 0.65):
-            is_question = True
-            
-        # x_sensory is already computed above
-        drive_vec = np.array([
-            0.85 if is_question else (1.0 - max_resonance),  # Curiosity / Inquiry
-            float(np.mean(x_sensory[:4])) + 0.3,             # Complexity / Aspiration
-            max_resonance,                                   # Coherence / Synthesis
-            float(np.std(x_sensory))                         # Self-Identity
-        ])
-        active_trait = self.trait_field.step(external_drive=drive_vec)
+        # 2. Formulate Output
+        response_text = ""
+        is_question = (wave_state.get("state") == "DESTRUCTIVE (VOID)")
         
         if is_question:
-            self.trait_field.inject_curiosity(0.8)
-            active_trait = self.trait_field.active_trait
-        
-        # 4. Syntactic Analysis & Grammar Well-Formedness
-        syntax_analysis = self.lang.evaluate_syntactic_well_formedness(text_clean)
-        
-        # Ingest Knowledge (The physical act of experiencing the wave builds topology)
-        ingested_nodes = []
-        if syntax_analysis.is_valid:
-            ingested_nodes = self.lang.ingest_continuous_stream(text_clean, target_tier=1)
-        
-        # 5. Novelty & Epistemic Vacuum Detection
-        novelty = 1.0 - max_resonance
-        if len(ingested_nodes) > 0:
-            novelty = 0.95  # Physical spike: new isolated nodes introduce massive topological tension
-            
-        if novelty > 0.55 and len(text_clean.split()) > 0:
-            words = [w for w in text_clean.split() if len(w) > 2]
-            if words:
-                target_word = words[0] if is_question and len(words) > 1 else words[-1]
-                vacuum = self.observer.register_vacuum(
-                    concept_query=target_word,
-                    context_z=self.substrate.current_event_z,
-                    tension=float(novelty),
-                    context_prompt=text_clean
-                )
-                self.trait_field.inject_curiosity(float(novelty))
-                active_trait = self.trait_field.active_trait
+            # Epistemic vacuum triggered. Query Ollama Mentor for the answer.
+            void_targets = [op["target"] for op in wave_state.get("operations", []) if op["action"] == "void"]
+            target_id = void_targets[0] if void_targets else None
+            if target_id:
+                target_word = self.substrate.neurons[target_id].text
+                print(f"[CURIOSITY] FELLA's wave engine hit a void on '{target_word}'. Seeking mentor...")
+                mentor_answer = self.mentor.ask_mentor(f"What is {target_word}?")
                 
-                # Autonomous Epistemic Resolution (Self-Training Loop)
-                if autonomous_exploration and vacuum:
-                    print(f"\n[AUTONOMOUS LEARNING TRIGGERED] Fella encountered Epistemic Vacuum: '{target_word}'")
-                    print(f" -> Querying Internal Mentor (Ollama) to resolve the gap...")
-                    mentor_bundle = self.mentor.ask_about_vacuum(vacuum)
-                    mentor_explanation = mentor_bundle.get("explanation")
-                    if mentor_explanation:
-                        print(f" -> Mentor Explanation: {mentor_explanation}")
-                        print(f" -> Ingesting mentor knowledge directly into structural matrix (Tier 3 Causal Laws)...")
-                        self.lang.ingest_continuous_stream(mentor_explanation, target_tier=3)
-                        vacuum.is_resolved = True
+                response_text = mentor_answer
                 
-        # 6. Semantic Wave Reasoning over Query (Continuous Hamiltonian Pre-Articulatory Simulation)
-        reasoning_res = self.lang.reason_over_query(text_clean, max_depth=6, active_trait=active_trait)
-        raw_narrative = reasoning_res.get("reasoning_narrative", "")
-        seed_concept = reasoning_res.get("seed_concept", "")
-        is_uncertain = reasoning_res.get("is_uncertain", False)
-        rejected_count = reasoning_res.get("rejected_count", 0)
-        
-        # Trait Field Modulation & Incentive Dynamics based on Response Quality
-        if is_question and raw_narrative:
-            # Check for verbatim copying vs emergent variation
-            last_taught = getattr(self, '_last_taught_text', '')
-            is_verbatim = bool(last_taught and last_taught.lower() in raw_narrative.lower())
-            
-            if is_verbatim:
-                # PENALIZE MEMORIZATION: Verbatim repeating triggers CAUTION trait and reduces Coherence/Confidence
-                self.penalize_cognition(penalty_value=0.8, corrective_explanation="Verbatim repeating detected.")
+                # Re-inject the mentor's answer into her brain to forge it immediately!
+                self.wave_engine.parse_simultaneous_wave(mentor_answer, speaker_id="mentor")
             else:
-                # REWARD UNDERSTANDING: Emergent variation boosts ASPIRE drive and Metacognitive Confidence
-                self.reward_cognition(reward_value=1.0)
-                self.trait_field.inject_aspiration(0.50)
-                
-        elif is_uncertain:
-            self.trait_field.inject_uncertainty(0.80)
-            self.observer.epistemic_friction = float(np.clip(self.observer.epistemic_friction + 0.25, 0.05, 1.0))
-        elif active_trait in ["INQUIRE", "ASPIRE"]:
-            self.observer.self_confidence = float(np.clip(self.observer.self_confidence + 0.02, 0.1, 0.999))
-            
-        # Store last taught statement for verbatim check
-        if not is_question and syntax_analysis.is_valid:
-            self._last_taught_text = text_clean
-            
-        # 7. Formulate Raw Physical Response
-        response_text = "uncertainty"
-        if raw_narrative:
-            # If the thermodynamic loop remains open (Curiosity/Vacuum), it physically expresses as an interrogative wave.
-            if active_trait == "INQUIRE" or syntax_analysis.tension_energy > 0.65:
-                response_text = f"{raw_narrative} ?"
-            else:
-                response_text = f"{raw_narrative}."
-            
-        self.last_thought = f"Excited '{seed_concept}' (Critic rejected: {rejected_count}, Trait: {self.trait_field.active_trait}, Tension: {syntax_analysis.tension_energy:.2f})"
+                response_text = "[Void]"
+        else:
+            # Constructive wave. She just grounds it.
+            # (In a fully mature system, this would trigger the Broca module to re-articulate the standing wave)
+            response_text = "acknowledged."
+
+        self.last_thought = f"Wave State: {wave_state.get('state')} (Avg Phase: {wave_state.get('average_phase', 0.0):.2f})"
         self.last_response = response_text
         self.dialogue_history.append({"speaker": "FELLA", "text": response_text})
         
-        # 8. Step Thermodynamics
+        # 3. Step Thermodynamics
         self.substrate.step_thermodynamics()
         
         return self.get_telemetry()
-
     def autonomous_curiosity_cycle(self) -> Optional[Dict[str, Any]]:
         """
         Autonomous Curiosity Self-Education:
@@ -310,7 +214,7 @@ class FellaBrain:
         
         # Group concept seeds by network cluster to prevent global clique cross-talk
         network_groups: Dict[str, List[int]] = defaultdict(list)
-        for n in self.substrate.neurons.values():
+        for n in list(self.substrate.neurons.values()):
             if n.tier_z > 0 and (n.energy > 2.0 or n.role in ["anchor", "causal"]):
                 network_groups[n.network_id].append(n.id)
                 
@@ -323,6 +227,8 @@ class FellaBrain:
             
         # Anti-Hebbian topological pruning of spurious cross-talk
         pruned_spurious = self.substrate.prune_cross_talk_synapses(threshold=0.40, max_fanout=12)
+        pruned_gravity = self.substrate.prune_gravity_wells(max_in_degree=35)
+        
         thermo_stats = self.substrate.step_thermodynamics()
         syn_stats = self.substrate.get_synapse_stats()
         

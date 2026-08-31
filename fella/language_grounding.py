@@ -11,6 +11,7 @@ FELLA Language Grounding: Pure Continuous ENN Synaptic Field
 """
 
 import numpy as np
+from fella.true_physics_engine import TruePhysicsEngine
 import re
 from typing import List, Dict, Any, Tuple, Optional, Set
 from fella.core_substrate import StackedSubstrate, FellaNeuron
@@ -156,21 +157,6 @@ class LanguageGroundingEngine:
             
         return created_neurons
 
-    def ground_uncertainty_anchor(self) -> FellaNeuron:
-        """Seeds foundational uncertainty attractor neuron in Tier Z=4."""
-        x_unc = self.encode_continuous_wave("uncertainty")
-        y_unc = self.encode_efferent_output(x_unc)
-        unc_n, _ = self.substrate.find_or_birth_concept(
-            text="uncertainty",
-            x_vec=x_unc,
-            y_vec=y_unc,
-            tier_z=4,
-            network_id="epistemic_humility",
-            role="anchor",
-            syntax_valence=np.array([1.0, 0.0, 0.0, 0.0]),
-            energy=4.0
-        )
-        return unc_n
 
     def rehearse_and_fortify_alphabet(self, practice_rounds: int = 5) -> Dict[str, Any]:
         """Fortifies all 26 alphabet neurons with maximal conductance at Z=0."""
@@ -220,9 +206,9 @@ class LanguageGroundingEngine:
             return []
             
         n_tokens = len(raw_tokens)
-        pointer_words = {"the", "a", "an", "this", "that", "it"}
-        has_leading_pointer = (raw_tokens[0] in pointer_words and n_tokens > 2)
-        subj_token = raw_tokens[1 if has_leading_pointer and len(raw_tokens) > 1 else 0]
+        
+        # We no longer rely on hardcoded english pointers. The wave engine resolves subjects through Phase Interference.
+        subj_token = raw_tokens[0] if len(raw_tokens) > 0 else "void"
         cluster_id = f"net_{subj_token[:4]}"
         ingested_neurons: List[FellaNeuron] = []
         
@@ -473,7 +459,9 @@ class LanguageGroundingEngine:
                 v_src = curr_n.syntax_valence
                 v_dst = target_n.syntax_valence
                 
-                flow_bonus = 1.0
+                # Default to heavy penalty unless the physical syntax geometry aligns
+                flow_bonus = 0.05 
+                
                 if v_src[0] > 0.2:  # Source / Subject Noun
                     if not has_passed_action and v_dst[1] > 0.2:  # Noun -> Action Verb
                         flow_bonus = 2.8
@@ -497,8 +485,20 @@ class LanguageGroundingEngine:
                     if v_dst[0] > 0.2:  # Modifier -> Noun
                         flow_bonus = 2.6
                         
-                # Degree normalization
+                # Phase 7: Topological Friction (Inverse Gravity for Stop-Words)
+                # Words like "the", "and", "a" have massive degrees. We must physically penalize 
+                # their gravity so the thought doesn't get trapped in a filler-loop.
                 degree = max(1.0, float(len(target_n.synapses)))
+                
+                # If a node is highly connective but lacks physical density (Noun/Action), it's a stop word.
+                max_valence = max(v_dst)
+                if degree > 15 and max_valence < 0.35:
+                    # Massive friction for meaningless hubs
+                    gravity_penalty = 1.0 / (degree ** 0.95)
+                else:
+                    # Normal normalization for meaningful concepts
+                    gravity_penalty = 1.0 / (degree ** 0.35)
+                    
                 tier_boost = 1.3 if (tier_preference is not None and target_n.tier_z == tier_preference) else 1.0
                 
                 # Condition / Counterfactual guidance
@@ -533,14 +533,40 @@ class LanguageGroundingEngine:
                 if phase_coherence < 0.15:
                     inhibition = np.exp((phase_coherence - 0.15) * 12.0)
                 
-                score = (float(conductance) ** 1.8) * flow_bonus * cluster_bonus * tier_boost * cond_boost * wave_boost * inhibition / (degree ** 0.28)
-                candidates.append((target_id, score, float(conductance)))
+                # TRUE PHYSICS: Hamiltonian Potential Well
+                potential_well = 1.0 / (flow_bonus * cluster_bonus * tier_boost * cond_boost * wave_boost * inhibition * gravity_penalty + 1e-9)
+                candidates.append((target_id, float(conductance), target_n.x, potential_well))
                 
-            if not candidates:
-                break
+            next_id = None
+            w_trans = 1.0
+            
+            if candidates:
+                # Calculate Tier 3 Causal Anchor for Frustration
+                causal_momentum = momentum_wave
+                tier_3_vectors = []
+                for tgt, w in curr_n.synapses.items():
+                    if tgt in self.substrate.neurons and self.substrate.neurons[tgt].tier_z >= 3:
+                        tier_3_vectors.append(self.substrate.neurons[tgt].x)
+                if tier_3_vectors:
+                    causal_momentum = np.mean(tier_3_vectors, axis=0)
+                    
+                cand_ids = [c[0] for c in candidates]
+                conductances = [c[1] for c in candidates]
+                vectors = np.array([c[2] for c in candidates])
+                wells = np.array([c[3] for c in candidates])
                 
-            candidates.sort(key=lambda item: item[1], reverse=True)
-            next_id, _, w_trans = candidates[0]
+                physics = TruePhysicsEngine(temperature=0.5)
+                next_id, prob, H, frust = physics.boltzmann_thermodynamic_step(
+                    cand_ids, conductances, vectors, causal_momentum, wells
+                )
+                
+                # Retrieve original w_trans
+                for c in candidates:
+                    if c[0] == next_id:
+                        w_trans = c[1]
+                        break
+            else:
+                break # Clean collapse into uncertainty if no paths exist
             target_n = self.substrate.neurons[next_id]
             
             # Phase 6: Clean Thought Termination via Destructive Wave Cancellation
@@ -769,12 +795,11 @@ class LanguageGroundingEngine:
                     
         # Epistemic Humility Phase Transition: If peak resonance is weak (below physical threshold)
         if best_seed_id is None or best_force < 0.55:
-            unc_neurons = [n for n in self.substrate.neurons.values() if n.text.lower() == "uncertainty" and n.tier_z > 0]
-            unc_label = unc_neurons[0].text if unc_neurons else "uncertainty"
+            # We no longer hardcode "uncertainty". We simply report an Epistemic Vacuum in the field.
             return {
-                "seed_concept": unc_label,
-                "active_path": [unc_label],
-                "reasoning_narrative": unc_label,
+                "seed_concept": "[Void]",
+                "active_path": ["[Void]"],
+                "reasoning_narrative": "[Void]",
                 "evaluation_score": float(best_force if best_force is not None else 0.0),
                 "rejected_count": 0,
                 "is_uncertain": True
@@ -795,12 +820,10 @@ class LanguageGroundingEngine:
         
         # If the thought was rejected by the field, emit physical uncertainty attractor
         if is_uncertain or not verified_tokens:
-            unc_neurons = [n for n in self.substrate.neurons.values() if n.text.lower() == "uncertainty" and n.tier_z > 0]
-            unc_label = unc_neurons[0].text if unc_neurons else "uncertainty"
             return {
                 "seed_concept": seed_word,
-                "active_path": [unc_label],
-                "reasoning_narrative": unc_label,
+                "active_path": ["[Void]"],
+                "reasoning_narrative": "[Void]",
                 "evaluation_score": eval_score,
                 "rejected_count": rejected_count,
                 "is_uncertain": True

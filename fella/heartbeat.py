@@ -39,22 +39,20 @@ class CognitiveHeartbeat:
                 if hasattr(self.brain.substrate, 'apply_synaptic_decay'):
                     self.brain.substrate.apply_synaptic_decay(decay_rate=0.005)
                 
-                # 2. Spontaneous Reactivation (Dreaming)
-                neurons = list(self.brain.substrate.neurons.values())
-                if len(neurons) > 10:
-                    # Inject thermal noise into a random high-mass node
-                    candidates = sorted(neurons, key=lambda n: getattr(n, 'mass', 1.0), reverse=True)
-                    seed = random.choice(candidates[:5]) # Pick from top 5 massive nodes
-                    
-                    if seed.id != -1 and len(seed.synapses) > 0:
-                        # Spontaneous activation traversal (thinking)
-                        # We just let the broca motor cortex traverse it silently to consolidate weights
-                        if hasattr(self.brain, 'lang') and hasattr(self.brain.lang, 'broca'):
-                            # Add some random thermal noise to the wave
-                            _ = self.brain.lang.broca.decode_neural_utterance(
-                                seed_id=seed.id,
-                                max_words=8,
-                                query_text="<thermal_noise_dream>"
-                            )
+                # 2. Spontaneous Reactivation (The Inner Voice / Rumination)
+                # Instead of just traversing, the Inner Voice re-injects the semantic wave 
+                # to run the Wave-Hebbian Integral and Phase Drift without external input.
+                if hasattr(self.brain, 'wave_engine') and hasattr(self.brain, 'dialogue_history'):
+                    # The inner voice ruminates on recent sensory experiences (short-term memory consolidation)
+                    history = self.brain.dialogue_history
+                    if history:
+                        # Pick a random recent interaction to ruminate on
+                        memory_event = random.choice(history[-10:])
+                        memory_text = memory_event.get("text", "")
+                        speaker = memory_event.get("speaker", "fella")
+                        
+                        if memory_text and len(memory_text.split()) > 1:
+                            print(f"[INNER VOICE] Ruminating on memory: '{memory_text}'")
+                            self.brain.wave_engine.parse_simultaneous_wave(memory_text, speaker_id=speaker)
             except Exception as e:
                 pass

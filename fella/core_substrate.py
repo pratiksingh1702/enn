@@ -35,6 +35,7 @@ class FellaNeuron:
         origin: float = 1.0,
         epistemic_tension: float = 0.0,
         energy: float = 1.0,
+        spectron_charge: float = 0.0,
         features: Optional[np.ndarray] = None
     ):
         self.id = int(neuron_id)
@@ -48,23 +49,17 @@ class FellaNeuron:
         self.role = str(role)                              # "letter", "entity", "action", "property", "anchor"
         self.grammatical_role = str(grammatical_role)      # "noun", "verb", "adj", "pointer"
         
-        # 4D Syntactic Valence Vector: [v_noun, v_verb, v_adj, v_pointer]
+        # 4D Syntactic Valence Vector (Emergent, no hardcoded english grammar rules)
         if syntax_valence is not None:
             self.syntax_valence = np.array(syntax_valence, dtype=float).copy()
         else:
             self.syntax_valence = np.zeros(4, dtype=float)
-            if self.grammatical_role == "noun":
-                self.syntax_valence[0] = 1.0
-            elif self.grammatical_role == "verb":
-                self.syntax_valence[1] = 1.0
-            elif self.grammatical_role == "adj":
-                self.syntax_valence[2] = 1.0
-            elif self.grammatical_role == "pointer":
-                self.syntax_valence[3] = -1.0
                 
         self.origin = float(origin)
         self.epistemic_tension = float(epistemic_tension)
         self.energy = float(energy)
+        self.spectron_charge = float(spectron_charge)  # Spectron Theory (Hot > 0, Cold < 0)
+
         self.features = np.array(features, dtype=float).copy() if features is not None else None
         
         # Momentum & Lifecycle
@@ -114,9 +109,9 @@ class FellaNeuron:
             "role": str(self.role),
             "grammatical_role": str(self.grammatical_role),
             "syntax_valence": self.syntax_valence.tolist(),
-            "origin": float(self.origin),
-            "epistemic_tension": float(self.epistemic_tension),
+            "origin": float(self.origin),              "epistemic_tension": float(self.epistemic_tension),
             "energy": float(self.energy),
+            "spectron_charge": float(self.spectron_charge),
             "age": int(self.age),
             "last_active": int(self.last_active),
             "features": self.features.tolist() if self.features is not None else None,
@@ -138,9 +133,9 @@ class FellaNeuron:
             role=str(data.get("role", "concept")),
             grammatical_role=str(data.get("grammatical_role", "noun")),
             syntax_valence=np.array(data.get("syntax_valence", [1, 0, 0, 0]), dtype=float),
-            origin=float(data.get("origin", 1.0)),
-            epistemic_tension=float(data.get("epistemic_tension", 0.0)),
+            origin=float(data.get("origin", 1.0)),              epistemic_tension=float(data.get("epistemic_tension", 0.0)),
             energy=float(data.get("energy", 1.0)),
+            spectron_charge=float(data.get("spectron_charge", 0.0)),
             features=np.array(data["features"], dtype=float) if data.get("features") is not None else None
         )
         n.age = int(data.get("age", 0))
@@ -531,7 +526,7 @@ class StackedSubstrate:
             if not curr_neuron:
                 continue
                 
-            for neighbor_id, conductance in curr_neuron.synapses.items():
+            for neighbor_id, conductance in list(curr_neuron.synapses.items()):
                 if neighbor_id not in self.neurons:
                     continue
                 transferred = curr_pot * conductance * damping
@@ -554,7 +549,7 @@ class StackedSubstrate:
             tier_counts[n.tier_z] += 1
             network_counts[f"Z{n.tier_z}:{n.network_id}"] += 1
             
-            for dst_id, w in n.synapses.items():
+            for dst_id, w in list(n.synapses.items()):
                 n_dst = self.neurons.get(dst_id)
                 if not n_dst:
                     continue
@@ -622,3 +617,30 @@ class StackedSubstrate:
                 n.synapses[peer_id] *= (1.0 - decay_rate)
                 if n.synapses[peer_id] < self.pruning_threshold:
                     del n.synapses[peer_id]
+
+    def prune_gravity_wells(self, max_in_degree: int = 35) -> int:
+        """
+        Anti-Gravity Pruning:
+        Automatically detects nodes with massive incoming synapses (stop words/filler funnels)
+        and physically dissolves the incoming paths to prevent thought-loops.
+        """
+        from collections import defaultdict
+        
+        in_degree = defaultdict(int)
+        for n in self.neurons.values():
+            for peer_id in n.synapses.keys():
+                in_degree[peer_id] += 1
+                
+        dead_nodes = set()
+        for n_id, degree in in_degree.items():
+            if degree > max_in_degree:
+                dead_nodes.add(n_id)
+                
+        synapses_destroyed = 0
+        for n in self.neurons.values():
+            dead_peers = [peer for peer in n.synapses if peer in dead_nodes]
+            for peer in dead_peers:
+                del n.synapses[peer]
+                synapses_destroyed += 1
+                
+        return synapses_destroyed
