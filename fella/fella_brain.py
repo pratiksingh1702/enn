@@ -99,6 +99,7 @@ class FellaBrain:
 
 
 
+
     def converse(self, user_speech: str, autonomous_exploration: bool = False) -> Dict[str, Any]:
         self.age_steps += 1
         text_clean = str(user_speech).strip()
@@ -118,27 +119,39 @@ class FellaBrain:
             if target_id is not None:
                 target_word = self.substrate.neurons[target_id].text
                 
-                # Retrieval Attempt (Parallel Resonance)
+                # Retrieval Attempt (Wave Superposition / Concept Blooming)
                 found_answer = False
                 if self.wave_engine.determine_spectron_type(self.substrate.neurons[target_id]) == "hot":
                     words = text_clean.replace("?", "").split()
                     for w in words:
                         n = self.wave_engine._get_or_create_neuron(w)
-                        if n.id != target_id and n.text != "is":
-                            # Use Parallel Resonance: what grounded node does this noun pull on the hardest?
-                            best_ans = None
-                            best_w = 0.0
+                        # Ensure we are reasoning from a grounded mass, not the vacuum itself or a catalyst
+                        if n.id != target_id and self.wave_engine.determine_spectron_type(n) != "catalyst":
+                            # Wave Superposition: Activate ALL grounded nodes above the noise floor
+                            resonant_nodes = []
                             for syn_id, weight in n.synapses.items():
                                 syn_n = self.substrate.neurons[syn_id]
-                                if syn_n.id != n.id and syn_n.text != "is" and self.wave_engine.determine_spectron_type(syn_n) in ["mass", "cold"]:
-                                    if weight > best_w:
-                                        best_w = weight
-                                        best_ans = syn_n
+                                if syn_n.id != n.id and self.wave_engine.determine_spectron_type(syn_n) in ["mass", "cold"]:
+                                    if weight > 0.0: # Any surviving gravity bond
+                                        resonant_nodes.append((syn_n, weight))
                             
-                            if best_ans:
-                                response_text = f"{n.text} is {best_ans.text}"
+                            if resonant_nodes:
+                                # Sort by gravity (strongest/most recent first)
+                                resonant_nodes.sort(key=lambda x: x[1], reverse=True)
+                                
+                                attributes = [rn[0].text for rn in resonant_nodes]
+                                
+                                # Find the catalyst that bridges this node (for grammatical phrasing)
+                                bridge_word = " "
+                                for sid in n.synapses:
+                                    sn = self.substrate.neurons[sid]
+                                    if self.wave_engine.determine_spectron_type(sn) == "catalyst":
+                                        bridge_word = f" {sn.text} "
+                                        break
+                                        
+                                response_text = f"{n.text}{bridge_word}{' '.join(attributes)}"
                                 found_answer = True
-                                print(f"[REASONING] Parallel Resonance retrieved: {response_text} (Gravity: {best_w:.1f})")
+                                print(f"[REASONING] Wave Superposition retrieved: {response_text}")
                                 break
                         if found_answer: break
                 

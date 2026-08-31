@@ -614,7 +614,7 @@ class StackedSubstrate:
         """Applies global synaptic forgetting across the entire topology."""
         for n in self.neurons.values():
             for peer_id in list(n.synapses.keys()):
-                n.synapses[peer_id] *= (1.0 - decay_rate)
+                n.synapses[peer_id] *= 0.995
                 if n.synapses[peer_id] < self.pruning_threshold:
                     del n.synapses[peer_id]
 

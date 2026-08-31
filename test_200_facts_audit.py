@@ -1,9 +1,9 @@
 import os
 import shutil
-import math
+import time
 from fella.fella_brain import FellaBrain
 
-def run_ask_again_100_full():
+def run_200_facts_audit():
     if os.path.exists('memory_bank'):
         shutil.rmtree('memory_bank')
 
@@ -21,42 +21,64 @@ def run_ask_again_100_full():
     ]
     
     categories = []
+    adjectives = []
     for n in nouns:
-        if n in ["apple", "fruit", "vegetable"]: categories.append("food")
+        # Assign Category
+        if n in ["apple", "fruit", "vegetable", "meat", "bread", "cheese"]: categories.append("food")
         elif n in ["dog", "cat", "bird"]: categories.append("animal")
         elif n in ["tree", "leaf", "branch", "root", "flower", "grass"]: categories.append("plant")
         elif n in ["sun", "moon", "star", "ocean", "river", "mountain", "cloud", "rain", "snow", "wind", "fire", "ice", "sand"]: categories.append("nature")
         elif n in ["car", "ship", "plane", "train"]: categories.append("vehicle")
+        elif n in ["milk", "water", "juice", "tea", "coffee"]: categories.append("liquid")
         else: categories.append("object")
+        
+        # Assign Adjective
+        if categories[-1] == "food": adjectives.append("tasty")
+        elif categories[-1] == "animal": adjectives.append("alive")
+        elif categories[-1] == "plant": adjectives.append("green")
+        elif categories[-1] == "nature": adjectives.append("wild")
+        elif categories[-1] == "vehicle": adjectives.append("fast")
+        elif categories[-1] == "liquid": adjectives.append("wet")
+        else: adjectives.append("solid")
 
     print("==================================================")
-    print("INITIALIZING FELLA (PURE TABULA RASA)")
+    print("INITIALIZING FELLA")
     print("==================================================")
     fella = FellaBrain(dim=16)
 
-    print("\n==================================================")
-    print("PHASE 1: TEACHING 100 FACTS")
-    print("==================================================")
+    print("\n[TEACHING PHASE: 200 FACTS]")
     for i, noun in enumerate(nouns):
-        ans = categories[i]
-        fella.converse(f"what is {noun} ?")
-        fella.converse(f"{noun} is {ans}")
+        # 2 Facts per noun
+        cat = categories[i]
+        adj = adjectives[i]
+        fella.converse(f"{noun} is {cat}")
+        fella.converse(f"{noun} is {adj}")
 
     print("\n==================================================")
-    print("PHASE 2: ASKING 100 QUESTIONS WITHOUT RESET")
+    print("TESTING PHASE: 100 QUESTIONS")
     print("==================================================")
-    successful_retrievals = 0
     for i, noun in enumerate(nouns):
         q = f"what is {noun} ?"
         fella.converse(q)
-        # 100% RELYING ON THE BRAIN'S ACTUAL OUTPUT
-        ans = fella.last_response
-        print(f"[USER]: {q} -> [FELLA]: {ans}")
-        
-        if ans != f"{noun} ?" and ans != "what ?":
-            successful_retrievals += 1
+        print(f"[USER]: {q} -> [FELLA]: {fella.last_response}")
 
-    print(f"\nSuccessfully reasoned answers for {successful_retrievals} out of 100 questions!")
+    print("\n==================================================")
+    print("INNER VOICE (HEARTBEAT) PHASE")
+    print("==================================================")
+    print("[LEAVING FELLA ALONE FOR 12 SECONDS TO RUMINATE...]")
+    time.sleep(12) # Wait for heartbeat to trigger
+
+    print("\n==================================================")
+    print("FINAL BRAIN STATE METRICS")
+    print("==================================================")
+    state = fella.wave_engine.get_brain_state()
+    print(f"Total Neurons Mapped: {state['total_neurons']}")
+    print(f"Hot Spectrons (Curiosity): {state['hot_spectrons']}")
+    print(f"Catalysts (Operators): {state['catalysts']}")
+    print(f"Mirrors (Identity): {state['mirrors']}")
+    
+    total_synapses = sum(len(n.synapses) for n in fella.substrate.neurons.values())
+    print(f"Total Active Synaptic Edges: {total_synapses}")
 
 if __name__ == "__main__":
-    run_ask_again_100_full()
+    run_200_facts_audit()
