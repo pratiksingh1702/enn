@@ -62,6 +62,10 @@ class FellaNeuron:
 
         self.features = np.array(features, dtype=float).copy() if features is not None else None
         
+        # Thermodynamics & Mass
+        self.mass = 1.0
+        self.temperature = 1.0
+        
         # Momentum & Lifecycle
         self.velocity_x = np.zeros_like(self.x)
         self.velocity_y = np.zeros_like(self.y)
@@ -473,31 +477,44 @@ class StackedSubstrate:
         return pruned
 
     def step_thermodynamics(self) -> Dict[str, int]:
+        from collections import defaultdict
         self.current_step += 1
-        pruned_synapses = 0
         
+        # 1. Thermal Radiation (Cooling)
         for n_id, n in self.neurons.items():
             n.age += 1
-            if n.role != "letter" and self.current_step - n.last_active > 15:
+            if n.mass < float('inf') and self.current_step - n.last_active > 15:
+                # Temperature naturally radiates back to baseline 1.0 over time
+                if n.temperature > 1.0:
+                    n.temperature = max(1.0, n.temperature * 0.95)
                 n.energy = max(0.2, n.energy * 0.995)
                 
-        for n in self.neurons.values():
-            dead_peers = []
-            for peer_id, weight in list(n.synapses.items()):
-                decayed_w = weight * 0.985
-                if decayed_w < self.pruning_threshold or peer_id not in self.neurons:
-                    dead_peers.append(peer_id)
-                else:
-                    n.synapses[peer_id] = float(decayed_w)
+        # 1.5 Thermal Diffusion (Semantic Bleeding / Generalization)
+        # Heat spreads across the graph via established structural mass (synapses).
+        # This gives her the physical ability to guess and generalize.
+        heat_transfers = defaultdict(float)
+        for n_id, n in self.neurons.items():
+            if n.temperature > 1.1 and n.synapses:
+                excess_heat = (n.temperature - 1.0) * 0.05
+                total_weight = sum(n.synapses.values())
+                if excess_heat > 0.01 and total_weight > 0:
+                    for peer_id, weight in n.synapses.items():
+                        ratio = weight / total_weight
+                        heat_transfers[peer_id] += excess_heat * ratio
+                    n.temperature -= excess_heat
                     
-            for dead in dead_peers:
-                del n.synapses[dead]
-                if dead in n.synapse_relations:
-                    del n.synapse_relations[dead]
-                pruned_synapses += 1
+        for n_id, transfer in heat_transfers.items():
+            if n_id in self.neurons:
+                self.neurons[n_id].temperature += transfer
                 
+        # 2. Phase Transition Decay
+        # Count pruned synapses before and after
+        start_count = sum(len(n.synapses) for n in self.neurons.values())
+        self.apply_synaptic_decay()
+        end_count = sum(len(n.synapses) for n in self.neurons.values())
+                  
         return {
-            "pruned_synapses": pruned_synapses,
+            "pruned_synapses": start_count - end_count,
             "total_neurons": len(self.neurons)
         }
 
@@ -610,11 +627,23 @@ class StackedSubstrate:
         sub._dirty_tensors = True
         return sub
 
-    def apply_synaptic_decay(self, decay_rate: float = 0.005):
-        """Applies global synaptic forgetting across the entire topology."""
+    def apply_synaptic_decay(self):
+        """Applies global synaptic forgetting via Thermodynamic Phase Transition (Crystallization)."""
+        import math
         for n in self.neurons.values():
             for peer_id in list(n.synapses.keys()):
-                n.synapses[peer_id] *= 0.995
+                peer = self.neurons.get(peer_id)
+                if peer:
+                    # T/M Phase transition. As Mass increases and Temp drops, decay -> 0
+                    if peer.mass == float('inf'):
+                        decay_rate = 0.0
+                    else:
+                        decay_rate = 1.0 - math.exp(-(peer.temperature / max(peer.mass, 0.001)))
+                        # Cap max decay to 0.05 per tick to maintain physical continuity
+                        decay_rate = min(decay_rate, 0.05)
+                        
+                    n.synapses[peer_id] *= (1.0 - decay_rate)
+                    
                 if n.synapses[peer_id] < self.pruning_threshold:
                     del n.synapses[peer_id]
 

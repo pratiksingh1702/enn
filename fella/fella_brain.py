@@ -100,15 +100,22 @@ class FellaBrain:
 
 
 
-    def converse(self, user_speech: str, autonomous_exploration: bool = False) -> Dict[str, Any]:
+    def converse(self, user_speech: str, autonomous_exploration: bool = False, speaker_id: str = "user", listener_id: str = "fella") -> Dict[str, Any]:
         self.age_steps += 1
         text_clean = str(user_speech).strip()
         if not text_clean:
             return self.get_telemetry()
             
-        self.dialogue_history.append({"speaker": "User", "text": text_clean})
+        self.dialogue_history.append({"speaker": speaker_id, "text": text_clean})
         
-        wave_state = self.wave_engine.parse_simultaneous_wave(text_clean, speaker_id="User")
+        origin_node = self.wave_engine._get_or_create_neuron(speaker_id)
+        anti_origin_node = self.wave_engine._get_or_create_neuron(listener_id)
+        
+        wave_state = self.wave_engine.parse_simultaneous_wave(
+            text_clean, 
+            origin_node=origin_node, 
+            anti_origin_node=anti_origin_node
+        )
         
         response_text = ""
         is_question = (wave_state.get("state") == "DESTRUCTIVE (VOID)")

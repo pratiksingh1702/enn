@@ -9,14 +9,33 @@ class WavePhysicsEngine:
         self.lang = grounding_engine
         
     def _get_or_create_neuron(self, text: str) -> FellaNeuron:
-        """Finds or creates a node for the word, completely neutral."""
+        """Finds or creates a node for the word, applying Sensory Harmonics (Fuzzy Matching)."""
+        import difflib
         text = text.lower()
+        
+        # 1. Exact Match
         for nid, n in self.substrate.neurons.items():
             if n.text.lower() == text:
-                # Ensure it has wave properties
                 self._ensure_wave_properties(n)
                 return n
                 
+        # 2. Sensory Harmonics (Fuzzy Morphological Resonance)
+        # Prevent graph sparsity from typos. If incoming wave resonates > 85% with an existing node,
+        # they physically collapse together. We rely purely on the amplitude threshold, no length algorithms.
+        best_match = None
+        highest_res = 0.0
+        for nid, n in self.substrate.neurons.items():
+            res = difflib.SequenceMatcher(None, text, n.text.lower()).ratio()
+            if res > highest_res:
+                highest_res = res
+                best_match = n
+        
+        # 0.85 is the Resonance Noise Floor constant
+        if highest_res > 0.85 and best_match is not None:
+            print(f"[SENSORY HARMONICS] Typo resonance collapsed: '{text}' -> '{best_match.text}' ({highest_res*100:.1f}%)")
+            self._ensure_wave_properties(best_match)
+            return best_match
+
         # Completely neutral starting point
         new_id = max(self.substrate.neurons.keys()) + 1 if self.substrate.neurons else 1
         vec = self.lang.encode_continuous_wave(text)
@@ -59,33 +78,37 @@ class WavePhysicsEngine:
             return "mass"
         return max_type
 
-    def parse_simultaneous_wave(self, sentence: str, speaker_id: str) -> Dict[str, Any]:
+    def parse_simultaneous_wave(
+        self, 
+        sentence: str, 
+        origin_node: FellaNeuron,
+        anti_origin_node: FellaNeuron
+    ) -> Dict[str, Any]:
         """
-        Parses a sentence by injecting a simultaneous wave, applying Phase operators,
-        and forging or querying based on emergent wave interference.
+        Parses a sentence by injecting a simultaneous wave.
+        Uses physical origin nodes rather than string-based speaker IDs.
+        No Regex. No String filtering.
         """
-        # Punctuation acts as basic sensory ground truth for Vacuum
-        sensory_target_vacuum = "?" in sentence
+        import math
         
-        words = sentence.strip().lower().replace('?', '').split()
+        # Raw physical tokenization (Cochlear frequency split)
+        words = sentence.lower().split()
         if not words:
             return {"status": "empty"}
             
         neurons = [self._get_or_create_neuron(w) for w in words]
-        speaker_neuron = self._get_or_create_neuron(speaker_id)
         
-        # 1. Resolve Mirror Spectrons (Identity Tracking)
+        # 1. Topological Slingshot (Identity via Charge Deflection)
         for i, n in enumerate(neurons):
-            if self.determine_spectron_type(n) == "mirror":
-                neurons[i] = speaker_neuron
+            if n.spectron_charge > 0.5:
+                neurons[i] = origin_node
+            elif n.spectron_charge < -0.5:
+                neurons[i] = anti_origin_node
                 
-        # 2. Wave Superposition
+        # 2. Wave Superposition (Pure Physics, no artificial ? forcing)
+        # Hot Spectrons naturally possess high phase.
         avg_phase = sum(n.phase for n in neurons) / len(neurons)
         
-        # Artificial sensory injection (environmental ground truth)
-        if sensory_target_vacuum:
-            avg_phase = math.pi # Force destructive interference environment
-            
         is_void_state = avg_phase > (math.pi / 2.0)
         
         print(f"[WAVE ENGINE] Sentence Average Phase: {avg_phase:.2f} rad")
@@ -135,6 +158,7 @@ class WavePhysicsEngine:
             for n in neurons:
                 if n != void_target and n not in operator_nodes:
                     n.phase += 0.1 * (math.pi - n.phase)
+                    n.temperature += 1.0
                     if hasattr(n, "hot_potential"):
                         n.hot_potential += 1.0
         else:
@@ -148,6 +172,11 @@ class WavePhysicsEngine:
                     
                     print(f"[WAVE ENGINE] Forging Resonant Bond (d={distance}): '{left_n.text}' -> '{right_n.text}'")
                     left_n.synapses[right_n.id] = left_n.synapses.get(right_n.id, 0.0) + weight
+                    
+                    # Thermodynamic Mass Accumulation
+                    left_n.mass += weight
+                    right_n.mass += weight
+                    
                     left_n.tier_z = max(left_n.tier_z, 3)
                     right_n.tier_z = max(right_n.tier_z, 3)
                     
@@ -218,7 +247,9 @@ class WavePhysicsEngine:
         """
         print("[HEARTBEAT] Inner Voice Rumination started...")
         for memory in memories:
-            self.parse_simultaneous_wave(memory, speaker_id="fella")
+            origin = self._get_or_create_neuron("fella")
+            anti_origin = self._get_or_create_neuron("user")
+            self.parse_simultaneous_wave(memory, origin_node=origin, anti_origin_node=anti_origin)
             
     def get_brain_state(self):
         hot_nodes = sum(1 for n in self.substrate.neurons.values() if self.determine_spectron_type(n) == "hot")
