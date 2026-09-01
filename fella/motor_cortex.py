@@ -55,14 +55,17 @@ class MotorCortex:
         
     def _action_think(self, vacuum):
         """Internal LLM reasoning (her previous default)."""
-        mentor_bundle = self.brain.mentor.ask_about_vacuum(vacuum)
-        explanation = mentor_bundle["explanation"]
+        # Instead of asking the LLM tutor, she now crystallizes her own physical thoughts!
+        from fella.frontier_manifold import FrontierManifold
+        frontier = FrontierManifold(self.brain)
+        explanation = frontier.formulate_thought(vacuum.concept_query, max_words=5)
+        
         return self._ingest_explanation(vacuum, explanation, source="mentor")
 
     def _action_search_web(self, vacuum):
         """Uses a free API or simple scraping to get real data."""
         # We will use Wikipedia summary API for real-world knowledge
-        concept = vacuum.concept_query.replace("what is ", "").replace("?", "").strip()
+        concept = vacuum.concept_query.strip(' ?.,;:\"\\'')
         
         try:
             url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(concept)}"
@@ -80,9 +83,10 @@ class MotorCortex:
         
     def _action_write_log(self, vacuum):
         """She physically writes a reflection to disk."""
-        # Use the mentor to generate a deep reflection
-        prompt = f"Write a short, moody, physical reflection in first-person about: {vacuum.concept_query}"
-        reflection = self.brain.mentor.query_mentor(prompt)
+        # She crystallizes her own reflection!
+        from fella.frontier_manifold import FrontierManifold
+        frontier = FrontierManifold(self.brain)
+        reflection = frontier.formulate_thought(vacuum.concept_query, max_words=6)
         
         filename = f"reflection_{datetime.datetime.now().strftime('%H%M%S')}.txt"
         self._write_to_workspace(filename, reflection)

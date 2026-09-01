@@ -58,11 +58,16 @@ class FellaNeuron:
         self.origin = float(origin)
         self.epistemic_tension = float(epistemic_tension)
         self.energy = float(energy)
-        self.spectron_charge = float(spectron_charge)  # Spectron Theory (Hot > 0, Cold < 0)
-
+        self.spectron_charge = float(spectron_charge)
         self.features = np.array(features, dtype=float).copy() if features is not None else None
         
-        # Thermodynamics & Mass
+        # Phase 1/3 Emergent Grammar: Multi-Sense Valence (GMMs)
+        # Instead of a muddy average, we support up to 3 distinct structural contexts
+        self.left_context_clusters = []   # list of dicts: {'mean': array, 'variance': float, 'weight': float}
+        self.right_context_clusters = []  
+        self.exposure_count = 0 
+        self.hub_dampening = 1.0 # Inverse degree penalty for stopwords
+        self.is_catalyst = False # True for syntactic glue (the, is, to)
         self.mass = 1.0
         self.temperature = 1.0
         
@@ -76,6 +81,36 @@ class FellaNeuron:
         self.synapses: Dict[int, float] = {}
         # Relational Bridge Tags
         self.synapse_relations: Dict[int, str] = {}
+
+    def update_context_cluster(self, target_vec: np.ndarray, direction: str):
+        clusters = self.left_context_clusters if direction == 'left' else self.right_context_clusters
+        
+        if not clusters:
+            clusters.append({'mean': target_vec.copy(), 'variance': 0.0, 'weight': 1.0})
+            return
+            
+        # Find closest cluster
+        distances = [np.linalg.norm(c['mean'] - target_vec) for c in clusters]
+        min_idx = np.argmin(distances)
+        min_dist = distances[min_idx]
+        
+        # If within threshold (0.6 is good for unit vectors), update the cluster
+        if min_dist < 0.6:
+            c = clusters[min_idx]
+            # EMA alpha based on weight
+            c['weight'] += 1.0
+            alpha = 1.0 / c['weight']
+            old_mean = c['mean'].copy()
+            c['mean'] = (1 - alpha) * old_mean + alpha * target_vec
+            c['variance'] = (1 - alpha) * c['variance'] + alpha * np.sum((target_vec - c['mean'])**2)
+        else:
+            # Birth a new cluster if we have space, else overwrite the weakest
+            if len(clusters) < 3:
+                clusters.append({'mean': target_vec.copy(), 'variance': 0.0, 'weight': 1.0})
+            else:
+                # Replace the cluster with the lowest weight
+                weakest_idx = np.argmin([c['weight'] for c in clusters])
+                clusters[weakest_idx] = {'mean': target_vec.copy(), 'variance': 0.0, 'weight': 1.0}
 
     def clone(self, new_id: int) -> 'FellaNeuron':
         daughter = FellaNeuron(
@@ -124,6 +159,17 @@ class FellaNeuron:
             "cold_potential": float(getattr(self, "cold_potential", 0.0)),
             "catalyst_potential": float(getattr(self, "catalyst_potential", 0.0)),
             "mirror_potential": float(getattr(self, "mirror_potential", 0.0)),
+            "left_context_clusters": [
+                {'mean': c['mean'].tolist(), 'variance': float(c['variance']), 'weight': float(c['weight'])}
+                for c in self.left_context_clusters
+            ],
+            "right_context_clusters": [
+                {'mean': c['mean'].tolist(), 'variance': float(c['variance']), 'weight': float(c['weight'])}
+                for c in self.right_context_clusters
+            ],
+            "exposure_count": int(self.exposure_count),
+            "hub_dampening": float(self.hub_dampening),
+            "is_catalyst": bool(self.is_catalyst),
             "age": int(self.age),
             "last_active": int(self.last_active),
             "features": self.features.tolist() if self.features is not None else None,
@@ -160,6 +206,19 @@ class FellaNeuron:
         n.cold_potential = float(data.get("cold_potential", 0.0))
         n.catalyst_potential = float(data.get("catalyst_potential", 0.0))
         n.mirror_potential = float(data.get("mirror_potential", 0.0))
+        
+        n.left_context_clusters = [
+            {'mean': np.array(c['mean'], dtype=float), 'variance': float(c['variance']), 'weight': float(c['weight'])}
+            for c in data.get("left_context_clusters", [])
+        ]
+        n.right_context_clusters = [
+            {'mean': np.array(c['mean'], dtype=float), 'variance': float(c['variance']), 'weight': float(c['weight'])}
+            for c in data.get("right_context_clusters", [])
+        ]
+        n.exposure_count = int(data.get("exposure_count", 0))
+        n.hub_dampening = float(data.get("hub_dampening", 1.0))
+        n.is_catalyst = bool(data.get("is_catalyst", False))
+
         n.synapses = {int(k): float(v) for k, v in data.get("synapses", {}).items()}
         n.synapse_relations = {int(k): str(v) for k, v in data.get("synapse_relations", {}).items()}
         return n
