@@ -113,9 +113,17 @@ class FellaNeuron:
             "role": str(self.role),
             "grammatical_role": str(self.grammatical_role),
             "syntax_valence": self.syntax_valence.tolist(),
-            "origin": float(self.origin),              "epistemic_tension": float(self.epistemic_tension),
+            "origin": float(self.origin),
+            "epistemic_tension": float(self.epistemic_tension),
             "energy": float(self.energy),
             "spectron_charge": float(self.spectron_charge),
+            "mass": float(getattr(self, "mass", 1.0)),
+            "temperature": float(getattr(self, "temperature", 1.0)),
+            "phase": float(getattr(self, "phase", 0.0)),
+            "hot_potential": float(getattr(self, "hot_potential", 0.0)),
+            "cold_potential": float(getattr(self, "cold_potential", 0.0)),
+            "catalyst_potential": float(getattr(self, "catalyst_potential", 0.0)),
+            "mirror_potential": float(getattr(self, "mirror_potential", 0.0)),
             "age": int(self.age),
             "last_active": int(self.last_active),
             "features": self.features.tolist() if self.features is not None else None,
@@ -137,13 +145,21 @@ class FellaNeuron:
             role=str(data.get("role", "concept")),
             grammatical_role=str(data.get("grammatical_role", "noun")),
             syntax_valence=np.array(data.get("syntax_valence", [1, 0, 0, 0]), dtype=float),
-            origin=float(data.get("origin", 1.0)),              epistemic_tension=float(data.get("epistemic_tension", 0.0)),
+            origin=float(data.get("origin", 1.0)),
+            epistemic_tension=float(data.get("epistemic_tension", 0.0)),
             energy=float(data.get("energy", 1.0)),
             spectron_charge=float(data.get("spectron_charge", 0.0)),
             features=np.array(data["features"], dtype=float) if data.get("features") is not None else None
         )
         n.age = int(data.get("age", 0))
         n.last_active = int(data.get("last_active", 0))
+        n.mass = float(data.get("mass", 1.0))
+        n.temperature = float(data.get("temperature", 1.0))
+        n.phase = float(data.get("phase", 0.0))
+        n.hot_potential = float(data.get("hot_potential", 0.0))
+        n.cold_potential = float(data.get("cold_potential", 0.0))
+        n.catalyst_potential = float(data.get("catalyst_potential", 0.0))
+        n.mirror_potential = float(data.get("mirror_potential", 0.0))
         n.synapses = {int(k): float(v) for k, v in data.get("synapses", {}).items()}
         n.synapse_relations = {int(k): str(v) for k, v in data.get("synapse_relations", {}).items()}
         return n

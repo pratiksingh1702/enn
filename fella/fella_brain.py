@@ -129,11 +129,11 @@ class FellaBrain:
                 # Retrieval Attempt (Wave Superposition / Concept Blooming)
                 found_answer = False
                 if self.wave_engine.determine_spectron_type(self.substrate.neurons[target_id]) == "hot":
-                    words = text_clean.replace("?", "").split()
+                    words = text_clean.split()
                     for w in words:
                         n = self.wave_engine._get_or_create_neuron(w)
                         # Ensure we are reasoning from a grounded mass, not the vacuum itself or a catalyst
-                        if n.id != target_id and self.wave_engine.determine_spectron_type(n) != "catalyst":
+                        if n.id != target_id and self.wave_engine.determine_spectron_type(n) not in ["catalyst", "hot"]:
                             # Wave Superposition: Activate ALL grounded nodes above the noise floor
                             resonant_nodes = []
                             for syn_id, weight in n.synapses.items():
@@ -201,44 +201,20 @@ class FellaBrain:
         self.trait_field.inject_curiosity(0.8)
         self.trait_field.inject_aspiration(0.65)
         
-        mentor_bundle = self.mentor.ask_about_vacuum(vacuum)
-        explanation = mentor_bundle["explanation"]
-        
-        if not explanation:
-            explanation = f"{vacuum.concept_query} transforms energy and physical matter."
+        # We will lazy-load the motor cortex so we don't break existing imports if not fully refactored everywhere
+        if not hasattr(self, "motor_cortex"):
+            from fella.motor_cortex import MotorCortex
+            self.motor_cortex = MotorCortex(self)
             
-        # Ingest mentor explanation through continuous stream engine
-        ingested = self.lang.ingest_continuous_stream(explanation, target_tier=3)
+        out = self.motor_cortex.evaluate_vacuum_action(vacuum)
         
-        # Ensure the vacuum concept itself is deeply grounded at Tier Z=3 (Causal Law)
-        x_vac = self.lang.encode_continuous_wave(vacuum.concept_query)
-        y_vac = self.lang.encode_efferent_output(x_vac)
-        focus_n, _ = self.substrate.find_or_birth_concept(
-            text=vacuum.concept_query,
-            x_vec=x_vac,
-            y_vec=y_vac,
-            tier_z=3,
-            network_id=f"net_{vacuum.concept_query[:4]}",
-            role="causal",
-            energy=3.0
-        )
+        # Unpack out to set focus_n for thought logging
+        tier_z = out.get("tier_z", 1)
+
         
-        # Resolve vacuum
-        self.observer.resolve_vacuum(vacuum.vacuum_id, explanation)
-        self.trait_field.step(external_drive=np.array([0.3, 0.9, 0.8, 0.5]))
+        self.last_thought = f"Executed Action '{vacuum.concept_query}' via Motor Cortex, bound into Tier Z={tier_z}"
         
-        self.last_thought = f"Assimilated '{vacuum.concept_query}' from mentor, bound into Tier Z={focus_n.tier_z}"
-        
-        return {
-            "vacuum_id": vacuum.vacuum_id,
-            "concept": vacuum.concept_query,
-            "mentor_model": mentor_bundle["mentor_model"],
-            "explanation": explanation,
-            "ingested_nodes": len(ingested),
-            "tier_z": focus_n.tier_z,
-            "focus_neuron_id": focus_n.id,
-            "total_synapses": len(focus_n.synapses)
-        }
+        return out
 
     def dream_consolidation(self) -> Dict[str, Any]:
         """
@@ -418,4 +394,13 @@ class FellaBrain:
         if "memory_bank" in data:
             brain.lang.memory_bank = list(data["memory_bank"])
         return brain
+
+    def save_brain(self, filepath: str = "fella_checkpoint.json"):
+        """Convenience alias for saving brain state."""
+        self.save_state(filepath)
+
+    def start_cognitive_heartbeat(self):
+        """Convenience alias for starting the background heartbeat."""
+        if hasattr(self, 'heartbeat') and self.heartbeat:
+            self.heartbeat.start()
 

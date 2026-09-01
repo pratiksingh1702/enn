@@ -43,7 +43,7 @@ class WavePhysicsEngine:
         n = FellaNeuron(
             neuron_id=new_id,
             x=vec,
-            y=np.zeros(2),
+            y=np.zeros(self.substrate.dim),
             tier_z=1,
             text=text
         )
@@ -109,7 +109,7 @@ class WavePhysicsEngine:
         # Hot Spectrons naturally possess high phase.
         avg_phase = sum(n.phase for n in neurons) / len(neurons)
         
-        is_void_state = avg_phase > (math.pi / 2.0)
+        is_void_state = avg_phase >= (math.pi / 4.0)
         
         print(f"[WAVE ENGINE] Sentence Average Phase: {avg_phase:.2f} rad")
         state = "DESTRUCTIVE (VOID)" if is_void_state else "CONSTRUCTIVE (FORGE)"
@@ -129,12 +129,8 @@ class WavePhysicsEngine:
                 operator_n = neurons[i]
                 
                 # If there's a significant phase differential or tension passing through it
-                if is_void_state:
-                    # In a vacuum, if it's adjacent to the void, it's the conduit
-                    # We estimate the void is at the end (temporally forward)
-                    operator_n.catalyst_potential += 1.0
-                    operator_nodes.add(operator_n)
-                else:
+                if not is_void_state:
+                    # Only constructive waves forge new catalysts (bridges). Vacuums do not build topology.
                     operator_n.catalyst_potential += 1.0
                     operator_nodes.add(operator_n)
 
@@ -183,15 +179,15 @@ class WavePhysicsEngine:
                     if distance == 1:
                         operations.append({"action": "forge", "source": left_n.id, "target": right_n.id})
                     
-                    if left_n not in operator_nodes:
+                    if left_n not in operator_nodes and self.determine_spectron_type(left_n) != "hot":
                         left_n.phase -= 0.1 * left_n.phase
                         left_n.cold_potential += (1.0 / distance)
-                    if right_n not in operator_nodes:
+                    if right_n not in operator_nodes and self.determine_spectron_type(right_n) != "hot":
                         right_n.phase -= 0.1 * right_n.phase
                         right_n.cold_potential += (1.0 / distance)
             
         # 4. Topological Collapse (Geometric Logic)
-        self._topological_collapse_check(speaker_neuron.id)
+        self._topological_collapse_check(origin_node.id)
         
         return {"status": "success", "state": state, "average_phase": avg_phase, "operations": operations}
 
