@@ -4,6 +4,7 @@ from fella.frontier_manifold import FrontierManifold
 from fella.visual_cortex import VisualCortex
 from fella.acoustic_cortex import AcousticCortex
 from fella.active_vision_cortex import ActiveVisionCortex
+from fella.causal_cortex import CausalCortex
 from fella.core_substrate import ENNNeuron
 
 class FellaEntity:
@@ -11,13 +12,14 @@ class FellaEntity:
         """
         The Singular Organism.
         Fuses the Z-Axis Brain, the Frontier Manifold, Vision, Hearing, 
-        Active Saliency Vision, and the Thermodynamic Oscillator.
+        Active Saliency Vision, Temporal Reasoning, and the Thermodynamic Oscillator.
         """
         self.brain = FellaBrain(dim=dim)
         self.frontier = FrontierManifold(self.brain)
         self.vision = VisualCortex(target_dim=dim)
         self.hearing = AcousticCortex(target_dim=dim)
         self.active_vision = ActiveVisionCortex(target_dim=dim)
+        self.causal_cortex = CausalCortex(initial_capacity=2000)
         
         # The internal biological clock
         self.entropy_level = 0.0
@@ -53,9 +55,19 @@ class FellaEntity:
                 self.brain.wave_matrix = np.vstack([self.brain.wave_matrix, a_wave])
             events.append(a_id)
             
-        # Bind them all via Geometric Drift
+        # Bind them all via Geometric Drift (Spatial Gravity)
         if events:
             self.brain.record_event(events)
+            
+            # Extract concept indices for Temporal Gravity
+            concept_indices = []
+            for e in events:
+                if e in self.brain.matrix_keys:
+                    concept_indices.append(self.brain.matrix_keys.index(e))
+            
+            # Bind Time (Causal Gravity)
+            if concept_indices:
+                self.causal_cortex.bind_time(concept_indices)
             
         return events
 
@@ -86,6 +98,12 @@ class FellaEntity:
         
         # Record the sudden environmental shift as a Z-Event
         self.brain.record_event(["[CURIOSITY_SPIKE]", v_id])
+        
+        # Bind Time (Causal Timeline linking visual saccades)
+        if v_id in self.brain.matrix_keys:
+            v_idx = self.brain.matrix_keys.index(v_id)
+            self.causal_cortex.bind_time([v_idx])
+            
         print(f"[ACTIVE VISION] Curiosity anomaly detected at {coords}. Saccade snapped and extracted {v_id}.")
         return v_id
 
