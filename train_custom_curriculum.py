@@ -64,8 +64,7 @@ def run_custom_curriculum():
     print(f"Streaming complete in {time.time() - start:.2f} seconds.")
     print(f"Final Vocabulary Size: {len(brain.substrate.neurons)}")
     
-    # Save the beautifully structured brain
-    brain.substrate.save_to_disk("universe_master_checkpoint.json")
+    # (Checkpoint saving removed)
     
     print("\n[2] Triggering Epistemic Vacuums...")
     manifold = FrontierManifold(brain)
@@ -84,7 +83,7 @@ def run_custom_curriculum():
     ]
     
     for prompt in test_prompts:
-        manifold.formulate_thought(prompt, max_length=15, stop_threshold=0.35)
+        manifold.formulate_thought(prompt)
 
 if __name__ == "__main__":
     run_custom_curriculum()

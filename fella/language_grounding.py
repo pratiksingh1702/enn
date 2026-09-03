@@ -260,21 +260,34 @@ class LanguageGroundingEngine:
             n_curr.exposure_count += 1
             alpha = 1.0 / (1.0 + n_curr.exposure_count)  # EMA rate
             
-            # Left context
-            if i > 0:
-                left_n = ingested_neurons[i-1]
-                # Inverse degree dampening to avoid hubs ('the', 'is') washing out signal
-                left_deg = max(1, len(left_n.synapses))
-                damp = 1.0 / (left_deg ** 0.5)
-                target_left = left_n.x * damp
+            # Left context wave (Decaying memory of last 3 words)
+            target_left = np.zeros(self.dim)
+            weight = 1.0
+            total_weight = 0.0
+            for j in range(1, 4):
+                if i - j >= 0:
+                    prev_n = ingested_neurons[i - j]
+                    damp = 1.0 / (max(1, len(prev_n.synapses)) ** 0.5)
+                    target_left += (prev_n.x * damp) * weight
+                    total_weight += weight
+                    weight *= 0.4 # Decay factor
+            if total_weight > 0:
+                target_left /= total_weight
                 n_curr.update_context_cluster(target_left, 'left')
                 
-            # Right context
-            if i < len(ingested_neurons) - 1:
-                right_n = ingested_neurons[i+1]
-                right_deg = max(1, len(right_n.synapses))
-                damp = 1.0 / (right_deg ** 0.5)
-                target_right = right_n.x * damp
+            # Right context wave (Decaying anticipation of next 3 words)
+            target_right = np.zeros(self.dim)
+            weight = 1.0
+            total_weight = 0.0
+            for j in range(1, 4):
+                if i + j < len(ingested_neurons):
+                    next_n = ingested_neurons[i + j]
+                    damp = 1.0 / (max(1, len(next_n.synapses)) ** 0.5)
+                    target_right += (next_n.x * damp) * weight
+                    total_weight += weight
+                    weight *= 0.4
+            if total_weight > 0:
+                target_right /= total_weight
                 n_curr.update_context_cluster(target_right, 'right')
 
                             
