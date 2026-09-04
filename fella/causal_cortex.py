@@ -77,3 +77,59 @@ class CausalCortex:
             state = np.dot(state, safe_T)
             
         return state
+
+    def transitive_deduction(self, start_idx: int, target_idx: int, max_hops: int = 5) -> float:
+        """
+        Piagetian Concrete Operational Deduction:
+        Evaluates multi-hop transitivity (If A -> B and B -> C, does A lead to C?).
+        Returns cumulative probability across all paths of length <= max_hops.
+        """
+        if start_idx >= self.capacity or target_idx >= self.capacity:
+            return 0.0
+
+        row_sums = self.T_matrix.sum(axis=1, keepdims=True)
+        safe_T = np.divide(self.T_matrix, row_sums, out=np.zeros_like(self.T_matrix), where=row_sums!=0)
+
+        cumulative_prob = 0.0
+        current_state = np.zeros(self.capacity, dtype=np.float32)
+        current_state[start_idx] = 1.0
+
+        for hop in range(1, max_hops + 1):
+            current_state = np.dot(current_state, safe_T)
+            # Add weighted contribution for this hop
+            cumulative_prob += current_state[target_idx] * (1.0 / hop)
+
+        return float(min(1.0, cumulative_prob))
+
+    def trace_reasoning_path(self, start_idx: int, target_idx: int, brain_matrix_keys: list, max_hops: int = 4) -> list:
+        """Traces the most probable intermediate concepts connecting start to target."""
+        if start_idx >= self.capacity or target_idx >= self.capacity:
+            return []
+
+        row_sums = self.T_matrix.sum(axis=1, keepdims=True)
+        safe_T = np.divide(self.T_matrix, row_sums, out=np.zeros_like(self.T_matrix), where=row_sums!=0)
+
+        path = [brain_matrix_keys[start_idx]]
+        curr = start_idx
+
+        for _ in range(max_hops):
+            # Look ahead to see which neighbor has the highest connection toward target
+            next_step_probs = safe_T[curr]
+            if np.all(next_step_probs == 0):
+                break
+                
+            # Weight neighbors by their proximity to target
+            target_proximity = safe_T[:, target_idx]
+            combined_scores = next_step_probs * (target_proximity + 0.1)
+            best_next = int(np.argmax(combined_scores))
+            
+            if best_next == curr or best_next >= len(brain_matrix_keys):
+                break
+                
+            path.append(brain_matrix_keys[best_next])
+            curr = best_next
+            
+            if curr == target_idx:
+                break
+
+        return path

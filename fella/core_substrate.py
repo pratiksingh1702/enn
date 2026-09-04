@@ -94,8 +94,9 @@ class ENNSubstrate:
         return len(dead_events)
 
     def save_state(self, filepath: str):
-        """Saves all neurons, vectors, and Z-events to JSON."""
+        """Saves all neurons, vectors, and Z-events to JSON atomically."""
         import json
+        import os
         state = {
             "dim": self.dim,
             "z_counter": self.z_counter,
@@ -114,14 +115,25 @@ class ENNSubstrate:
                 for z, neurons in self.events.items()
             }
         }
-        with open(filepath, "w", encoding="utf-8") as f:
+        temp_path = filepath + ".tmp"
+        with open(temp_path, "w", encoding="utf-8") as f:
             json.dump(state, f)
+        os.replace(temp_path, filepath)
 
     def load_state(self, filepath: str):
-        """Restores neurons, vectors, and Z-events from JSON."""
+        """Restores neurons, vectors, and Z-events from JSON with retry protection."""
         import json
-        with open(filepath, "r", encoding="utf-8") as f:
-            state = json.load(f)
+        import time
+        for attempt in range(5):
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    state = json.load(f)
+                break
+            except Exception:
+                time.sleep(0.1)
+        else:
+            with open(filepath, "r", encoding="utf-8") as f:
+                state = json.load(f)
         self.dim = state.get("dim", self.dim)
         self.z_counter = state.get("z_counter", 0)
         self.w_counter = state.get("w_counter", 0)

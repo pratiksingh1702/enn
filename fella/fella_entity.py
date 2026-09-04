@@ -5,6 +5,7 @@ from fella.visual_cortex import VisualCortex
 from fella.acoustic_cortex import AcousticCortex
 from fella.active_vision_cortex import ActiveVisionCortex
 from fella.causal_cortex import CausalCortex
+from fella.autotelic_agency import AutotelicAgency
 from fella.core_substrate import ENNNeuron
 
 class FellaEntity:
@@ -12,7 +13,7 @@ class FellaEntity:
         """
         The Singular Organism.
         Fuses the Z-Axis Brain, the Frontier Manifold, Vision, Hearing, 
-        Active Saliency Vision, Temporal Reasoning, and the Thermodynamic Oscillator.
+        Active Saliency Vision, Temporal Reasoning, Autotelic Agency, and the Thermodynamic Oscillator.
         """
         self.brain = FellaBrain(dim=dim)
         self.frontier = FrontierManifold(self.brain)
@@ -20,9 +21,18 @@ class FellaEntity:
         self.hearing = AcousticCortex(target_dim=dim)
         self.active_vision = ActiveVisionCortex(target_dim=dim)
         self.causal_cortex = CausalCortex(initial_capacity=2000)
+        self.agency = AutotelicAgency(dim=dim)
         
         # The internal biological clock
         self.entropy_level = 0.0
+
+    def act(self, target_concept=None):
+        """
+        The Autonomous Action Pulse:
+        Evaluates self-state, decodes gaps, resolves them via resonant tools,
+        and learns causally from outcomes with zero hardcoding.
+        """
+        return self.agency.evaluate_and_act(self, target_concept=target_concept)
 
     def perceive(self, text_words: list, image_path: str = None, audio_path: str = None):
         """
@@ -126,15 +136,11 @@ class FellaEntity:
             self.entropy_level = 0.0 # Reset after autonomous discharge
             
     def _trigger_curiosity(self):
-        """When entropy is critical, she autonomously routes an unstable wave to ask a question."""
-        print("\n[AUTONOMOUS DRIVE] Entropy Critical. Initiating Curiosity Discharge...")
-        if len(self.brain.neurons) < 2: return
-        
-        # Find the most mathematically unstable (least accessed) concept
-        unstable_neuron = min(self.brain.neurons.values(), key=lambda n: len(n.z_events) + n.last_accessed)
-        
-        print(f"[OSCILLATOR] Routing unstable concept '{unstable_neuron.text}' to Frontier Manifold.")
-        # She forces a thought autonomously using the grammar rules she knows
-        y, _, _, _ = self.frontier.formulate_thought(f"what is {unstable_neuron.text}", simulate=False)
-        if not y:
-            print(f"[AUTONOMOUS OUTPUT] {unstable_neuron.text}?")
+        """When entropy is critical, she autonomously engages her Autotelic Agency Cortex."""
+        print("\n[AUTONOMOUS DRIVE] Entropy Critical. Engaging Autotelic Agency Cortex...")
+        decision = self.act()
+        if decision:
+            print(f"[AGENCY ENGAGED] Target: '{decision['target']}'")
+            print(f"                Resonant Action: {decision['selected_action']} (Resonance: {decision['resonance']:+.4f})")
+            print(f"                Outcome: {decision['outcome']}")
+            print(f"                Homeostatic Status: {decision['status']}")
